@@ -220,6 +220,118 @@ If the owner does not provide a full name (first **and** last):
   (planned); until it exists, the old kit's Step 1 (install the harness and connect the model) is
   the fallback.
 
+## 7. Setting up the accounts — what each one is for
+
+§6 records the account **state**; this section is the **procedure** behind it. Account creation and
+any spend are **owner gate #2** — ask before creating anything, one account (or one step) at a time,
+and never invent credentials (`AGENTS.md` §4, §11; §6 above). No new gate is introduced here. One
+account per sub-block: say what it is for in the owner's words, then keep the facts straight. If a
+detail below is not stated, **confirm it at setup with the owner** — do not guess a key format,
+scope or version.
+
+### 7.1 GitHub — the home for the site's source
+
+> "This is where your site's source code lives. It also runs the checks and publishes the site when
+> we are ready."
+
+Facts:
+
+- What it is for: the code repository plus the build / validate / deploy automation (CI/CD). Free.
+- Sign up with email, password and username, verify the confirmation email, and **enable 2FA** —
+  mandatory for this project's security bar.
+- Create the project repository. It may be **Public or Private**; add `.gitignore: Node` and a
+  license.
+- CI secrets live under **Settings → Secrets and variables → Actions**, with Environments `staging`
+  and `production` — the credential procedure is in `references/deploy.md` (planned).
+
+### 7.2 Cloudflare — hosting, the human check, and DNS
+
+> "This is the service that puts your site online, adds the 'prove you are human' check before
+> downloads, and manages your domain's routing."
+
+Facts:
+
+- What it is for: hosting (**Workers**), **Turnstile** (the bot gate for the CV download), and DNS.
+  Free tier.
+- Sign up at `dash.cloudflare.com`, verify the email, choose the **Free** plan.
+- **Turnstile** (dashboard → Turnstile → Add site):
+  - Widget name: e.g. `portfolio-cv`.
+  - **Hostname**: your domain — or `*` while developing.
+  - **Widget mode: Managed**.
+  - It issues two keys. The **Site key** is public — it goes in the browser (`VITE_TURNSTILE_SITE_KEY`,
+    a `VITE_` build-time variable). The **Secret key** is private — server-side only, set as a
+    Supabase secret. **Never swap them**, and the secret must never reach the browser.
+- **Workers**: create a Worker (name e.g. `my-portfolio`). Deploying happens later from CI — this
+  step only **reserves the name**.
+- **Custom domain** (after the first deploy): Worker → Settings → Domains & Routes → Add → Custom
+  domain; add the apex and `www`. Cloudflare provisions DNS automatically when the domain is on
+  Cloudflare DNS (§7.5).
+- CI credentials: the Cloudflare API token scopes are `Account > Workers Scripts > Edit` and
+  `Zone > Workers Routes > Edit`; they are stored as the GitHub secret `CLOUDFLARE_API_TOKEN`, with
+  the account id in the GitHub variable `CLOUDFLARE_ACCOUNT_ID`. The full CI credential set is in
+  `references/deploy.md` (planned).
+
+### 7.3 Supabase — the site's database, sign-in and server functions
+
+> "This is where your content is stored and where the site checks who is allowed to see or change
+> it."
+
+Facts:
+
+- What it is for: Postgres + RLS, Auth, Storage and Edge Functions. Free tier.
+- Create an **organization**, then a **New project**: project name, **Database password** (save it
+  in a password manager), the region nearest the audience, Free tier. The database password is set
+  at project creation and is what `supabase link` needs if it prompts (via `SUPABASE_DB_PASSWORD`).
+- The Project URL is `https://<project-ref>.supabase.co`. The `<project-ref>` is a **22-character
+  string** and is the value `supabase link --project-ref ...` needs.
+- **API keys** (Project Settings → API):
+  - **Publishable key** (`sb_publishable_...`) — public, safe in the browser (build variable
+    `VITE_SUPABASE_PUBLISHABLE_KEY`).
+  - **Service role key** (`sb_secret_...`) — private, server-side only (set as a Supabase secret).
+- Keep the project on the **free tier** — this build deliberately uses no paid features.
+- **Where secrets live:** server storage only — **Supabase secrets** (for the edge functions) and
+  **Wrangler secrets** (for the Cloudflare Worker). Secrets never go in `.env.local`, which holds
+  **PUBLIC build-time variables only** and is gitignored; no secret may appear in the browser
+  bundle. The security rules are in `references/secure.md` (planned).
+
+### 7.4 The AI provider key — server-side only
+
+> "The AI that answers visitors about you needs a key. It stays on the server, so nobody can read it
+> from the page."
+
+Facts:
+
+- Create the AI provider account and API key (the old kit's provider is **DeepSeek**,
+  `platform.deepseek.com`). The key is shown **only once**, starts with `sk-...`, and must be saved
+  somewhere safe. Treat it as a secret: never commit it, never paste it into public chats.
+- The site's AI features (chat, JD analysis) run from **Supabase edge functions** and consume the key
+  as a **server-side secret** named `deepseek`. Set the server secrets once with:
+
+```sh
+supabase secrets set TURNSTILE_SECRET=<cloudflare-turnstile-secret> \
+  SUPABASE_SERVICE_ROLE_KEY=<sb_secret_...> \
+  deepseek=<sk-...>
+```
+
+- It must never reach the browser: the built bundle must not contain `sk-` (DeepSeek),
+  `sb_secret_` (service role) or `0x3…` (Turnstile secret).
+
+### 7.5 Domain — your own web address (optional, recommended)
+
+> "Your own web address, like yourname.com. This is the one that costs money, so we only do it if you
+> want it."
+
+Facts:
+
+- Optional but recommended; roughly **$10/year**. This costs money, so it is **owner gate #2** — ask
+  first.
+- Easiest: buy it in Cloudflare (dashboard → Domain Registration → search → register). It lands on
+  Cloudflare DNS automatically, so Worker custom domains and Turnstile just work.
+- Or buy it anywhere (Namecheap, GoDaddy, …), then in Cloudflare **Add a site** → Free plan → change
+  the **nameservers** at the registrar to the two Cloudflare nameservers shown → wait for
+  propagation (minutes to hours).
+- Point both the apex and `www` at the Worker (§7.2).
+
 ## Source map
 
 | Section here | Old-kit section |
@@ -232,3 +344,9 @@ If the owner does not provide a full name (first **and** last):
 | §4 The local, no-account sandbox | `SKILL_INTERACTIVE_PORTFOLIO.md` — "Optional — a local, no-account sandbox first (before you commit)" (including its "Boundaries" list); "When to use" sandbox offer; `GUIDE_FROM_SCRATCH.md` — the "Optional — no accounts yet?" note before Step 1 |
 | §5 Placeholder rule | `SKILL_INTERACTIVE_PORTFOLIO.md` — Q1 placeholder paragraph; `GUIDE_FROM_SCRATCH.md` — "Step 6 — Phase A: the design questionnaire" placeholder note |
 | §6 What to record | `SKILL_INTERACTIVE_PORTFOLIO.md` — "note answers verbatim — they are the design contract"; Non-negotiables 1 and 3; `GUIDE_FROM_SCRATCH.md` — "Step 2 — Create the remaining accounts" (account state, no secrets) |
+| §7 Setting up the accounts (intro / gate) | `GUIDE_FROM_SCRATCH.md` — "Step 2 — Create the remaining accounts" (the cost table); `SKILL_INTERACTIVE_PORTFOLIO.md` — "Phase 0 — Prerequisites" (account list, missing? walk user through); `AGENTS.md` §4 (owner gate #2) |
+| §7.1 GitHub | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.1 GitHub" (signup, 2FA, repo public/private, `.gitignore: Node`, license; Step 12 CI secrets + Environments) |
+| §7.2 Cloudflare | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.2 Cloudflare (account + Turnstile + Workers + DNS)" (Free plan; Turnstile widget name / hostname / mode **Managed** / site key vs secret; Worker name reservation; custom domain; API token scopes and GitHub secret/variable names); "Step 4.2" (`VITE_TURNSTILE_SITE_KEY`); "Step 11" (Turnstile secret as a Supabase secret) |
+| §7.3 Supabase | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.3 Supabase" (organization, New project, database password, Project URL, 22-char project-ref, `sb_publishable_...` / `sb_secret_...`, free tier); "Step 8" (`supabase link --project-ref`); "Step 4.2" (`.env.local` PUBLIC only; secrets never there); "Step 11" (Supabase secrets); `SKILL_INTERACTIVE_PORTFOLIO.md` — "Phase 0 — Prerequisites" (`SUPABASE_DB_PASSWORD`) |
+| §7.4 The AI provider key | `GUIDE_FROM_SCRATCH.md` — "Step 1.1 Create the DeepSeek account and API key" (`sk-...`, shown once, treat as a secret); "Step 11" (server secret named `deepseek`; no `sk-` / `sb_secret_` / `0x3…` in the browser bundle) |
+| §7.5 Domain | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.4 Domain (optional but recommended)" (Cloudflare registration, or registrar + Cloudflare `Add a site` + nameservers + propagation); Step 2 cost table (~$10/yr) |
