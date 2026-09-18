@@ -5,12 +5,15 @@
 > `recommendations` — plus the §2.1 population note.
 > **Loaded at:** Build — data layer (profile tables). The homepage, AI chat, JD analysis and CV
 > generation read these tables at runtime.
-> **Source:** `DATABASE_SCHEMA.md` §2.1, verbatim — the schema is unchanged.
-> **Cross-references:** §6 ContentDoc shape → `content.md`; views/RPCs/policies for these tables →
-> `access.md`; the §2.1 note says these tables are not seeded — seed/migration notes → `seeds.md`;
-> §12 audit → `audit.md`.
+> **Source:** `DATABASE_SCHEMA.md` §2 (its `## 2. Tables` heading is reproduced here) and §2.1,
+> verbatim — the schema is unchanged.
+> **Cross-references:** §2.2/§2.3 table definitions → `content.md`, `ai-ops.md`; §6 ContentDoc shape
+> → `content.md`; views/RPCs/policies for these tables → `access.md`; the §2.1 note says these
+> tables are not seeded — seed/migration notes → `seeds.md`; §12 audit → `audit.md`.
 
 ---
+
+## 2. Tables
 
 ### 2.1 Profile domain
 

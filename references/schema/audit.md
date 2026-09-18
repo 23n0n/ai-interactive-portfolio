@@ -2,12 +2,12 @@
 
 > **Holds:** the §12 final RLS audit, checks A–G, to be run before launch and after every schema
 > change. Self-sufficient for the A–G assertions: each check carries its own SQL and its expected
-> result.
+> result. Includes the source §12 closing reference-files paragraph.
 > **Loaded at:** Publish — before launch; and after every schema change.
 > **Source:** `DATABASE_SCHEMA.md` §12, verbatim — the schema is unchanged.
 > **Cross-references:** the §10 RLS and grants summary matrix that A–G check against, and the §9
 > service-role access matrix (including the explicit service-role grants), are in `access.md`.
-> `references/secure.md` points at this file for the A–G assertions.
+> `references/secure.md` points at this file for the A–G assertions. Seed values → `seeds.md`.
 
 ---
 
@@ -145,3 +145,8 @@ anon USING (true)`; the public registries' read policies restrict rows
 Automate B–G in a script (`scripts/audit-rls.mjs`) so the Phase 8 RLS audit
 in the skill is one command; the script's expected output is the §10 matrix
 with zero deviations.
+
+Reference files in the source project: `supabase/migrations/*.sql`
+(authoritative DDL), `supabase/config.toml` (edge-function schedules,
+`verify_jwt = false`), `supabase/functions/_shared/deepseek.ts` +
+`_shared/http.ts` (shared clients).

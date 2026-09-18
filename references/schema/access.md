@@ -6,7 +6,8 @@
 > matrix).
 > **Loaded at:** Build — data layer, security half; re-loaded at Publish for the security audit.
 > **Source:** `DATABASE_SCHEMA.md` §§1, 3, 4, 5, 7, 8, 9, 10, verbatim — the schema is unchanged.
-> **Cross-references:** §2 table definitions → `profile.md`, `content.md`, `ai-ops.md`; §6 ContentDoc
+> **Cross-references:** §2.1/§2.2/§2.3 table definitions → `profile.md`, `content.md`, `ai-ops.md`;
+> §6 ContentDoc
 > shape → `content.md`; §11 migrations → `seeds.md`; **§12 final RLS audit (A–G) → `audit.md`**.
 > The source's citations of §5 and §9 in this file point at sections that also live here.
 

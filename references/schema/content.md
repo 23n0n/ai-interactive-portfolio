@@ -5,10 +5,13 @@
 > ContentDoc JSONB shape (source §6).
 > **Loaded at:** Build — data layer (content model); content authoring / Distribute for the shape in
 > §6.
-> **Source:** `DATABASE_SCHEMA.md` §2.2 and §6, verbatim. Exception, by task spec: the two seed-row
-> lists inside §2.2 are re-homed in `seeds.md` (pointer lines left in place). No SQL is changed.
-> **Cross-references:** §6 → §6 below; views/RPCs/policies for these tables → `access.md`; seed rows
-> → `seeds.md`; §12 audit → `audit.md`.
+> **Source:** `DATABASE_SCHEMA.md` §2.2 and §6, verbatim, with one declared exception: the
+> `site_sections` and `holiday_banners` seed **values** are relocated to [`seeds.md`](seeds.md)
+> (declared relocations R1/R2 — see `README.md`). The source's own seed pointer lines
+> (`… Seed rows (adapt wording):` / `… Seed rows`) are reproduced here byte-for-byte; only the
+> value lines that followed them moved. No SQL is changed.
+> **Cross-references:** §2.1 → `profile.md`; §2.3 → `ai-ops.md`; §6 → §6 below; views/RPCs/policies
+> for these tables → `access.md`; seed values → `seeds.md`; §12 audit → `audit.md`.
 
 ---
 
@@ -70,8 +73,10 @@ Partial index: `site_content_public_order_idx (sort_order) WHERE publish_status 
 NULL), `description` (text default `''`), `is_visible` (boolean default
 `true`), `display_order` (integer default `0`), `created_at`, `updated_at`.
 Partial index: `site_sections_visible_order_idx (display_order) WHERE
-is_visible = true`. Trigger: `set_updated_at`. Seed rows: see `seeds.md`
-(section "site_sections seeds").
+is_visible = true`. Trigger: `set_updated_at`. Seed rows (adapt wording):
+
+> Seed values relocated verbatim to [`seeds.md`](seeds.md) — declared relocation **R1**
+> (source §2.2 lines 253–254). The pointer line above is the source's own, unchanged.
 
 #### `public.fun_links` — just-for-fun links
 
@@ -107,8 +112,10 @@ true`. Trigger: `set_updated_at`.
 | `created_at`, `updated_at` | timestamptz NOT NULL | |
 
 Partial index: `holiday_banners_active_window_idx (start_date, end_date,
-display_order) WHERE is_active = true`. Trigger: `set_updated_at`. Seed rows: see `seeds.md`
-(section "holiday_banners seeds").
+display_order) WHERE is_active = true`. Trigger: `set_updated_at`. Seed rows
+
+> Seed values relocated verbatim to [`seeds.md`](seeds.md) — declared relocation **R2**
+> (source §2.2 lines 291–293). The pointer line above is the source's own, unchanged.
 
 ---
 

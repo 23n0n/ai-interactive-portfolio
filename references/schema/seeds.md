@@ -1,37 +1,37 @@
 # Schema — Seeds and migration ordering
 
-> **Holds:** the seed rows for `site_sections` and `holiday_banners` (extracted verbatim from source
-> §2.2); migration ordering and verification (source §11); the authoritative source files in the
-> reference project.
+> **Holds:** the seed-row **values** for `site_sections` and `holiday_banners` (declared relocations
+> R1/R2 from source §2.2) and migration ordering and verification (source §11).
 > **Loaded at:** Build — migrations stage, before `supabase db push`.
-> **Source:** `DATABASE_SCHEMA.md` §2.2 (seed lists) and §11 + closing reference-files note,
-> verbatim — the schema is unchanged.
+> **Source:** `DATABASE_SCHEMA.md` §2.2 (the two declared seed-value relocations reproduced below)
+> and §11, byte-identical — the schema is unchanged. The source's closing reference-files paragraph
+> (source §12, lines 773–776) is reproduced at the end of §12 in [`audit.md`](audit.md).
 > **Cross-references:** the profile domain is deliberately not seeded — see the §2.1 population note
 > in `profile.md`; **§12 final RLS audit → `audit.md`**; table definitions → `profile.md`,
-> `content.md`, `ai-ops.md`.
+> `content.md`, `ai-ops.md`. The source's own seed pointer lines stay in `content.md` and point here.
 
 ---
 
-## Seed rows
+## Declared relocations from source §2.2 (byte-identical)
 
-### `public.site_sections` — homepage section registry
+The lines below are the **only** §2.2 lines not reproduced in `content.md`. They are declared
+relocations **R1** and **R2** (see `README.md` → "Declared relocations"). Each line is
+byte-identical to `DATABASE_SCHEMA.md`.
 
-Verbatim from `DATABASE_SCHEMA.md` §2.2 (`public.site_sections`):
+### R1 — `public.site_sections` seed values (source §2.2 lines 253–254)
 
-> Seed rows (adapt wording):
-> `spotlight`, `experience`, `skills`, `jd`, `testimonials`, `transparency`,
-> `disclaimer`, `footer`, `fun`.
+`spotlight`, `experience`, `skills`, `jd`, `testimonials`, `transparency`,
+`disclaimer`, `footer`, `fun`.
 
-### `public.holiday_banners` — recurring seasonal banners
+### R2 — `public.holiday_banners` seed values (source §2.2 lines 291–293)
 
-Verbatim from `DATABASE_SCHEMA.md` §2.2 (`public.holiday_banners`):
+live in the migrations (New Year, HR Day, Christmas, System Administrator
+Day, Programmer Day, Computer Security Day, Password Day, Safer Internet
+Day, ...) — adapt dates to your persona.
 
-> Seed rows
-> live in the migrations (New Year, HR Day, Christmas, System Administrator
-> Day, Programmer Day, Computer Security Day, Password Day, Safer Internet
-> Day, ...) — adapt dates to your persona.
+---
 
-### Profile domain — not seeded
+## Profile domain — not seeded
 
 The §2.1 population note (kept verbatim in `profile.md`) is explicit: the profile tables are NOT
 seeded by migrations in the reference. There are no seed rows for `candidate_profile`,
@@ -60,12 +60,3 @@ seeded by migrations in the reference. There are no seed rows for `candidate_pro
    - `check_rate_limit` returns true then false past the cap.
 4. Apply migrations **before** deploying schema-dependent Worker changes —
    deploy workflows never run migrations.
-
----
-
-## Authoritative files in the reference project
-
-Reference files in the source project: `supabase/migrations/*.sql`
-(authoritative DDL), `supabase/config.toml` (edge-function schedules,
-`verify_jwt = false`), `supabase/functions/_shared/deepseek.ts` +
-`_shared/http.ts` (shared clients).
