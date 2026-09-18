@@ -108,11 +108,12 @@ swapping it silently and mentioning it later. That is the inherited **no silent 
 This distribution is a **work in progress**, and the sections above describe the intended model as
 much as the current tree. Honestly, as of now:
 
-- The rework from the old kit into a contract plus references is **in flight**, not finished: the
-  contract, the references and these docs are still being settled, so expect churn rather than a
-  frozen release.
-- A worked `examples/` site **does not exist yet**. It is planned, not present, and nothing above
-  should be read as promising it today.
+- The rework from the old kit into a contract plus references has **landed in this tree**: `AGENTS.md`,
+  the ten references, the `scripts/` helpers, this README and the `examples/` directory are all here.
+  Expect churn in the wording rather than missing pieces.
+- `examples/` holds a worked, **fictional** example site — a filled-in `ad-home/` state home with its
+  manifest, decisions log and a run report, plus example content payloads. Read it for the shapes; do
+  not copy it wholesale.
 - There is **no released version**: no tag, no package and no published distribution beyond the
   repository itself. Nothing here is a polished release.
 - The technology, the schema and the accumulated troubleshooting knowledge are inherited from the
