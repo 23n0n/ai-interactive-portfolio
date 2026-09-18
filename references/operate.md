@@ -219,6 +219,10 @@ domain or TLS change also re-verifies `www` → `301` → apex and the CORS allo
 | DeepSeek API | none (pay-per-token) | a $5 top-up lasts a long time |
 | Domain | — | ~$10/yr |
 
+**One-off build cost.** Building the whole site costs roughly **$1–3** of AI-provider tokens on top
+of the running costs above. That is the old kit's field estimate for the reference build — treat it as
+an order of magnitude, not a quote.
+
 **Signals a site is outgrowing the free tier:**
 
 - Cloudflare Workers request volume approaching **100k req/day** in the Cloudflare analytics, or a
