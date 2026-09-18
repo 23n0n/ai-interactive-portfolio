@@ -58,7 +58,7 @@ gets `SELECT` (edge functions). Writes on views are revoked for all roles.
 
 | View | Projected columns |
 |---|---|
-| `candidate_profile_public` | `id, name, title, elevator_pitch, availability_status, target_company_stages, linkedin_url` |
+| `candidate_profile_public` | `id, name, title, elevator_pitch, availability_status, target_company_stages, linkedin_url, profile_image_url` |
 | `experiences_public` | `id, candidate_id, company_name, title, title_progression, start_date, end_date, is_current, bullet_points, display_order` |
 | `skills_public` | `id, candidate_id, skill_name, category, self_rating, years_experience` |
 | `gaps_weaknesses_public` | `id, candidate_id, gap_type, description, interest_in_learning` |

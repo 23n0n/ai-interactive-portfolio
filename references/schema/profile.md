@@ -48,7 +48,13 @@
 | `availability_date` | date | |
 | `location` | text | |
 | `remote_preference` | text | |
-| `github_url`, `linkedin_url`, `twitter_url` | text | `linkedin_url` is the only URL projected publicly |
+| `github_url`, `linkedin_url`, `twitter_url` | text | `linkedin_url` and `profile_image_url` are the only URLs projected publicly |
+| `profile_image_url` | text | absolute HTTPS URL (required for `og:image`), portrait; a public `kb-images` object URL satisfies this. Feeds the visible spotlight image and `og:image` / `Person.image` |
+
+> **Social image — future override (not in this schema):** `profile_image_url` is used directly for
+> the visible spotlight image, `og:image` and JSON-LD `Person.image`. A purpose-built 1200x630 social
+> card could later be added as a separate override column; this schema deliberately adds the
+> portrait column only.
 
 #### `public.experiences` — work history
 
