@@ -676,7 +676,7 @@ Expected: `authenticated` has CRUD on admin tables; `anon` has `SELECT` only
 on the public registries (`site_sections`, `fun_links`, `holiday_banners`,
 `cv_settings`) and nothing else. Any anon `INSERT/UPDATE/DELETE`, and any
 grant on the deny-all tables (`rate_limits`, `chat_response_cache`,
-`jd_analysis_cache`, `rag_metrics`, `cv_documents`, `abuse_alerts`), is a
+`jd_analysis_cache`, `rag_metrics`, `cv_documents`), is a
 launch blocker.
 
 **C. View layer is read-only (for the API roles):**
@@ -765,7 +765,7 @@ where schemaname = 'public'
                     'gaps_weaknesses','values_culture','faq_responses',
                     'ai_instructions','recommendations','content_collections',
                     'content_docs','site_content','site_sections','fun_links',
-                    'holiday_banners','cv_settings')
+                    'holiday_banners','cv_settings','abuse_alerts')
 order by tablename, policyname;
 ```
 

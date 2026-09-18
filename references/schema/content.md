@@ -76,7 +76,7 @@ Partial index: `site_sections_visible_order_idx (display_order) WHERE
 is_visible = true`. Trigger: `set_updated_at`. Seed rows (adapt wording):
 
 > Seed values relocated verbatim to [`seeds.md`](seeds.md) — declared relocation **R1**
-> (source §2.2 lines 253–254). The pointer line above is the source's own, unchanged.
+> (source §2.2 lines 259–260). The pointer line above is the source's own, unchanged.
 
 #### `public.fun_links` — just-for-fun links
 
@@ -115,7 +115,7 @@ Partial index: `holiday_banners_active_window_idx (start_date, end_date,
 display_order) WHERE is_active = true`. Trigger: `set_updated_at`. Seed rows
 
 > Seed values relocated verbatim to [`seeds.md`](seeds.md) — declared relocation **R2**
-> (source §2.2 lines 291–293). The pointer line above is the source's own, unchanged.
+> (source §2.2 lines 297–299). The pointer line above is the source's own, unchanged.
 
 ---
 

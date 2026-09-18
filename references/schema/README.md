@@ -36,7 +36,7 @@ Private/sensitive columns never leave the view layer.
 | Content / knowledge base | [`content.md`](content.md) | `content_collections`, `content_docs`, `site_content`, `site_sections`, `fun_links`, `holiday_banners` (source §2.2) and the ContentDoc JSONB shape (source §6) | Build — data layer (content model); content authoring / Distribute for the shape in §6 |
 | AI / cache / operations | [`ai-ops.md`](ai-ops.md) | `rate_limits`, `chat_response_cache`, `jd_analysis_cache`, `rag_metrics`, `cv_settings`, `cv_documents`, `abuse_alerts` (source §2.3) | Build — data layer (AI + ops); Publish/Operate for the abuse watchdog and CV cache |
 | Access layer | [`access.md`](access.md) | roles and conventions (§1), public views (§3), read RPCs (§4), `private` schema (§5), functions/triggers/hooks/cron (§7), storage bucket (§8), edge functions + service-role access matrix (§9), RLS/grants matrix (§10) | Build — data layer, security half; re-loaded at Publish for the security audit |
-| Audit | [`audit.md`](audit.md) | the §12 final RLS audit, checks A–G, including the §12 closing reference-files paragraph | Publish — before launch and after every schema change |
+| Audit | [`audit.md`](audit.md) | the §12 final RLS audit, checks A–G, including the §12 closing reference-files paragraph | Build — data layer (part of `schema/*`); run before launch and after every schema change |
 | Seeds / migrations | [`seeds.md`](seeds.md) | the `site_sections` and `holiday_banners` seed **values** (declared relocations R1/R2 from §2.2); migration ordering and verification (§11) | Build — migrations stage, before `supabase db push` |
 
 ## Load order
@@ -84,12 +84,12 @@ both are reproduced byte-for-byte in [`seeds.md`](seeds.md); no other source lin
 
 | ID | Source lines (`DATABASE_SCHEMA.md`) | Moved from | Moved to | Reason |
 | --- | --- | --- | --- | --- |
-| R1 | 253–254 | §2.2 `public.site_sections` seed values | `seeds.md` → "R1" | task spec requires the seed rows in `seeds.md` |
-| R2 | 291–293 | §2.2 `public.holiday_banners` seed values | `seeds.md` → "R2" | task spec requires the seed rows in `seeds.md` |
+| R1 | 259–260 | §2.2 `public.site_sections` seed values | `seeds.md` → "R1" | task spec requires the seed rows in `seeds.md` |
+| R2 | 297–299 | §2.2 `public.holiday_banners` seed values | `seeds.md` → "R2" | task spec requires the seed rows in `seeds.md` |
 
-The source's own pointer lines for both (`… Seed rows (adapt wording):` at line 252 and `… Seed
-rows` at line 290) stay in `content.md`, reproduced verbatim. The §12 closing "Reference files in
-the source project…" paragraph (`DATABASE_SCHEMA.md` lines 773–776) is **not** relocated: it is
+The source's own pointer lines for both (`… Seed rows (adapt wording):` at line 258 and `… Seed
+rows` at line 296) stay in `content.md`, reproduced verbatim. The §12 closing "Reference files in
+the source project…" paragraph (`DATABASE_SCHEMA.md` lines 797–800) is **not** relocated: it is
 reproduced at the end of §12 in [`audit.md`](audit.md).
 
 Markdown scaffolding added by the split (file titles, `> **Holds:** / **Loaded at:** / **Source:** /

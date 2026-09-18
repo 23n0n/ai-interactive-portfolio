@@ -3,7 +3,7 @@
 > **Holds:** the §12 final RLS audit, checks A–G, to be run before launch and after every schema
 > change. Self-sufficient for the A–G assertions: each check carries its own SQL and its expected
 > result. Includes the source §12 closing reference-files paragraph.
-> **Loaded at:** Publish — before launch; and after every schema change.
+> **Loaded at:** Build — data layer (part of `schema/*`); run before launch and after every schema change.
 > **Source:** `DATABASE_SCHEMA.md` §12, verbatim — the schema is unchanged.
 > **Cross-references:** the §10 RLS and grants summary matrix that A–G check against, and the §9
 > service-role access matrix (including the explicit service-role grants), are in `access.md`.
@@ -46,7 +46,7 @@ Expected: `authenticated` has CRUD on admin tables; `anon` has `SELECT` only
 on the public registries (`site_sections`, `fun_links`, `holiday_banners`,
 `cv_settings`) and nothing else. Any anon `INSERT/UPDATE/DELETE`, and any
 grant on the deny-all tables (`rate_limits`, `chat_response_cache`,
-`jd_analysis_cache`, `rag_metrics`, `cv_documents`, `abuse_alerts`), is a
+`jd_analysis_cache`, `rag_metrics`, `cv_documents`), is a
 launch blocker.
 
 **C. View layer is read-only (for the API roles):**
@@ -135,7 +135,7 @@ where schemaname = 'public'
                     'gaps_weaknesses','values_culture','faq_responses',
                     'ai_instructions','recommendations','content_collections',
                     'content_docs','site_content','site_sections','fun_links',
-                    'holiday_banners','cv_settings')
+                    'holiday_banners','cv_settings','abuse_alerts')
 order by tablename, policyname;
 ```
 
