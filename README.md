@@ -1,5 +1,7 @@
 # Make your own site with an AI agent
 
+*Vibe coded instruction for vibe coders by Piotr Żabrowski :-)*
+
 This repository is a **knowledge package plus a skill distribution** for building personal sites
 like [`zabrowski.pl`](https://zabrowski.pl) — an interactive portfolio/CV with an AI chat about you,
 a knowledge base with an admin panel, a gated CV download and machine-readable surfaces for search
