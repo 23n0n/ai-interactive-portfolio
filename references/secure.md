@@ -37,9 +37,12 @@ needs an ADR.
 4. **Writes service-role-only.** All writes go via the service role or `SECURITY DEFINER` — never
    browser-side RLS writes.
 5. **Turnstile server-side verify on the CV endpoint only** (`generate-cv`). Never on `chat` or
-   `analyze-jd`; use per-IP rate limits there (ADR-0007).
+   `analyze-jd`; compensating controls there are per-IP rate limits (`chat` 30/15 min,
+   `analyze-jd` 10/15 min), strict input caps and response caching (ADR-0007).
 6. **CORS allowlist.** Production domains + staging only. No wildcard.
-7. **HSTS 180d.** `Strict-Transport-Security: max-age=15552000; includeSubDomains; preload`.
+7. **TLS everywhere — HTTPS-only.** Worker custom domains + Supabase both terminate TLS; no
+   cleartext paths. HSTS 180d minimum: `Strict-Transport-Security: max-age=15552000;
+   includeSubDomains; preload`; a zone-level bump (6 months) wins at the edge.
 8. **Full header suite**, per-response CSP nonce, no `unsafe-inline`:
    - CSP without `'unsafe-inline'` in `script-src`; per-response nonce (16 random bytes, stamped
      via `router.options.ssr.nonce`, exposed to hydration through
@@ -52,20 +55,33 @@ needs an ADR.
    - `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
    - `X-Frame-Options: SAMEORIGIN` on non-SSR/error responses.
 9. **405/415 guards** on edge functions: wrong method → `405` + `Allow`; non-JSON body → `415`.
-10. **Fail-closed SSR.** Unreachable Supabase → 5xx, no stale content served.
+10. **Fail-closed SSR.** Unreachable Supabase → 5xx with `no-store` + `noindex` — never stale
+    content.
 11. **No secrets in the browser bundle.** `.env.local` holds only public vars
     (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY`) and is
     gitignored. Secrets go to Supabase secrets / Wrangler secrets. The DeepSeek key is read as the
     `deepseek` edge-function secret (`Deno.env.get("deepseek")`) and never shipped to the browser.
-12. **Dependency + secret scanning in CI** — both, enabled and enforced, not optional.
+    Never echo secrets in chat/logs.
+12. **Dependency + secret scanning in CI** — GitHub secret scanning AND `gitleaks` (both,
+    enforced — failures block the build); Dependabot or equivalent; pin the lockfile
+    (`bun install --frozen-lockfile`). Not optional.
 13. **MFA on every platform account that deploys or holds secrets.**
 14. **Abuse-watchdog** `abuse-alert` runs scheduled (every 15 min), counts only — never question
-    text or PII.
-15. **SVG out of the image bucket.** `kb-images` MIME allow-list `png/jpeg/webp/gif`; UUID
-    filenames; sanitizer allow-list `<img>` http(s) only, no `data:` URIs.
+    text or PII. Thresholds via `ABUSE_WINDOW_MINUTES`, `ABUSE_MAX_CALLS_CHAT/JD/CV`,
+    `ABUSE_MAX_TOKENS`; optional `ABUSE_ALERT_WEBHOOK_URL` mirror (counts only).
+15. **SVG out of the image bucket.** `kb-images` is a public bucket with admin-only
+    read/insert/update/delete policies (`is_admin()`), `file_size_limit = 5242880` (5 MB), MIME
+    allow-list `png/jpeg/webp/gif` (no SVG); UUID filenames; sanitizer allow-list `<img>` http(s)
+    only, no `data:` URIs. Policies per `DATABASE_SCHEMA.md` §8.
 16. **Legacy anon key disabled.**
 17. **Signups restricted to your own email domain** (reference: `@zabrowski.pl`) via the
     `check_email_domain` trigger plus the `hook_restrict_signup_by_email_domain` auth hook.
+18. **Logging & error handling.** Structured errors with `detail`; no sensitive data in responses,
+    and no sensitive data in logs.
+19. **`get-contact` data exposure.** Public contact endpoint returns `candidate_profile_public`
+    fields only (`name, title, elevator_pitch, availability_status, linkedin_url,
+    target_company_stages`); `404` when no profile row; contact info never includes email/phone.
+    See `DATABASE_SCHEMA.md` §9.
 
 | Control | Required state | Enforcement point |
 |---|---|---|
@@ -74,7 +90,7 @@ needs an ADR.
 | anon writes | Denied everywhere | Grants + deny policies |
 | Admin | `is_admin()` | Policy qual |
 | Turnstile | `generate-cv` only, server-side `siteverify` | Edge function |
-| AI endpoints | Per-IP rate limits via `check_rate_limit` keyed on `cf-connecting-ip` | Edge function |
+| AI endpoints | Per-IP rate limits via `check_rate_limit` keyed on `cf-connecting-ip` (`chat` 30/15 min, `analyze-jd` 10/15 min) | Edge function |
 | CORS | Prod + staging allowlist | `_shared/http.ts` |
 | Headers | Suite in item 8 | Worker SSR + non-SSR responses |
 | Secrets | Server-side only | Supabase/Wrangler secrets |
@@ -85,7 +101,7 @@ needs an ADR.
 |---|---|---|
 | ADR-0007 | No Turnstile on `chat`/`analyze-jd`; per-IP rate limits instead | Decision |
 | ADR-0008 | Free tier only | Risk acceptance |
-| ADR-0009 | No MFA for the single-operator admin | Risk acceptance |
+| ADR-0009 | No MFA for the single-operator admin. Compensating controls: single known operator, RLS `is_admin()` server-side, domain-restricted signup. Revisit if the site gains a second admin or business data | Risk acceptance |
 
 ## 3. Admin-function authentication
 
@@ -164,7 +180,8 @@ audit is one command. It is **not yet built**; until it lands, run the SQL by ha
 - [ ] AI endpoints: rate limit `429` after burst; input caps enforced; no key in browser bundle
 - [ ] Content: hub + doc pages render from DB; admin WYSIWYG + images + related pages work;
       sanitizer strips disallowed markup
-- [ ] Staging + prod both 200; staging noindex; `www` = 301 apex
+- [ ] Staging + prod both 200; staging noindex; `/admin` + `/auth` noindex/`nofollow`
+      (robots.txt + `X-Robots-Tag`); `www` = 301 apex
 - [ ] `llms.txt` / `llms-full.txt` / `sitemap.xml` / `robots.txt` / `openapi.json` 200
 - [ ] Security headers live: CSP rotating `nonce-…`, no `'unsafe-inline'` in `script-src`; HSTS
       180d; `nosniff`; `Referrer-Policy`; `Permissions-Policy`; `X-Frame-Options` on non-SSR
