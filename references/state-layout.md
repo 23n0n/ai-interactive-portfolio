@@ -21,6 +21,10 @@ site is a **run**. The distro repository itself is never written to.
 `<site-id>` is a short, stable, lowercase slug (`zbw`, `portfolio`, `jane-co`). It never changes
 after registration; the domain may.
 
+**No secret values in any `ad-home/` file.** Keys, tokens, passwords and connection strings never
+appear in the registry, the manifest, the decisions log or a run report — only the fact that a
+secret exists and where it lives. There is no exception for "temporary" evidence.
+
 ## state/sites.json
 
 ```json
@@ -30,7 +34,7 @@ after registration; the domain may.
       "id": "zbw",
       "owner": "Piotr Żabrowski",
       "domain": "zabrowski.pl",
-      "plan": "free",
+      "plan": "paid",
       "repo": "git@github.com:owner/zabrowski-pl.git",
       "status": "live",
       "created": "2026-09-18T15:00:00Z",
@@ -61,6 +65,8 @@ further runs).
 
 Rules:
 
+- Stage mapping: Intake → `registered`, Design approved → `designing`, Build → `building`, staging
+  deploy → `staging`, go-live → `live`.
 - `registered` means the row exists and the manifest may be empty. Nothing else may happen before
   registration.
 - `live` requires an approved go-live gate (owner gate #3); a site never reaches `live` while only a
@@ -78,6 +84,7 @@ Identity and settled facts. Rewritten in place as facts change; always current, 
 - id: zbw
 - owner: Piotr Żabrowski
 - domain: zabrowski.pl
+- plan: paid
 - status: live
 - created: 2026-09-18T15:00:00Z
 - updated: 2026-09-18T17:20:00Z
@@ -167,20 +174,27 @@ Staging remains noindex. No open findings.
 
 Rules:
 
-- `kind` is one of `build` | `deploy` | `audit` | `content`.
+- `kind` is one of `build` | `deploy` | `audit` | `content` | `design`. A later design tweak
+  (Stage 6) is a `design` run.
 - `result` is `pass` | `fail` | `partial`. A `fail` or `partial` must state the blocker and the next
   action in plain words.
+- An `audit` run records its findings under a `## Findings` block, not in `## Notes`; each finding
+  is folded into the fix or the next action.
 - Every run that touched a live environment records its rollback before the change is applied.
 - The report is the durable memory of the change; do not rely on the transcript.
 
 ## Lock: state/.lock
 
-Directory-based lock (`state/.lock/` with an owner file) so acquisition is atomic. Held by the
-first agent session that opens the owner's home; a second session that cannot acquire stays
-read-only and reports why.
+Directory-based lock (`state/.lock/` with an owner file `state/.lock/owner`) so acquisition is
+atomic. Held by the first agent session that opens the owner's home; a second session that cannot
+acquire stays read-only and reports why.
 
-- The owner token is the session id supplied by whatever harness is running you (any agent, any vendor, or a human). When no session id is available, fall back to the shell pid.
+- The owner file holds one **type-tagged token**, never a bare number: `pid:<n>` when the owner is
+  a local process, `session:<id>` when the harness supplies a session id (any agent, any vendor, or
+  a human). It is written when the lock is acquired.
 - Releases on session end or explicit unlock.
-- **Recovery rule:** if the owner token is a numeric pid and that process is dead, the lock may be
-  reclaimed. A token that is a session id is assumed live until that session unlocks — never
+- **Stale-lock rule:** only a `pid:<n>` token whose process is gone is stale, and only that lock
+  may be reclaimed. A `session:<id>` token is assumed live until that session unlocks — never
   reclaim it by guessing; ask the owner.
+- Recovery is fail-closed: if the token is unreadable or its type is unknown, ask the owner rather
+  than delete the lock.

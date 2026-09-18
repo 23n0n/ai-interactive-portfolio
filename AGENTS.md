@@ -51,7 +51,7 @@ Run the stages in order. Keep the technical content of the old kit's Phase 0–8
 
 | # | Stage | You produce |
 |---|---|---|
-| 1 | Intake | A registered site and a filled manifest |
+| 1 | Intake | A registered site, a filled manifest and the recorded questionnaire answers |
 | 2 | Design | An approved design contract |
 | 3 | Build | A working site on a private preview link |
 | 4 | Publish | A live site on its own domain, with rollback |
@@ -63,8 +63,15 @@ Run the stages in order. Keep the technical content of the old kit's Phase 0–8
 - Register the site in durable state before anything else (`references/state-layout.md`).
 - Reconcile from disk: if a `manifest.md` and `decisions.log` already exist, resume from them and
   never from chat memory.
-- Run the discovery conversation: audience, voice, what should be remembered, what the site must
-  achieve. One question at a time, in the owner's language.
+- Run the **full 25-question questionnaire** conversationally, before any layout work — one
+  question at a time, in the owner's language. The questions and their substance are unchanged
+  (see `SKILL_INTERACTIVE_PORTFOLIO.md`, "Design questionnaire"). Note every answer **verbatim**;
+  together they are the recorded input the design contract is derived from. This is the only time
+  the questionnaire runs.
+- Placeholder rule: if the owner has no full name yet, use the placeholder name
+  `Zygfryd Niewiadomski-Nieśmiałek` and tell the owner plainly that it is temporary and must be
+  replaced before going live (§11.3). Record `placeholder name in use: yes` in the manifest until
+  it is replaced.
 - Establish access. If the owner has no accounts yet, offer the **throwaway local, no-account
   sandbox first** — a disposable browser prototype with flat dummy files, nothing created and
   nothing charged. It validates the idea before any commitment and is never the deliverable.
@@ -74,10 +81,9 @@ Run the stages in order. Keep the technical content of the old kit's Phase 0–8
 
 ### Stage 2 — Design
 
-- Run the full design questionnaire **conversationally**, before any layout code. The 25 questions
-  and their intent are unchanged; see `SKILL_INTERACTIVE_PORTFOLIO.md`, "Design questionnaire".
-  Note the owner's answers verbatim — they are the design contract.
-- Derive from the answers: design tokens, type scale, spacing rhythm, colour, motion, layout
+- Derive the design from the answers recorded at Stage 1. Do not re-run the questionnaire; if one
+  answer is missing or ambiguous, ask that single question and append the answer to the record.
+- Derive from those answers: design tokens, type scale, spacing rhythm, colour, motion, layout
   concept (navigation, spotlight pattern, section order, card style, footer), responsive and
   accessibility rules (contrast AA, keyboard navigation, reduced motion).
 - Show the token set and an **ASCII wireframe of the home page top to bottom**. If the owner cannot
@@ -120,7 +126,8 @@ Build in this order, verifying each part before moving on.
    the secrets policy, and CI secret and dependency scanning as part of the build, not after it.
    Record any decision that deviates in an ADR.
 
-- Reference: `build.md`, `pitfalls.md`, `schema/*` (pending).
+- Reference: `build.md`, `pitfalls.md` (pending) for scaffold and for sections, content and
+  features; `schema/*` (pending) for the data layer only — the sub-stage loading rules are in §8.
 
 ### Stage 4 — Publish
 
@@ -200,9 +207,10 @@ it does. Wait for a clear yes. A silence, a maybe, or an unanswered question is 
    per-IP rate limits); CORS allowlist; HSTS 180 days; the full header suite (CSP with a
    per-response nonce and no `unsafe-inline`, `X-Content-Type-Options: nosniff`,
    `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `X-Frame-Options`);
-   405/415 guards on edge functions; fail-closed SSR; secrets never in the browser bundle;
-   dependency and secret scanning enforced in CI; MFA on every account that deploys or holds
-   secrets. A partial control needs a compensating control; a risk acceptance needs an ADR.
+   405/415 guards on edge functions; fail-closed SSR; **secrets live server-side only** (Supabase
+   secrets / Wrangler secrets) — never in `.env.local`, never committed, never in the browser
+   bundle; dependency and secret scanning enforced in CI; MFA on every account that deploys or
+   holds secrets. A partial control needs a compensating control; a risk acceptance needs an ADR.
    **Threat model — read once:** rate limits, input caps, response caching and Turnstile protect
    against **abuse and excessive AI use**, not against a determined attacker. The real security
    boundary is the **RLS model** (views, grants, policies), which is why the final RLS audit is
@@ -224,12 +232,15 @@ This distribution must run on **any agent, any model, any vendor — or by hand*
 
 1. The core of this repository contains **no harness-specific instructions**. No Pi commands, no
    DSH commands, no Claude or Codex commands in the core path.
-2. Harness notes live in `references/harness.md` and separate thin wrappers at
-   `skills/<harness>/SKILL.md`. A wrapper does one thing: point back at this file.
+2. Harness notes will live in `references/harness.md` (pending) and thin wrappers at
+   `skills/<harness>/SKILL.md` (P3) — neither exists yet. A wrapper does one thing: point back at
+   this file.
 3. A human following the same six stages by hand is a supported path, not a degraded one. Never
    assume a tool call is available; state the outcome and let the runner choose the mechanism.
 4. Neutrality is about the AI, not about the stack. The target stack and the database schema are
-   frozen (§5.2, §7); this distribution does not offer alternative stacks or a lean mode.
+   frozen (§5.2, §7); this distribution does not offer alternative stacks or a lean mode. "Any
+   model, any vendor" describes the agent that runs this distribution — it is not a licence to
+   swap the site's own AI provider, which is frozen stack (§7).
 
 ## 7. Frozen technology
 
@@ -241,6 +252,9 @@ Already documented and **must not change** as part of routine work:
 - **Styling:** Tailwind CSS v4 + shadcn/ui.
 - **Protection:** Cloudflare Turnstile.
 - **Toolchain:** Bun and Wrangler 4.
+- **AI features:** DeepSeek — the reference LLM provider, called from server-side edge functions
+  with the key held server-side. It is frozen like the rest of the stack; swapping it needs the
+  no-silent-swaps procedure below.
 - **Database:** `DATABASE_SCHEMA.md` — every table, view, RPC, policy, grant, storage rule and
   seed, plus the §12 audit. It is the source of truth and is not edited to fit a shortcut.
 
@@ -262,6 +276,11 @@ Load only what the current stage needs. Never dump a reference the stage does no
 | Distribute | `distribute.md` | — |
 | Operate | `operate.md`, `secure.md`, `pitfalls.md` | — |
 
+**Status of this table:** as of this phase every reference in the Load column **except
+`references/state-layout.md` is pending and does not exist yet** (§9). Until a reference exists,
+use the corresponding old-kit file. This table describes the target loading rules, not the current
+files.
+
 Two rules keep the loading honest:
 
 1. **The design conversation must not load the schema.** The owner is choosing colours and layout,
@@ -281,8 +300,8 @@ now, use the old kit files instead.
 | Reference | Owns | Status |
 |---|---|---|
 | `references/state-layout.md` | Durable state: registry, manifest, decisions log, runs, lock | **exists** |
-| `references/intake.md` | The hand-held discovery conversation and account setup | pending |
-| `references/design.md` | The questionnaire, design tokens, wireframe, approval | pending |
+| `references/intake.md` | The hand-held conversation, the full 25-question questionnaire, the placeholder rule, the sandbox and account setup | pending |
+| `references/design.md` | Derives design tokens, the wireframe and the design contract from the recorded intake answers; owns owner gate #1 | pending |
 | `references/build.md` | Scaffold, sections, content model, features | pending |
 | `references/deploy.md` | Domain, hosting, CI, staging-first, rollback | pending |
 | `references/secure.md` | Security defaults, RLS audit, verification checklist | pending |
@@ -333,7 +352,7 @@ blocker, the decision.
 | "The site is live at `example.com`." | "Custom domains attached, TLS active." |
 | "I found a security problem in the contact form and fixed it." | "RLS policy on `messages` was permissive." |
 
-Never expose internal bookkeeping vocabulary (worktree, brief, run id, lock, registry row) in
+Never expose internal bookkeeping vocabulary (state files, run id, lock, registry row) in
 owner-facing text. Keep it in the records. Mentioning a service name is allowed when the owner
 asked, or when a decision needs informed consent.
 
