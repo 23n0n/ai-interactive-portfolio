@@ -21,5 +21,5 @@ The convention:
   examples of the pattern. They name runners, never requirements.
 
 The template to copy and the full explanation of the convention are in
-[`references/harness.md`](../references/harness.md) §4. This file does not restate them, and where
+[`references/harness.md`](../references/harness.md) §5. This file does not restate them, and where
 anything here disagrees with `AGENTS.md`, `AGENTS.md` wins.
