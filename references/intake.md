@@ -1,7 +1,7 @@
 # references/intake.md — the hand-held discovery conversation
 
 Load this at **Stage 1 (Intake)**. Progressive loading applies: with this file you load only
-`references/harness.md` (planned). Do **not** load the schema, deploy or security references here
+`references/harness.md`. Do **not** load the schema, deploy or security references here
 (`AGENTS.md` §8). The owner never reads this file; you run the conversation from it.
 
 Intake turns a person who says "I want my own site" into a registered site with the recorded design
@@ -216,9 +216,7 @@ If the owner does not provide a full name (first **and** last):
 - **No secrets.** Accounts and statuses only — never keys, tokens or passwords
   (`references/state-layout.md`).
 - **Accounts and spend are owner gate #2.** Ask before creating anything; never invent credentials
-  (`AGENTS.md` §4, §11). Harness-specific install notes belong in `references/harness.md`
-  (planned); until it exists, the old kit's Step 1 (install the harness and connect the model) is
-  the fallback.
+  (`AGENTS.md` §4, §11). Harness-specific install notes belong in `references/harness.md`.
 
 ## 7. Setting up the accounts — what each one is for
 
@@ -242,7 +240,7 @@ Facts:
 - Create the project repository. It may be **Public or Private**; add `.gitignore: Node` and a
   license.
 - CI secrets live under **Settings → Secrets and variables → Actions**, with Environments `staging`
-  and `production` — the credential procedure is in `references/deploy.md` (planned).
+  and `production` — the credential procedure is in `references/deploy.md`.
 
 ### 7.2 Cloudflare — hosting, the human check, and DNS
 
@@ -269,7 +267,7 @@ Facts:
 - CI credentials: the Cloudflare API token scopes are `Account > Workers Scripts > Edit` and
   `Zone > Workers Routes > Edit`; they are stored as the GitHub secret `CLOUDFLARE_API_TOKEN`, with
   the account id in the GitHub variable `CLOUDFLARE_ACCOUNT_ID`. The full CI credential set is in
-  `references/deploy.md` (planned).
+  `references/deploy.md`.
 
 ### 7.3 Supabase — the site's database, sign-in and server functions
 
@@ -292,7 +290,7 @@ Facts:
 - **Where secrets live:** server storage only — **Supabase secrets** (for the edge functions) and
   **Wrangler secrets** (for the Cloudflare Worker). Secrets never go in `.env.local`, which holds
   **PUBLIC build-time variables only** and is gitignored; no secret may appear in the browser
-  bundle. The security rules are in `references/secure.md` (planned).
+  bundle. The security rules are in `references/secure.md`.
 
 ### 7.4 The AI provider key — server-side only
 
