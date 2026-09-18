@@ -21,7 +21,8 @@ needs them (§8). Everything here is written for the agent; the owner never has 
 This repository also holds the older linear kit — `GUIDE_FROM_SCRATCH.md`,
 `SKILL_INTERACTIVE_PORTFOLIO.md`, `DATABASE_SCHEMA.md`. Treat them as the deep fallback source of
 truth for their subjects; they are not the primary path any more. `DATABASE_SCHEMA.md` is the
-frozen database reference today and will be split into `references/schema/` in a later phase.
+frozen database reference today; the same schema is split by domain into `references/schema/` and
+loaded on demand (§8).
 
 ## 2. Your role, and the owner's
 
@@ -118,8 +119,8 @@ Build in this order, verifying each part before moving on.
    the database; admin create/edit/publish works; the sanitizer strips disallowed markup.
 5. **Interactive features.** AI chat and job-description analysis (per-IP rate limits, input caps,
    response caching, no key in the browser), the Turnstile-gated CV download with server-side
-   verification, the edge-function inventory, authenticated admin functions, seasonal banners, and
-   the machine-readable routes. Gate: wrong method returns 405 with `Allow`; non-JSON body returns
+   verification, the edge-function inventory, authenticated admin functions, and seasonal banners.
+   Gate: wrong method returns 405 with `Allow`; non-JSON body returns
    415; bad tokens are rejected; happy paths work end to end; admin functions reject missing,
    forged and non-admin tokens.
 6. **Security defaults are not optional** (§5.4). Wire the full header suite, the CORS allowlist,
@@ -232,9 +233,9 @@ This distribution must run on **any agent, any model, any vendor — or by hand*
 
 1. The core of this repository contains **no harness-specific instructions**. No Pi commands, no
    DSH commands, no Claude or Codex commands in the core path.
-2. Harness notes will live in `references/harness.md` (pending) and thin wrappers at
-   `skills/<harness>/SKILL.md` (P3) — neither exists yet. A wrapper does one thing: point back at
-   this file.
+2. Harness notes belong in `references/harness.md`, and a per-harness wrapper — when a harness
+   needs one — follows the `skills/<harness>/SKILL.md` convention (`references/harness.md` §5).
+   None is required. A wrapper does one thing: point back at this file.
 3. A human following the same six stages by hand is a supported path, not a degraded one. Never
    assume a tool call is available; state the outcome and let the runner choose the mechanism.
 4. Neutrality is about the AI, not about the stack. The target stack and the database schema are
@@ -324,6 +325,11 @@ Every site is a long-lived registered project, not a one-off task.
 - **Restart reconciles from disk. Chat is never authoritative.** If it is not in the manifest, the
   decisions log or a run report, it did not happen.
 - Read the manifest and the latest run report before acting on an existing site.
+- The helpers that create and mutate that state live in `scripts/ad-*.sh`: `ad-home.sh` (`init`,
+  `lock`, `unlock`, `status`), `ad-new-site.sh` (register a site), `ad-update.sh` (mutate one
+  field), `ad-status.sh` (read-only summary) and the sourced `ad-lock.sh` (shared lock logic).
+  `$AD_HOME` and `$AD_SESSION_ID`, the `--owner`/`--session` flags and the `0`/`1`/`2` exit codes
+  are their whole contract; `references/state-layout.md` documents them.
 
 ## 11. Fail closed
 
