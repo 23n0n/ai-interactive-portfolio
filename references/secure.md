@@ -262,13 +262,13 @@ select n.nspname as schema,
        p.proname as function_name,
        p.prosecdef as security_definer,
        pg_get_userbyid(p.proowner) as owner,
-       pg_get_userbyid(g.grantee) as grantee,
+       case when g.grantee = 0 then 'public' else pg_get_userbyid(g.grantee) end as grantee,
        g.privilege_type
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
 where n.nspname in ('public', 'private')
-  and pg_get_userbyid(g.grantee) in ('anon', 'authenticated', 'public')
+  and (g.grantee = 0 or pg_get_userbyid(g.grantee) in ('anon', 'authenticated'))
 order by 1, 2, 5;
 ```
 
@@ -277,14 +277,14 @@ order by 1, 2, 5;
 select n.nspname as schema,
        p.proname as function_name,
        pg_get_userbyid(p.proowner) as owner,
-       pg_get_userbyid(g.grantee) as grantee,
+       case when g.grantee = 0 then 'public' else pg_get_userbyid(g.grantee) end as grantee,
        g.privilege_type
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
 where n.nspname in ('public', 'private')
   and p.prosecdef                                   -- SECURITY DEFINER only
-  and pg_get_userbyid(g.grantee) in ('anon', 'authenticated', 'public')
+  and (g.grantee = 0 or pg_get_userbyid(g.grantee) in ('anon', 'authenticated'))
   -- whitelisted: `is_admin` to authenticated only (see below)
   and not (p.proname = 'is_admin' and pg_get_userbyid(g.grantee) = 'authenticated')
 order by 1, 2, 4;
@@ -293,9 +293,12 @@ order by 1, 2, 4;
 `aclexplode(coalesce(p.proacl, acldefault('f', p.proowner)))` is load-bearing: when `proacl IS
 NULL` Postgres applies the **default** ACL, which includes `EXECUTE` to `PUBLIC`. A function whose
 ACL was never revoked from `PUBLIC` therefore shows `grantee = public` here even though nobody
-granted it explicitly. (Note: `aclexplode` exposes `grantee` as `oid`; compare it as
-`pg_get_userbyid(g.grantee)`, which maps the PUBLIC pseudo-role's oid `0` to `'public'`. Comparing
-the raw `oid` to the text `'anon'` raises `invalid input syntax for type oid`.)
+granted it explicitly. **Two traps in `aclexplode`.** It exposes `grantee` as `oid`, so comparing the raw `oid` to the
+text `'anon'` raises `invalid input syntax for type oid` — always go through
+`pg_get_userbyid(g.grantee)`. But `pg_get_userbyid(0)` returns `unknown (OID=0)`, **not**
+`'public'`: the `PUBLIC` pseudo-role must be matched as `g.grantee = 0`. A filter written as
+`pg_get_userbyid(g.grantee) = 'public'` silently misses **every** default-ACL grant, which is
+precisely the case this check exists to catch. Match `PUBLIC` as `g.grantee = 0`.
 
 **Whitelist — the only permitted API-role grants:**
 
