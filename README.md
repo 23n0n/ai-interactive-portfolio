@@ -77,8 +77,18 @@ frozen (below).
 | `DATABASE_SCHEMA.md` | The **frozen schema of record** — every table, column, view, RPC, policy, grant, storage rule and seed. The agent applies it; you do not need to read it. |
 | `PLAN_AI_DISTRIBUTION.md` | A **dated planning artifact** (2026-09-18) — the plan that led to the contract, the references and the helpers. Background on how the rework was scoped, **not part of the instruction path**; the agent does not load it. |
 
-Also in the tree: `GUIDE_FROM_SCRATCH.pdf`, a PDF render of the guide, and `sanitize-id.lua`, the
-filter used to regenerate that PDF.
+Also in the tree: `GUIDE_FROM_SCRATCH.pdf`, an **offline render** of the guide, and
+`sanitize-id.lua`, the Pandoc filter that render needs.
+
+The PDF is a *build artifact*, so it goes stale whenever the guide changes. To rebuild it:
+
+```sh
+brew install pandoc typst
+pandoc GUIDE_FROM_SCRATCH.md -o GUIDE_FROM_SCRATCH.pdf \
+  --pdf-engine=typst --lua-filter=sanitize-id.lua --toc --toc-depth=1
+```
+
+The Markdown is the source of truth; if the two ever disagree, trust `GUIDE_FROM_SCRATCH.md`.
 
 Which of these are present today is covered under [Status](#status-and-licence).
 
