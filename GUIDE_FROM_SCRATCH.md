@@ -302,8 +302,9 @@ phase by phase; you answer questions and verify gates.
 `[Prompt]`:
 
 ```
-Follow the skill above. Start with the design questionnaire — ask me all
-the questions and wait for my answers before Phase 0.
+Follow the skill above. Start with Phase 0 (prerequisites); run the design
+questionnaire when the skill reaches Phase 2 — ask me all the questions and
+wait for my answers before writing any layout code.
 ```
 
 **Option B — install it as a project skill** (keeps future sessions clean):
@@ -322,8 +323,9 @@ until a workspace is selected), and start a session with:
 `[Prompt]`:
 
 ```
-Load the interactive-portfolio skill and start with the design
-questionnaire — ask me all the questions and wait for my answers.
+Load the interactive-portfolio skill. Start with Phase 0 (prerequisites);
+run the design questionnaire when the skill reaches Phase 2 — ask me all
+the questions and wait for my answers before writing any layout code.
 ```
 
 **Also give the AI the database reference** (it applies it in Step 8):
@@ -911,7 +913,7 @@ signup.
    `docs/CI-CD-RULES.md`, `adr/ADR-000N.md` records for decisions.
 8. **Model: high capability, high reasoning effort (recommended).** Run this
    build with a high-capability model at maximum reasoning effort (e.g.
-   `deepseek-reasoner`, high effort) — it generates security-sensitive code
+   `deepseek-v4-flash`, high effort) — it generates security-sensitive code
    (RLS, auth, edge functions) and the audit quality depends on it. The
    default chat model works, but this is the recommended configuration.
 

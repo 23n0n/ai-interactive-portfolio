@@ -1,6 +1,15 @@
 # Plan — from `ai-interactive-portfolio` to `ai-distribution`
 
-Status: **planning — no code written. Decisions D1–D7 resolved (§9). Awaiting captain's read of the plan.**
+Status: **historical planning record — P1–P3 landed, P4 partial, P5 not started (see the status note
+below). Decisions D1–D7 resolved (§9).**
+
+> **Status update (2026-09-18, docs r1).** This plan is a historical record of the rework; the tree has
+> since moved on. Landed: P1 (`AGENTS.md`, `references/state-layout.md`), P2 (`references/`, including
+> the `references/schema/` split), P3 (`README.md`, `references/harness.md`; the optional
+> `skills/pi/SKILL.md` wrapper was not shipped — see `references/harness.md` §5). Partly landed: P4
+> (`scripts/` exists; `examples/` does not). Not started: P5 (GitHub publish). §10 marks this; D5 is
+> corrected to keep the old kit at the repo root.
+
 Author: first mate session, 2026-09-18.
 Subject repo: `ai-interactive-portfolio/` (GUIDE 68 KB + SKILL 32 KB + DATABASE_SCHEMA 40 KB).
 Reference style: `pi-firstmate` / `dsh-firstmate` — but note: this is **not a skill for the agent**;
@@ -77,8 +86,8 @@ owner can also follow it by hand.
 ai-distribution/            # the repo itself IS the distribution
   AGENTS.md                 # the contract the agent loads (firstmate convention)
   README.md                 # human-facing: what it is, clone, "make my site"
-  skills/                   # thin per-harness wrappers that point at AGENTS.md (optional)
-    pi/SKILL.md  dsh/SKILL.md
+  skills/                   # the wrapper convention only (wrappers are optional)
+    README.md               # documents skills/<harness>/SKILL.md; no wrapper ships today
   references/               # the knowledge package, loaded on demand
     intake.md               # the hand-held discovery conversation
     design.md               # questionnaire -> design system + wireframe approval
@@ -92,13 +101,13 @@ ai-distribution/            # the repo itself IS the distribution
     harness.md              # how to read this repo on Pi / DSH / Claude / Codex / by hand
     schema/                 # DATABASE_SCHEMA.md, split by domain (loaded only when needed)
   scripts/                  # ad-home.sh, ad-new-site.sh, ad-update.sh, ad-status.sh
-  docs/                     # the deep documentation migrated from the old kit
+  docs/                     # not created — the old kit stays at the repo root as the deep fallback
   examples/                 # a worked example site
 ```
 
-Contract convention: **`AGENTS.md`** (what firstmate uses; auto-loaded by most agents), with a thin
-`skills/<harness>/SKILL.md` wrapper for harnesses that prefer skill discovery. Both point at the
-same prose; the repo is the single source of truth.
+Contract convention: **`AGENTS.md`** (what firstmate uses; auto-loaded by most agents). A harness
+that prefers skill discovery may add an optional thin `skills/<harness>/SKILL.md` wrapper; it only
+points at `AGENTS.md` and is not required. The repo is the single source of truth.
 
 **Where state lives.** The distro repo is tooling and stays clean. Each *site* is its own repo. The
 owner's workspace holds a small home (`ad-home/`, mirroring `firstmate-home/`):
@@ -156,7 +165,7 @@ The old kit is one linear 140 KB read. The new one is a **contract + references*
 | Build — data layer | `schema/*` | deploy |
 | Publish | `deploy.md`, `secure.md` | — |
 | Distribute | `distribute.md` | — |
-| Operate | `operate.md`, `pitfalls.md` | — |
+| Operate | `operate.md`, `secure.md`, `pitfalls.md` | — |
 
 This is progressive loading **of documents**, not of the stack: the destination stack is fixed and
 documented, but no single step forces the owner or the agent to hold all 140 KB at once.
@@ -184,7 +193,7 @@ surfaces; known pitfalls.
 
 **Retire from the main path:** the requirement to read 140 KB before starting; the assumption that
 the human runs commands and personally checks each gate; harness-specific install steps. Nothing is
-deleted — the linear manual remains as the by-hand fallback in `docs/`.
+deleted — the linear manual remains at the repo root as the by-hand fallback.
 
 **Loss test (build-time gate).** A traceability table maps every section of the old SKILL, GUIDE and
 DATABASE_SCHEMA to its new home, marked *kept / adapted / deliberately dropped (why)*. Nothing is
@@ -212,7 +221,7 @@ stacks, tiers, or a lean mode.
 | D2 | Harness target | **Neutral** — any agent/model, or by hand; thin per-harness wrappers only. | captain, verbatim |
 | D3 | What "distribution" is | A **distro of the skill + a knowledge package** for creating sites like `zabrowski.pl` with AI. | captain, verbatim |
 | D4 | Stack default | **Technology-neutral (w.r.t. the AI).** Stack and DB schema are already described and **are not changed**. | captain, verbatim |
-| D5 | Fate of the existing kit | Reworked **in place**; old guide/skill/schema become deep references in `docs/`. Nothing deleted. | captain via D1 |
+| D5 | Fate of the existing kit | Reworked **in place**; the old guide/skill/schema stay at the **repo root** as deep fallback references. Nothing deleted. | captain via D1 |
 | D6 | Name | `ai-distribution`. | captain's own word |
 | D7 | First test site | **None for now** — we are building the distribution, not dogfooding it. | captain, verbatim |
 
@@ -220,14 +229,14 @@ stacks, tiers, or a lean mode.
 
 ## 10. Phasing (plan → build, later)
 
-| Phase | Deliverable | Gate |
-|---|---|---|
-| **Plan** (now) | this document | captain reads and accepts it |
-| P1 | `AGENTS.md` contract (the hand-held path, four gates, fail-closed rules) + `state-layout.md` | captain reads `AGENTS.md` top-to-bottom and it holds |
-| P2 | Reference extraction: `intake`, `design`, `build`, `deploy`, `secure`, `distribute`, `operate`, `pitfalls`, `schema/*` | traceability table: nothing lost silently |
-| P3 | `README.md` (human-facing) + `references/harness.md` + thin `skills/pi/SKILL.md` | a clean clone is understandable and runnable by a reader who never saw the old kit |
-| P4 | `scripts/` (home, new-site, update, status) + `examples/` | state survives a session restart; example is coherent |
-| P5 | GitHub publish | the repo stands alone publicly |
+| Phase | Deliverable | Gate | Status |
+|---|---|---|---|
+| **Plan** (now) | this document | captain reads and accepts it | delivered |
+| P1 | `AGENTS.md` contract (the hand-held path, four gates, fail-closed rules) + `state-layout.md` | captain reads `AGENTS.md` top-to-bottom and it holds | **landed** |
+| P2 | Reference extraction: `intake`, `design`, `build`, `deploy`, `secure`, `distribute`, `operate`, `pitfalls`, `schema/*` | traceability table: nothing lost silently | **landed** |
+| P3 | `README.md` (human-facing) + `references/harness.md` (+ optional thin `skills/pi/SKILL.md`) | a clean clone is understandable and runnable by a reader who never saw the old kit | **landed** (wrapper optional; not shipped) |
+| P4 | `scripts/` (home, new-site, update, status) + `examples/` | state survives a session restart; example is coherent | **partial** (`scripts/` landed; `examples/` not yet) |
+| P5 | GitHub publish | the repo stands alone publicly | not started |
 
 No dogfood phase now (D7).
 
