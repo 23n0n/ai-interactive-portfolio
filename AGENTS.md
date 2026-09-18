@@ -77,7 +77,7 @@ Run the stages in order. Keep the technical content of the old kit's Phase 0–8
   nothing charged. It validates the idea before any commitment and is never the deliverable.
 - Creating accounts or spending money is a gate (§4). Ask before you create, and before you advise
   a paid plan.
-- Reference: `intake.md` (pending). Harness notes: `references/harness.md` (pending).
+- Reference: `intake.md`. Harness notes: `references/harness.md`.
 
 ### Stage 2 — Design
 
@@ -92,7 +92,7 @@ Run the stages in order. Keep the technical content of the old kit's Phase 0–8
   `decisions.log`. Build nothing until it is approved.
 - Copying the reference site's layout is allowed and advised against. Guide the owner toward
   something original that resonates with them. Re-derive if the design drifts toward a copy.
-- Reference: `design.md` (pending).
+- Reference: `design.md`.
 
 ### Stage 3 — Build
 
@@ -126,8 +126,8 @@ Build in this order, verifying each part before moving on.
    the secrets policy, and CI secret and dependency scanning as part of the build, not after it.
    Record any decision that deviates in an ADR.
 
-- Reference: `build.md`, `pitfalls.md` (pending) for scaffold and for sections, content and
-  features; `schema/*` (pending) for the data layer only — the sub-stage loading rules are in §8.
+- Reference: `build.md`, `pitfalls.md` for scaffold and for sections, content and
+  features; `schema/*` for the data layer only — the sub-stage loading rules are in §8.
 
 ### Stage 4 — Publish
 
@@ -140,7 +140,7 @@ Build in this order, verifying each part before moving on.
   `SKILL_INTERACTIVE_PORTFOLIO.md`, "Verification checklist").
 - Database migrations are applied **before** deploying schema-dependent changes.
 - **Owner gate #3: go live publicly.**
-- Reference: `deploy.md`, `secure.md` (pending).
+- Reference: `deploy.md`, `secure.md`.
 
 ### Stage 5 — Distribute
 
@@ -153,7 +153,7 @@ Build in this order, verifying each part before moving on.
   docs.
 - Audit the live pages: AI surfaces return 200, no page ships an empty, over-long or out-of-sync
   search description, route filenames are lowercase on disk.
-- Reference: `distribute.md` (pending).
+- Reference: `distribute.md`.
 
 ### Stage 6 — Operate
 
@@ -167,7 +167,7 @@ Build in this order, verifying each part before moving on.
   path.
 - Keep `docs/PROJECT_REFERENCE_ARCHITECTURE.md`, `docs/CI-CD-RULES.md` and `adr/ADR-000N.md`
   current with every real decision.
-- Reference: `operate.md`, `secure.md`, `pitfalls.md` (pending).
+- Reference: `operate.md`, `secure.md`, `pitfalls.md`.
 
 ## 4. The four owner gates — and only these four
 
@@ -232,9 +232,8 @@ This distribution must run on **any agent, any model, any vendor — or by hand*
 
 1. The core of this repository contains **no harness-specific instructions**. No Pi commands, no
    DSH commands, no Claude or Codex commands in the core path.
-2. Harness notes will live in `references/harness.md` (pending) and thin wrappers at
-   `skills/<harness>/SKILL.md` (P3) — neither exists yet. A wrapper does one thing: point back at
-   this file.
+2. Harness notes live in `references/harness.md` and thin wrappers live at
+   `skills/<harness>/SKILL.md`. A wrapper does one thing: point back at this file.
 3. A human following the same six stages by hand is a supported path, not a degraded one. Never
    assume a tool call is available; state the outcome and let the runner choose the mechanism.
 4. Neutrality is about the AI, not about the stack. The target stack and the database schema are
@@ -276,10 +275,8 @@ Load only what the current stage needs. Never dump a reference the stage does no
 | Distribute | `distribute.md` | — |
 | Operate | `operate.md`, `secure.md`, `pitfalls.md` | — |
 
-**Status of this table:** as of this phase every reference in the Load column **except
-`references/state-layout.md` is pending and does not exist yet** (§9). Until a reference exists,
-use the corresponding old-kit file. This table describes the target loading rules, not the current
-files.
+**Status of this table:** every reference in the Load column exists (§9). Load them by stage; do
+not load a reference the current stage does not need.
 
 Two rules keep the loading honest:
 
@@ -292,28 +289,25 @@ Two rules keep the loading honest:
 
 ## 9. Reference index
 
-Planned references, and what each owns. **Status truth:** as of this phase only
-`references/state-layout.md` exists. Every other reference below is planned for a later phase and
-**does not exist in the repository yet** — do not cite it as present, and if you need its content
-now, use the old kit files instead.
+The references, and what each owns. **Every one of them exists.** The old kit files remain the deep
+source for their subjects, but these references are the primary path.
 
 | Reference | Owns | Status |
 |---|---|---|
 | `references/state-layout.md` | Durable state: registry, manifest, decisions log, runs, lock | **exists** |
-| `references/intake.md` | The hand-held conversation, the full 25-question questionnaire, the placeholder rule, the sandbox and account setup | pending |
-| `references/design.md` | Derives design tokens, the wireframe and the design contract from the recorded intake answers; owns owner gate #1 | pending |
-| `references/build.md` | Scaffold, sections, content model, features | pending |
-| `references/deploy.md` | Domain, hosting, CI, staging-first, rollback | pending |
-| `references/secure.md` | Security defaults, RLS audit, verification checklist | pending |
-| `references/distribute.md` | `llms.txt`, JSON-LD, markdown surfaces, schema.org | pending |
-| `references/operate.md` | Edits by conversation, backups, monitoring | pending |
-| `references/pitfalls.md` | Hard-won traps (iOS zoom, anchors, lockfile registry, PAT churn, and more) | pending |
-| `references/harness.md` | How to run this repo on any harness, or by hand | pending |
-| `references/schema/` | `DATABASE_SCHEMA.md` split by domain, loaded on demand | pending |
+| `references/intake.md` | The hand-held conversation, the full 25-question questionnaire, the placeholder rule, the sandbox and account setup | **exists** |
+| `references/design.md` | Derives design tokens, the wireframe and the design contract from the recorded intake answers; owns owner gate #1 | **exists** |
+| `references/build.md` | Scaffold, sections, content model, features | **exists** |
+| `references/deploy.md` | Domain, hosting, CI, staging-first, rollback | **exists** |
+| `references/secure.md` | Security defaults, RLS audit, verification checklist | **exists** |
+| `references/distribute.md` | `llms.txt`, JSON-LD, markdown surfaces, schema.org | **exists** |
+| `references/operate.md` | Edits by conversation, backups, monitoring | **exists** |
+| `references/pitfalls.md` | Hard-won traps (iOS zoom, anchors, lockfile registry, PAT churn, and more) | **exists** |
+| `references/harness.md` | How to run this repo on any harness, or by hand | **exists** |
+| `references/schema/` | `DATABASE_SCHEMA.md` split by domain, loaded on demand | **exists** |
 
-Until a reference exists, its subject is covered by the old kit in this repository: the guide, the
-skill and the schema reference. Never invent a reference, quote a pending file, or behave as if it
-had been written.
+The old kit in this repository — the guide, the skill and the schema reference — remains the deep
+source for its subjects. Never invent a reference or quote a file that does not exist.
 
 ## 10. Durable state
 
@@ -363,7 +357,7 @@ asked, or when a decision needs informed consent.
 - [ ] Every claim in my report was verified by me, with evidence (§5.3).
 - [ ] No technology was swapped silently (§7).
 - [ ] I loaded only the references the current stage needs (§8).
-- [ ] I did not cite a pending reference as if it existed (§9).
+- [ ] I did not cite a reference that does not exist (§9).
 - [ ] Owner-facing text is in outcomes language, no infrastructure jargon (§2, §12).
 - [ ] Nothing destructive or irreversible was done without approval (§4.4).
 - [ ] I did not guess: an unknown became one concise question (§11).

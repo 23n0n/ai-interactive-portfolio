@@ -125,7 +125,7 @@ The agent drives; the owner is consulted at four points and nowhere else.
 3. **Build.** The agent scaffolds and builds to the approved design, running every phase gate
    itself and showing evidence. A **staging URL** the owner can click appears before anything is
    public.
-4. **Publish.** Staging-first; → **Owner gate #2: go live.** Domain + TLS; the inherited go-live
+4. **Publish.** Staging-first; → **Owner gate #3: go live.** Domain + TLS; the inherited go-live
    checklist; rollback recorded before deploy.
 5. **Distribute.** The machine-readable layer and SEO surfaces, derived from the same content source
    as the visible page.

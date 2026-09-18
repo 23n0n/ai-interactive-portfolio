@@ -71,6 +71,7 @@ frozen (below).
 | `AGENTS.md` | **The contract.** The agent's instructions: the six stages, the four owner gates and the non-negotiables. The place to start. |
 | `references/` | The knowledge package, loaded by the agent one stage at a time: intake, design, build, deploy, security, distribution, operations, pitfalls, state layout, harness notes, and the frozen schema split by domain. |
 | `scripts/` | Small shell helpers for the distribution (workspace home, new site, update, status). |
+| `skills/` | Thin per-harness wrappers (`skills/<harness>/SKILL.md`). A wrapper does one thing: point at `AGENTS.md`. See `references/harness.md`. |
 | `GUIDE_FROM_SCRATCH.md` | The older human-followed walkthrough. The **deep reference source** for technical detail; **not the primary path** any more. |
 | `SKILL_INTERACTIVE_PORTFOLIO.md` | The older build procedure, including the design questionnaire. Deep reference source; **not the primary path**. |
 | `DATABASE_SCHEMA.md` | The **frozen schema of record** — every table, column, view, RPC, policy, grant, storage rule and seed. The agent applies it; you do not need to read it. |
