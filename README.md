@@ -70,10 +70,12 @@ frozen (below).
 |---|---|
 | `AGENTS.md` | **The contract.** The agent's instructions: the six stages, the four owner gates and the non-negotiables. The place to start. |
 | `references/` | The knowledge package, loaded by the agent one stage at a time: intake, design, build, deploy, security, distribution, operations, pitfalls, state layout, harness notes, and the frozen schema split by domain. |
-| `scripts/` | Small shell helpers for the distribution (workspace home, new site, update, status). |
+| `scripts/` | Five small shell helpers for the distribution: workspace home and lock handling (`ad-home.sh` plus the sourced `ad-lock.sh`), a new site (`ad-new-site.sh`), updates (`ad-update.sh`) and status (`ad-status.sh`). |
+| `skills/` | The **convention for optional per-harness wrappers**: if a harness discovers skills only in a fixed directory, its adapter is one file, `skills/<harness>/SKILL.md`, that does nothing but point at `AGENTS.md`. No wrapper ships here — the tree holds only `skills/README.md` — and `references/harness.md` §5 carries the template. |
 | `GUIDE_FROM_SCRATCH.md` | The older human-followed walkthrough. The **deep reference source** for technical detail; **not the primary path** any more. |
 | `SKILL_INTERACTIVE_PORTFOLIO.md` | The older build procedure, including the design questionnaire. Deep reference source; **not the primary path**. |
 | `DATABASE_SCHEMA.md` | The **frozen schema of record** — every table, column, view, RPC, policy, grant, storage rule and seed. The agent applies it; you do not need to read it. |
+| `PLAN_AI_DISTRIBUTION.md` | A **dated planning artifact** (2026-09-18) — the plan that led to the contract, the references and the helpers. Background on how the rework was scoped, **not part of the instruction path**; the agent does not load it. |
 
 Also in the tree: `GUIDE_FROM_SCRATCH.pdf`, a PDF render of the guide, and `sanitize-id.lua`, the
 filter used to regenerate that PDF.
@@ -82,7 +84,10 @@ Which of these are present today is covered under [Status](#status-and-licence).
 
 ## The frozen stack
 
-The reference target technology and the database schema are fixed, and neither is swapped quietly:
+The reference target technology and the database schema are fixed, and neither is swapped quietly.
+In plain terms, this is the machinery that makes the site open quickly, keeps your content and your
+AI key out of a visitor's reach, and runs the few interactive pieces — the chat about you, the admin
+panel and the gated CV download — for you:
 
 - **Hosting:** Cloudflare Workers + Static Assets, deployed with Wrangler.
 - **Data:** Supabase Postgres with row-level security, Auth, Storage and Edge Functions.
@@ -103,11 +108,11 @@ swapping it silently and mentioning it later. That is the inherited **no silent 
 This distribution is a **work in progress**, and the sections above describe the intended model as
 much as the current tree. Honestly, as of now:
 
-- The rework from the old kit into a contract plus references is **in flight**, not finished. The
-  contract (`AGENTS.md`), the references and these docs are landing on separate branches of the
-  rework; a given clone may have some of them and not others.
-- `scripts/` and a worked `examples/` site **do not exist yet**. They are planned, not present, and
-  nothing above should be read as promising them today.
+- The rework from the old kit into a contract plus references is **in flight**, not finished: the
+  contract, the references and these docs are still being settled, so expect churn rather than a
+  frozen release.
+- A worked `examples/` site **does not exist yet**. It is planned, not present, and nothing above
+  should be read as promising it today.
 - There is **no released version**: no tag, no package and no published distribution beyond the
   repository itself. Nothing here is a polished release.
 - The technology, the schema and the accumulated troubleshooting knowledge are inherited from the
