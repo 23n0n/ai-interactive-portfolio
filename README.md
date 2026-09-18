@@ -98,8 +98,6 @@ Two notes on the flags, because both are easy to get wrong:
 
 The Markdown is the source of truth; if the two ever disagree, trust `GUIDE_FROM_SCRATCH.md`.
 
-Which of these are present today is covered under [Status](#status-and-licence).
-
 ## The frozen stack
 
 The reference target technology and the database schema are fixed, and neither is swapped quietly.
@@ -121,27 +119,6 @@ If something genuinely cannot be done on this stack, the agent stops and asks yo
 swapping it silently and mentioning it later. That is the inherited **no silent swaps** rule
 (`AGENTS.md` §7).
 
-## Status and licence
+## Licence
 
-This distribution is a **work in progress**, and the sections above describe the intended model as
-much as the current tree. Honestly, as of now:
-
-- The rework from the old kit into a contract plus references has **landed in this tree**: `AGENTS.md`,
-  the ten references, the `scripts/` helpers, this README and the `examples/` directory are all here.
-  Expect churn in the wording rather than missing pieces.
-- `examples/` holds a worked, **fictional** example site — a filled-in `ad-home/` state home with its
-  manifest, decisions log and a run report, plus example content payloads. Read it for the shapes; do
-  not copy it wholesale.
-- There is **no released version**: no tag, no package and no published distribution beyond the
-  repository itself. Nothing here is a polished release.
-- The technology, the schema and the accumulated troubleshooting knowledge are inherited from the
-  old kit and remain usable: if a file named above is missing from your clone, the legacy
-  `GUIDE_FROM_SCRATCH.md`, `SKILL_INTERACTIVE_PORTFOLIO.md` and `DATABASE_SCHEMA.md` are the deep
-  source of truth for their subjects.
-
-Licence: MIT — see [`LICENSE`](LICENSE).
-
-> **Mid-rework caveat.** This repository was reworked from a step-by-step manual into a
-> distribution you hand to an agent. Everything named above **is present in this tree**; what is
-> still settling is the wording, not the files. The legacy guide, skill and schema remain the deep
-> reference for their subjects.
+MIT — see [`LICENSE`](LICENSE).
