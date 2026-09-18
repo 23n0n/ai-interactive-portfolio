@@ -36,6 +36,7 @@ requires them, and none of the versions below are guesswork (CI pins the Supabas
 | Bun | **1.4.x or newer** (the stack pins it) | `curl -fsSL https://bun.sh/install \| bash` (or `brew install bun`) | `bun -v` |
 | git | any current release | `brew install git` (macOS) or your package manager | `git --version` |
 | Supabase CLI | **2.115.0** — the version CI pins; a local/CI CLI mismatch breaks `supabase db push` | `brew install supabase/tap/supabase` (or `npm i -g supabase`) | `supabase --version` |
+| Wrangler | **4.x** — the stack freezes Wrangler 4 (`AGENTS.md` §7) | none — run it through `bunx` (e.g. `bunx wrangler deploy`); no global or project install needed | `bunx wrangler --version` → `4.x` |
 
 Verify before you start:
 
