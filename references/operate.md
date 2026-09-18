@@ -284,7 +284,7 @@ these is optional, and each result is recorded as an `audit` run.
 | Trigger | Re-run |
 |---|---|
 | Any schema change — table, column, view, RPC, function, policy, grant | Final RLS audit: `DATABASE_SCHEMA.md` §12 A–G plus `references/secure.md` §4 assertions 1–12; then the anon probe |
-| A new or changed view | `references/secure.md` §4.1 view options — `security_invoker = on` and `security_barrier = true` on every `public.*_public` and `private.api_*` view |
+| A new or changed view | `references/secure.md` §4.1 view options — `security_invoker = on` and `security_barrier = true` on every `public.*_public` view; `security_barrier = true` only on `private.api_*` views (adding `security_invoker` there breaks anonymous reads) |
 | A new or changed `SECURITY DEFINER` function | `references/secure.md` §4.2 `EXECUTE` grant sweep |
 | A new bucket, a storage policy change, or a MIME/size change | `references/secure.md` §4.3 `storage.objects` policy audit |
 | A new or changed edge function | Admin-function auth test (`references/secure.md` §3) for any of the four admin functions; the `405`/`415` guards; the service-role grant matrix; the live CORS check |
