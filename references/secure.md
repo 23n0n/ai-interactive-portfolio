@@ -4,6 +4,11 @@ Security material is inherited from the old kit **unchanged**. This file re-home
 rewrite, weaken or summarize away any control. Do not invent controls, do not relax a rule without
 a compensating control, do not accept a risk without an ADR.
 
+Revision **r3** (task `fm-20260918-10`) restates section 1 as the layered perimeter
+(captain-approved) and adds three perimeter checks — view options (§4.1), `SECURITY DEFINER`
+`EXECUTE` grants (§4.2) and the `storage.objects` policy audit (§4.3). Everything else remains
+inherited unchanged.
+
 Reference `DATABASE_SCHEMA.md` sections by number (P2 target: `references/schema/`). Do not copy
 full DDL here. SQL, identifiers, env var names, header names and error strings below are exact —
 keep them exact.
@@ -11,14 +16,39 @@ keep them exact.
 ## 1. Threat model, stated plainly
 
 **Rate limits, input caps, response caching and Turnstile protect against abuse and excessive AI
-use — not against a determined attacker.** The **RLS model** (views + grants + policies) is the
-actual security boundary of the site.
+use — not against a determined attacker.** Those are the third of three layers. The perimeter is
+**layered**, and only the first layer is RLS:
+
+| Layer | What it protects | Mechanism | If it fails |
+|---|---|---|---|
+| **Read authorization** | which rows `anon` / `authenticated` may read | **RLS** — policies + grants, reached through `security_invoker` views | every private row is public |
+| **Write integrity** | every mutation of the data | **edge functions + secret custody** — `service_role` bypasses RLS entirely and every write goes through an edge function holding that key | a leaked service-role key is total read/write access, and **no RLS policy mitigates it** |
+| **Availability / abuse** | excessive AI use, scraping, floods | **Cloudflare, Turnstile, per-IP rate limits** | cost and noise, not a data breach |
+
+The layering matters because RLS only governs the roles that RLS applies to. **Two paths bypass it
+outright, and both must be audited alongside the policies:**
+
+1. **A view without `security_invoker = on`.** On PG15+ such a view executes as its **owner** and
+   bypasses the RLS policies underneath it — the base-table policies never run. A view missing
+   `security_invoker` is a **launch blocker** (§4.1), and Supabase's own database linter flags
+   this class of view.
+2. **`SECURITY DEFINER` functions, and the `service_role` key.** A `SECURITY DEFINER` body runs as
+   its owner and bypasses RLS for its duration; the `service_role` key bypasses RLS completely.
+   One over-broad `EXECUTE` grant is a full read/write hole (§4.2). A leaked service-role key is
+   total access — **no RLS policy mitigates it** — which is why the bundle/log secret scan matters
+   as much as the RLS audit.
+
+**Assertion A — RLS enabled on every base table — is the single most important check.** Supabase
+grants privileges to `anon` and `authenticated` on new `public` tables **by default**, so a table
+created with RLS off is fully exposed the moment it exists — no policy mistake required. This is a
+migration-discipline risk: **RLS must be enabled in the same migration that creates the table.**
 
 Hard rules:
 
 1. Never present the abuse controls as attack protection. They limit abuse; they do not stop an
    attacker.
-2. Treat the RLS model as the boundary. Audit it with SQL, never by eyeballing.
+2. Treat the **RLS read-authorization layer** — plus the view options and `SECURITY DEFINER`
+   grants that bypass it — as the boundary. Audit it with SQL, never by eyeballing.
 3. The final RLS audit is **mandatory, not optional** — it gates launch and every schema change.
 4. CORS is browser-only. Edge functions are publicly reachable endpoints; CORS alone is not access
    control. Rate limits / Turnstile / JWT checks are the actual access control there.
@@ -127,7 +157,9 @@ Four admin edge functions: `generate-doc-content`, `generate-doc-tags`, `generat
 
 Audit the RLS model with SQL, never by eyeballing. Run the audit in `DATABASE_SCHEMA.md` **§12
 (A–G)** before launch and after **every** schema change; the P2 owner of the split is
-`references/schema/`. Expected output is the §10 matrix with zero deviations.
+`references/schema/`. Expected output is the §10 matrix with zero deviations. Three perimeter
+checks sit alongside §12 A–G and are just as mandatory: view options (§4.1), `SECURITY DEFINER`
+`EXECUTE` grants (§4.2) and the `storage.objects` policy audit (§4.3).
 
 Assertions — all must hold:
 
@@ -151,6 +183,217 @@ Assertions — all must hold:
 8. The authenticated non-admin probe (§12 G2) **fails** on private reads and admin writes, and
    **succeeds** on public views.
 9. Service-role grants match the edge-function access matrix in `DATABASE_SCHEMA.md` §9.
+10. **Every view carries the hardening options** (§4.1): all `public.*_public` views and all
+    `private.api_*` views have BOTH `security_invoker = on` and `security_barrier = true`. A view
+    missing `security_invoker` is a **launch blocker** — it runs as its owner and bypasses the RLS
+    policies underneath it.
+11. **No over-broad `EXECUTE` grant on any `SECURITY DEFINER` function** (§4.2): zero
+    `anon`/`authenticated`/`public` `EXECUTE` on any definer function except the whitelisted
+    `is_admin` (`authenticated`, required for RLS policies to evaluate). This generalizes
+    assertion 6 from the six cache/rate-limit RPCs to every definer function. Every
+    `SECURITY DEFINER` function reachable by `anon`/`authenticated` must check the caller in its
+    body (`is_admin()` or `auth.uid()`).
+12. **`storage.objects` policies are exactly the four admin policies** (§4.3): `kb-images admin
+    select|insert|update|delete`, `TO authenticated`, `is_admin()` in `qual`/`with_check`,
+    `bucket_id = 'kb-images'`; bucket `file_size_limit = 5242880`; `allowed_mime_types` excludes
+    SVG; no other non-empty bucket.
+
+### 4.1 View options — `security_invoker` / `security_barrier` (launch blocker)
+
+A view without `security_invoker = on` executes as its **owner** and bypasses the RLS policies on
+the tables underneath it. The DDL sets the option (`DATABASE_SCHEMA.md` §3, §5); this check proves
+it is actually set. Run the enumeration, then the violation query:
+
+```sql
+-- Enumerate every view and its options.
+select n.nspname as schema, c.relname as view_name, c.reloptions
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where c.relkind = 'v'
+  and n.nspname in ('public', 'private')
+order by 1, 2;
+```
+
+```sql
+-- Launch gate: must return zero rows. Accepts both spellings Postgres stores for a boolean
+-- reloption (`=on` and `=true`).
+select n.nspname as schema,
+       c.relname as view_name,
+       coalesce(array_to_string(c.reloptions, ', '), '(no options)') as reloptions
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where c.relkind = 'v'
+  and n.nspname in ('public', 'private')
+  and (
+    not exists (
+      select 1 from unnest(coalesce(c.reloptions, '{}')) as opt
+      where opt in ('security_invoker=on', 'security_invoker=true', 'security_invoker')
+    )
+    or not exists (
+      select 1 from unnest(coalesce(c.reloptions, '{}')) as opt
+      where opt in ('security_barrier=on', 'security_barrier=true', 'security_barrier')
+    )
+  )
+order by 1, 2;
+```
+
+Assert, on the enumeration:
+
+1. Every `public.*_public` view and every `private.api_*` view carries BOTH `security_invoker=on`
+   and `security_barrier=true` in `reloptions`. Because the only views in `public` are `*_public`
+   and the only views in `private` are `api_*`, the schema-wide query is equivalent.
+2. The violation query returns **zero rows**. A view missing `security_invoker=on` is a **launch
+   blocker**: it runs as its owner and bypasses RLS underneath. Supabase's database linter flags
+   this class of view.
+3. `security_invoker` requires PG15+ (Supabase is PG15+). On an older engine the option does not
+   exist and the whole view layer cannot be trusted — upgrade instead of proceeding.
+4. Any new view added to `public` or `private` must ship with both options in the same migration
+   that creates it.
+
+### 4.2 `EXECUTE` grants on `SECURITY DEFINER` functions (every definer, not just the cache RPCs)
+
+Assertion 6 covers the six cache/rate-limit RPCs; that is a subset. **Every** `SECURITY DEFINER`
+function bypasses RLS for its body, so an over-broad `EXECUTE` grant on any of them is a full
+read/write hole. Enumerate all of them, then close the gate:
+
+```sql
+-- Enumerate every function reachable by an API role, showing whether it is SECURITY DEFINER.
+select n.nspname as schema,
+       p.proname as function_name,
+       p.prosecdef as security_definer,
+       pg_get_userbyid(p.proowner) as owner,
+       pg_get_userbyid(g.grantee) as grantee,
+       g.privilege_type
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
+where n.nspname in ('public', 'private')
+  and pg_get_userbyid(g.grantee) in ('anon', 'authenticated', 'public')
+order by 1, 2, 5;
+```
+
+```sql
+-- Launch gate: MUST return zero rows.
+select n.nspname as schema,
+       p.proname as function_name,
+       pg_get_userbyid(p.proowner) as owner,
+       pg_get_userbyid(g.grantee) as grantee,
+       g.privilege_type
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
+where n.nspname in ('public', 'private')
+  and p.prosecdef                                   -- SECURITY DEFINER only
+  and pg_get_userbyid(g.grantee) in ('anon', 'authenticated', 'public')
+  -- whitelisted: `is_admin` to authenticated only (see below)
+  and not (p.proname = 'is_admin' and pg_get_userbyid(g.grantee) = 'authenticated')
+order by 1, 2, 4;
+```
+
+`aclexplode(coalesce(p.proacl, acldefault('f', p.proowner)))` is load-bearing: when `proacl IS
+NULL` Postgres applies the **default** ACL, which includes `EXECUTE` to `PUBLIC`. A function whose
+ACL was never revoked from `PUBLIC` therefore shows `grantee = public` here even though nobody
+granted it explicitly. (Note: `aclexplode` exposes `grantee` as `oid`; compare it as
+`pg_get_userbyid(g.grantee)`, which maps the PUBLIC pseudo-role's oid `0` to `'public'`. Comparing
+the raw `oid` to the text `'anon'` raises `invalid input syntax for type oid`.)
+
+**Whitelist — the only permitted API-role grants:**
+
+| Function | Grantee | Kind | Why |
+|---|---|---|---|
+| `get_public_homepage_data`, `get_public_homepage_route`, `get_public_content_catalog`, `get_public_content_route`, `get_public_sitemap_data` | `anon`, `authenticated` | `security invoker` | The deliberate public read RPCs (`DATABASE_SCHEMA.md` §4). They are invoker, so they do **not** bypass RLS; they must be `REVOKE ... FROM public` (§4). |
+| `is_admin` | `authenticated` | `SECURITY DEFINER` | RLS policies call `is_admin()`; the grant is required for policies to evaluate. The body returns only the caller's own `app_metadata` role claim — it reads no table rows. |
+
+Assert, on the enumeration:
+
+1. The only `security_definer = true` rows are `is_admin` with `grantee = authenticated`. The
+   launch gate above returns **zero rows**.
+2. The only `security_definer = false` rows are the five `get_public_*` read RPCs. Any other
+   function reachable by `anon`/`authenticated` — including `public` (the `PUBLIC` pseudo-role) on
+   a function whose ACL was never migrated — is a finding: `REVOKE EXECUTE ... FROM public, anon,
+   authenticated`. Triage trigger/helper functions explicitly (`set_updated_at`,
+   `normalize_cache_question`, `bigram_similarity` and any other): the default ACL grants them to
+   `public`, so they must be revoked too.
+3. For every `SECURITY DEFINER` function reachable by `anon`/`authenticated`, the body must check
+   the caller — `is_admin()` or `auth.uid()`. A reachable definer body without a caller check is a
+   **launch blocker**.
+4. Any row with `grantee = public` on a `SECURITY DEFINER` function is a **launch blocker**: it is
+   callable by every role, with the definer's privileges.
+
+### 4.3 `storage.objects` policy audit (second policy engine)
+
+Storage is a second policy engine and §12 A–G only covers the bucket table (`DATABASE_SCHEMA.md`
+§8). Run:
+
+```sql
+select policyname, cmd, roles, qual, with_check
+from pg_policies
+where schemaname = 'storage' and tablename = 'objects'
+order by policyname;
+```
+
+```sql
+-- Launch gate: must return zero rows.
+select policyname, cmd, roles, qual, with_check
+from pg_policies
+where schemaname = 'storage'
+  and tablename = 'objects'
+  and (
+    policyname not in ('kb-images admin select',
+                       'kb-images admin insert',
+                       'kb-images admin update',
+                       'kb-images admin delete')
+    or roles <> array['authenticated']::name[]
+    or coalesce(qual, with_check, '') not like '%is_admin()%'
+    or coalesce(qual, with_check, '') not like '%kb-images%'
+  )
+order by policyname;
+```
+
+```sql
+-- Buckets: limits, MIME allow-lists and object counts.
+select b.id, b.name, b.public, b.file_size_limit, b.allowed_mime_types,
+       (select count(*) from storage.objects o where o.bucket_id = b.id) as object_count
+from storage.buckets b
+order by b.id;
+```
+
+```sql
+-- Launch gate: must return zero rows.
+select b.id, b.file_size_limit, b.allowed_mime_types
+from storage.buckets b
+where b.id <> 'kb-images'
+  and exists (select 1 from storage.objects o where o.bucket_id = b.id)  -- non-empty extra bucket
+union all
+select b.id, b.file_size_limit, b.allowed_mime_types
+from storage.buckets b
+where b.id = 'kb-images'
+  and (
+    b.file_size_limit is distinct from 5242880
+    or b.allowed_mime_types is null
+    or array_length(b.allowed_mime_types, 1) is distinct from 4
+    or exists (select 1 from unnest(b.allowed_mime_types) as m where m ilike '%svg%')
+    or exists (
+      select 1 from unnest(b.allowed_mime_types) as m
+      where m not in ('image/png', 'image/jpeg', 'image/webp', 'image/gif')
+    )
+  );
+```
+
+Assert:
+
+1. `pg_policies` returns **exactly four** rows: `kb-images admin select`, `kb-images admin insert`,
+   `kb-images admin update`, `kb-images admin delete`. Each is `TO authenticated`
+   (`roles = {authenticated}`) and carries `is_admin()` plus `bucket_id = 'kb-images'` in `qual`
+   (SELECT/UPDATE/DELETE) or `with_check` (INSERT/UPDATE).
+2. `kb-images` has `file_size_limit = 5242880` and `allowed_mime_types` exactly
+   `['image/png','image/jpeg','image/webp','image/gif']` — **no SVG** (scriptable content).
+3. `kb-images` is the only bucket holding objects. Any other non-empty bucket is a launch blocker;
+   an extra empty bucket must still carry admin-only, `authenticated`-only policies (the
+   `pg_policies` assertion above covers it).
+4. **Trap — the missing public `SELECT` policy is correct, not a finding.** `kb-images` is a
+   **public** bucket, so object URLs are served directly and no public `SELECT` policy is needed.
+   Adding one would expose bucket listings.
 
 Never revoke a "dead" anon grant without verifying every reader — grep the edge functions for the
 table first. This exact mistake broke `generate-cv` once (`cv_settings`).
@@ -165,6 +408,16 @@ audit is one command. It is **not yet built**; until it lands, run the SQL by ha
       policy inventory (F) has no permissive non-admin policy on admin/private tables;
       authenticated non-admin probe (G2) fails on private reads and admin writes; anon write denied
       on ALL tables; views read-only for API roles; RPC `EXECUTE` grants clean
+- [ ] **View hardening check (§4.1)** — every `public.*_public` and `private.api_*` view reports
+      `security_invoker=on` AND `security_barrier=true`; the violation query returns zero rows. A
+      view missing `security_invoker` is a **launch blocker**
+- [ ] **`SECURITY DEFINER` `EXECUTE` sweep (§4.2)** — the definer gate returns zero rows: no
+      anon/authenticated/public `EXECUTE` on any `SECURITY DEFINER` function except the whitelisted
+      `is_admin`; the only other API-reachable functions are the five `get_public_*` read RPCs;
+      every reachable definer body checks the caller (`is_admin()` / `auth.uid()`)
+- [ ] **`storage.objects` policy audit (§4.3)** — exactly four `kb-images admin *` policies, `TO
+      authenticated`, `is_admin()` in `qual`/`with_check`; `file_size_limit = 5242880`;
+      `allowed_mime_types` excludes SVG; no other non-empty bucket
 - [ ] **Admin-function auth test passed** — all four admin edge functions: no token = `401`, forged
       token = `401`, non-admin token = `403`, admin token = works (signature-verified)
 - [ ] **IP-header trust test** — spoofed `cf-connecting-ip` / `x-forwarded-for` does NOT bypass the
@@ -197,7 +450,10 @@ audit is one command. It is **not yet built**; until it lands, run the SQL by ha
 owner. It must PASS in full — any failure means the build is not done.
 
 1. **RLS check (the security boundary).** Run `DATABASE_SCHEMA.md` §12 A–G (or
-   `scripts/audit-rls.mjs` once it exists). Assert everything in section 4 above.
+   `scripts/audit-rls.mjs` once it exists). Assert everything in section 4 above — that now
+   includes the view-options check (§4.1), the `SECURITY DEFINER` `EXECUTE` sweep (§4.2) and the
+   `storage.objects` audit (§4.3). A view missing `security_invoker`, or a reachable definer
+   function without a caller check, is a blocker.
 2. **Anon probe.** As a raw anon client, reads succeed on public views/RPCs and every write attempt
    returns a permission error.
 3. **Admin-function auth.** Per admin function: no token = `401`, forged/tampered token = `401`,
@@ -223,6 +479,11 @@ findings as a table: severity (blocker/major/minor/nit), location
 (file + line/function), evidence, concrete fix. Do not modify anything.
 ```
 
+The threat model is **layered** (section 1): RLS is the read-authorization layer, not the whole
+perimeter. When you hand this brief to the reviewer, add the view-options check (§4.1), the
+`SECURITY DEFINER` `EXECUTE` sweep (§4.2) and the `storage.objects` policy audit (§4.3) to the set
+of queries to re-run.
+
 1. Fix every finding before launch.
 2. Record findings, compensating controls and risk acceptances (no MFA for single-operator admin —
    ADR-0009; free tier only — ADR-0008) in `docs/PROJECT_REFERENCE_ARCHITECTURE.md`,
@@ -238,3 +499,7 @@ findings as a table: severity (blocker/major/minor/nit), location
 | 4. Final RLS audit | `DATABASE_SCHEMA.md` §10, §11 gate, §12 A–G; `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 8 "Final RLS audit" |
 | 5. Verification checklist | `SKILL_INTERACTIVE_PORTFOLIO.md` "Verification checklist (run at end)" + "Security self-test — final gate" |
 | 6. Independent security review | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 8 "Independent security review" |
+| 1. Threat model (layered perimeter) | Restated to the three-layer model in revision r3 (task `fm-20260918-10`, captain-approved); the old-kit "abuse vs attack" sentence is retained verbatim |
+| 4.1 View options (`security_invoker`) | New in revision r3 (task `fm-20260918-10`) — not present in the old kit |
+| 4.2 `SECURITY DEFINER` `EXECUTE` sweep | Generalizes `DATABASE_SCHEMA.md` §12 D from the six cache/rate-limit RPCs to every definer function (revision r3) |
+| 4.3 `storage.objects` policy audit | New in revision r3; `DATABASE_SCHEMA.md` §8 covers the bucket table only |
