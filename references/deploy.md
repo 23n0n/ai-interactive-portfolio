@@ -137,8 +137,8 @@ Repo **Settings → Secrets and variables → Actions**:
 ## 6. Migrations
 
 **Deploy workflows never apply migrations.** `deploy.yml` ships code; it does not touch the
-database. The database and its migrations are owned by `references/schema/` (`DATABASE_SCHEMA.md`
-§11 until that split), applied through `apply-migration.yml`, `supabase db push`, the Management API
+database. The database and its migrations are owned by `references/schema/` (`seeds.md`, source
+§11), applied through `apply-migration.yml`, `supabase db push`, the Management API
 or the dashboard SQL editor.
 
 Ordering — and why it is not negotiable:

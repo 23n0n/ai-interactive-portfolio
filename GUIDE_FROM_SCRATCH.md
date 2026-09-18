@@ -113,7 +113,7 @@ browser, `--port <n>` to change the port).
 ### 1.5 Choose the recommended model: high capability, high reasoning effort
 
 **Recommended:** use a high-capability model with **maximum reasoning
-effort** for this build (e.g. `deepseek-V4-flash`, high effort). The build
+effort** for this build (e.g. `deepseek-v4-flash`, high effort). The build
 generates security-sensitive code — RLS policies, auth, edge functions —
 and the final RLS audit is only as good as the model that runs it. The
 default chat model works, but the high-effort configuration is the
@@ -789,8 +789,8 @@ unverified.
   as text or sanitized — never raw innerHTML.
 - [ ] **405/415 guards** on every edge function: wrong method → 405 +
   `Allow`; non-JSON body → 415.
-- [ ] **Turnstile only on `generate-cv`** (every download, GET+POST,
-  server-side siteverify, hyphenated error-code diagnostics; 403 on
+- [ ] **Turnstile only on `generate-cv`** (every download, every accepted method — `GET`, `HEAD`,
+  `POST` — server-side siteverify, hyphenated error-code diagnostics; 403 on
   missing/dummy token). **AI chat + JD analysis deliberately have no
   Turnstile** — compensating controls: per-IP rate limits (`chat` 30/15
   min, `analyze-jd` 10/15 min), strict input caps, response caching.
@@ -1147,8 +1147,9 @@ time.
 
 ### Phase 5 — Content collections + knowledge base
 - Typed block model: `p`, `h2`, `h3`, `list`, `steps`, `table`, `checklist`,
-  `callout`, `diagram`, sanitized `rich` HTML. `ContentDoc` shape: slug,
-  title, h1, description, intro, tags, blocks, faqs, related refs.
+  `callout`, `diagram`, sanitized `rich` HTML. `ContentDoc` shape: `h1`,
+  `label`, `description`, `intro`, `tags`, `related`, `faqs`, `blocks`
+  (`slug` is a `content_docs` column, not a key in `doc`).
 - Collections user chose (hub + docs) with seed content; content = DATA —
   runtime renders from Supabase, seed modules for empty-DB population only.
 - Hub/doc routes with server-side related-link resolution (direct + backlinks

@@ -11,7 +11,9 @@ sub-stages in order; each gate (§6) must be green before the next. The stack is
 be made on this stack stops and asks the owner, then is recorded.
 
 Machine-readable routes (`llms.txt`, `sitemap.xml`, markdown negotiation, `.well-known/`), JSON-LD
-and SERP meta are **not** in this file — they belong to `references/distribute.md` (Stage 5).
+and SERP meta are **not** in this file — they belong to `references/distribute.md` (Stage 5). The
+`sitemap` edge function is still **deployed** here, in the Stage 3 inventory below, like every other
+function; what Stage 5 owns is the surface it produces, not the deployment.
 
 ## 1. Scaffold
 

@@ -25,7 +25,7 @@ the five `public.get_public_*` RPCs are `security invoker`, not definer rows. It
 "least-privilege and revocable" deploy-token property (§2 item 11). Corrective only: no control is
 weakened.
 
-Reference `DATABASE_SCHEMA.md` sections by number (P2 target: `references/schema/`). Do not copy
+Reference `DATABASE_SCHEMA.md` sections by number (the per-domain split is in `references/schema/`). Do not copy
 full DDL here. SQL, identifiers, env var names, header names and error strings below are exact —
 keep them exact.
 

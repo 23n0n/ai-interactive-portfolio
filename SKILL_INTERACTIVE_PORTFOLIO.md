@@ -310,8 +310,9 @@ time.
 
 ### Phase 5 — Content collections + knowledge base
 - Typed block model: `p`, `h2`, `h3`, `list`, `steps`, `table`, `checklist`,
-  `callout`, `diagram`, sanitized `rich` HTML. `ContentDoc` shape: slug,
-  title, h1, description, intro, tags, blocks, faqs, related refs.
+  `callout`, `diagram`, sanitized `rich` HTML. `ContentDoc` shape: `h1`,
+  `label`, `description`, `intro`, `tags`, `related`, `faqs`, `blocks`
+  (`slug` is a `content_docs` column, not a key in `doc`).
 - Collections user chose (hub + docs) with seed content; content = DATA —
   runtime renders from Supabase, seed modules for empty-DB population only.
 - Hub/doc routes with server-side related-link resolution (direct + backlinks

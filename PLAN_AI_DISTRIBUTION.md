@@ -7,7 +7,7 @@ below). Decisions D1–D7 resolved (§9).**
 > since moved on. Landed: P1 (`AGENTS.md`, `references/state-layout.md`), P2 (`references/`, including
 > the `references/schema/` split), P3 (`README.md`, `references/harness.md`; the optional
 > `skills/pi/SKILL.md` wrapper was not shipped — see `references/harness.md` §5). Partly landed: P4
-> (`scripts/` exists; `examples/` does not). Not started: P5 (GitHub publish). §10 marks this; D5 is
+> (`scripts/` and `examples/` both exist). Not started: P5 (GitHub publish). §10 marks this; D5 is
 > corrected to keep the old kit at the repo root.
 
 Author: first mate session, 2026-09-18.
@@ -235,7 +235,7 @@ stacks, tiers, or a lean mode.
 | P1 | `AGENTS.md` contract (the hand-held path, four gates, fail-closed rules) + `state-layout.md` | captain reads `AGENTS.md` top-to-bottom and it holds | **landed** |
 | P2 | Reference extraction: `intake`, `design`, `build`, `deploy`, `secure`, `distribute`, `operate`, `pitfalls`, `schema/*` | traceability table: nothing lost silently | **landed** |
 | P3 | `README.md` (human-facing) + `references/harness.md` (+ optional thin `skills/pi/SKILL.md`) | a clean clone is understandable and runnable by a reader who never saw the old kit | **landed** (wrapper optional; not shipped) |
-| P4 | `scripts/` (home, new-site, update, status) + `examples/` | state survives a session restart; example is coherent | **partial** (`scripts/` landed; `examples/` not yet) |
+| P4 | `scripts/` (home, lock, new-site, update, status) + `examples/` | state survives a session restart; example is coherent | **landed** |
 | P5 | GitHub publish | the repo stands alone publicly | not started |
 
 No dogfood phase now (D7).

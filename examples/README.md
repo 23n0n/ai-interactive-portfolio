@@ -11,7 +11,7 @@ reserved (RFC 2606) and can never resolve, so nothing here points at a real pers
 
 ```
 examples/
-  ad-home/                                     # on-disk state home (references/state-layout.md)
+  ad-home/                                     # FIXTURE copy of a state home - never point $AD_HOME here
     state/sites.json                           # the durable registry: one row per site
     data/nora-vance/manifest.md                # identity, stack decisions, accounts, URLs
     data/nora-vance/decisions.log              # append-only why-choices (design contract)

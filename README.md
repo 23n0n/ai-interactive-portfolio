@@ -123,8 +123,7 @@ much as the current tree. Honestly, as of now:
 
 Licence: MIT — see [`LICENSE`](LICENSE).
 
-> **Mid-rework caveat.** This repository is being reworked from a step-by-step manual into a
-> distribution you hand to an agent. Not everything described here is in place yet, and parts of
-> the tree still belong to the older kit. Treat the current state as work in progress, verify what
-> you actually have in your clone, and fall back to the legacy guide, skill and schema when a file
-> named in this README is not there.
+> **Mid-rework caveat.** This repository was reworked from a step-by-step manual into a
+> distribution you hand to an agent. Everything named above **is present in this tree**; what is
+> still settling is the wording, not the files. The legacy guide, skill and schema remain the deep
+> reference for their subjects.
