@@ -85,8 +85,16 @@ The PDF is a *build artifact*, so it goes stale whenever the guide changes. To r
 ```sh
 brew install pandoc typst
 pandoc GUIDE_FROM_SCRATCH.md -o GUIDE_FROM_SCRATCH.pdf \
-  --pdf-engine=typst --lua-filter=sanitize-id.lua --toc --toc-depth=1
+  --pdf-engine=typst --lua-filter=sanitize-id.lua --toc
 ```
+
+Two notes on the flags, because both are easy to get wrong:
+
+- **`--toc` must keep its default depth.** `--toc-depth=1` looks harmless but the guide's only H1 is the
+  title, so it renders an *empty* table of contents — 26 pages and zero links instead of 27 pages and 50.
+- **The Lua filter stays.** It rewrites heading ids and in-document links into typst-safe labels (a
+  `sec-` prefix, collapsed hyphen runs). The original render used it, and dropping it changes every
+  label. It is harmless — same pages, same links — but it keeps the ids stable across rebuilds.
 
 The Markdown is the source of truth; if the two ever disagree, trust `GUIDE_FROM_SCRATCH.md`.
 
