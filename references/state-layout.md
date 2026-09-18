@@ -8,7 +8,9 @@ not by trusting the previous conversation.
 
 ```
 ad-home/
-  state/.lock                          # one active agent session guard (dir-lock)
+  state/.lock/                         # one active agent session guard (dir-lock)
+    owner                              # type-tagged token: pid:<n> | session:<id>
+    acquired                           # ISO-8601 UTC, written when the lock is acquired
   state/sites.json                     # durable registry: one row per site
   data/<site-id>/manifest.md           # identity, stack decisions, accounts, URLs
   data/<site-id>/decisions.log         # append-only why-choices; the design contract
@@ -185,16 +187,83 @@ Rules:
 
 ## Lock: state/.lock
 
-Directory-based lock (`state/.lock/` with an owner file `state/.lock/owner`) so acquisition is
-atomic. Held by the first agent session that opens the owner's home; a second session that cannot
-acquire stays read-only and reports why.
+Directory-based lock (`state/.lock/`) so acquisition is atomic. Held by the first agent session
+that opens the owner's home; a second session that cannot acquire stays read-only and reports why.
+`scripts/ad-lock.sh` is the one implementation of this section (sourced by every `scripts/ad-*.sh`,
+never executed); it is the single place that reads, reclaims and writes the lock.
 
-- The owner file holds one **type-tagged token**, never a bare number: `pid:<n>` when the owner is
-  a local process, `session:<id>` when the harness supplies a session id (any agent, any vendor, or
-  a human). It is written when the lock is acquired.
-- Releases on session end or explicit unlock.
+Two files live inside the lock directory:
+
+| File | Written | Holds |
+|---|---|---|
+| `state/.lock/owner` | at acquisition | one **type-tagged token**, never a bare number |
+| `state/.lock/acquired` | at acquisition | ISO-8601 UTC timestamp (`date -u +%Y-%m-%dT%H:%M:%SZ`) |
+
+- The owner token is `pid:<n>` when the owner is a local process, `session:<id>` when the harness
+  supplies a session id (any agent, any vendor, or a human).
+- `ad-home.sh status` and `ad-status.sh` read `acquired` and print it as the "since" time of the
+  current holder. A missing or unreadable `acquired` is omitted, never an error.
+- Releases on session end or explicit unlock; `ad-home.sh unlock` removes the whole `state/.lock/`
+  directory.
 - **Stale-lock rule:** only a `pid:<n>` token whose process is gone is stale, and only that lock
   may be reclaimed. A `session:<id>` token is assumed live until that session unlocks — never
   reclaim it by guessing; ask the owner.
 - Recovery is fail-closed: if the token is unreadable or its type is unknown, ask the owner rather
   than delete the lock.
+
+## The `scripts/ad-*.sh` helpers
+
+The durable state above is created and mutated by five shell helpers in `scripts/`. They are the
+executable form of this contract; nothing here changes their behaviour.
+
+| Script | Commands | Purpose |
+|---|---|---|
+| `ad-home.sh` | `init`, `lock`, `unlock`, `status` | Create the home layout and manage the session lock |
+| `ad-new-site.sh` | — | Register a site row and scaffold its manifest and decisions log |
+| `ad-update.sh` | — | Mutate one field of a registered site and bump `updated` |
+| `ad-status.sh` | — | Read-only layout, lock and site summary for reconciliation |
+| `ad-lock.sh` | — | Shared lock logic; **sourced, never executed** |
+
+```sh
+scripts/ad-home.sh init                  # create $AD_HOME/{state,data} and state/sites.json
+scripts/ad-home.sh lock --session web-7  # hold state/.lock for this session
+scripts/ad-new-site.sh jane-co --owner "Jane Co" --domain jane.co --plan paid
+scripts/ad-update.sh jane-co --status building
+scripts/ad-status.sh                     # print the disk truth; writes nothing
+```
+
+### Home resolution
+
+- `$AD_HOME` is the environment contract: when set, it is the home.
+- A positional `HOME` argument overrides `$AD_HOME`.
+- When neither is given, the home is `$PWD/ad-home`.
+- A trailing `/` is stripped. Nothing is written outside the home.
+
+### Session and ownership
+
+Every command resolves one owner token for `state/.lock/owner`, in this order:
+
+1. `$AD_SESSION_ID`, when set, becomes `session:<id>`.
+2. `--owner pid:<n>|session:<id>` supplies an explicit, already type-tagged token.
+   `--session <id>` is shorthand for `--owner session:<id>`.
+3. Otherwise the token is `pid:$PPID` — the **invoking** shell, not the helper's own `$$`.
+
+`--owner` and `--session` are mutually exclusive. One exception: in `ad-new-site.sh`, `--owner`
+names the **site's owner** (the person recorded in the manifest and registry), not the lock token;
+that script uses `--session` for the lock.
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success, or the lock is already held by this invocation |
+| `1` | `state/.lock` is held by another live session; the command stays read-only |
+| `2` | Refusal: bad usage or input, an unreadable or unknown lock token, or invalid state |
+
+`ad-status.sh` only produces a report: `0` when it prints one, `2` for bad usage or an empty home
+argument.
+
+On a write (`ad_guard_write` in `ad-lock.sh`): a **free** lock is a warning only and the write
+proceeds, so an unlocked home still works; a holder that is this invocation proceeds; a dead
+`pid:<n>` is reclaimed and re-acquired once; a live `pid:<n>` or another session's `session:<id>`
+stops the write (exit `1`); an unreadable or unknown token fails closed (exit `2`).
