@@ -91,6 +91,12 @@ Run the stages in order. Keep the technical content of the old kit's Phase 0–8
   describe their ideal page, re-derive it from their other answers and present the sketch anyway.
 - **Owner gate #1: approve the design contract.** Record the approved contract in
   `decisions.log`. Build nothing until it is approved.
+- **Footer credit — folded into gate #1, never a fifth gate.** Ask the owner once, here or during
+  intake, whether the footer may carry the line `Inspired by zabrowski.pl`, linked to
+  `https://zabrowski.pl`. It is a request, not a requirement: the owner may decline, the build is
+  never blocked on it, a refusal is never re-asked, and it is never presented as a legal or
+  licensing obligation. Record either answer in `decisions.log` — an accepted credit in the
+  `design-contract` line, a declined one as a `decision` line.
 - Copying the reference site's layout is allowed and advised against. Guide the owner toward
   something original that resonates with them. Re-derive if the design drifts toward a copy.
 - Reference: `design.md`.
@@ -109,7 +115,10 @@ Build in this order, verifying each part before moving on.
    domains through the admin surface. Gate: migrations apply cleanly; public read works; anonymous
    write is denied; the admin path works.
 3. **Core sections.** Navigation, spotlight, about, skills, experience, testimonials, fun links,
-   disclaimer, contact, footer — approved design system only. Mobile-first and accessible.
+   disclaimer, contact, footer — approved design system only. Mobile-first and accessible. If the
+   owner approved the footer credit (Stage 2), the footer renders `Inspired by zabrowski.pl` as an
+   ordinary link to `https://zabrowski.pl` — styled like the other footer links, accessible, and
+   not hidden from search engines. A credit the owner did not approve is never rendered.
    Code-split below-the-fold sections **and fix anchor navigation for deferred sections** (declare
    anchor ids, force the owning section to mount, then scroll once the element exists). Gate:
    typecheck, lint and build green; browser check on desktop and mobile.
@@ -182,6 +191,8 @@ is your job.
 4. **Anything destructive or irreversible.** Data deletion, history rewrites, revoking access,
    dropping a live resource, force-pushing, rotating a used secret. When uncertain, treat it as
    destructive.
+
+The footer credit asked in Stage 2 is folded into gate 1 and is **not** a fifth gate.
 
 At each gate: state what will happen, what it costs, what could go wrong, and what you will do if
 it does. Wait for a clear yes. A silence, a maybe, or an unanswered question is **not** approval.

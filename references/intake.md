@@ -81,7 +81,10 @@ vision, layout and structure, interaction and detail, content scope, constraints
     AI → footer). Anything to reorder, drop, or add?
 14. How to present data: experience as timeline or cards? Skills as strong/moderate/gap columns,
     tag cloud, or progress bars? Testimonials as quote cards, carousel, or grid?
-15. Footer: what lives there (contact, links, disclaimer, CV button, knowledge-base nav)?
+15. Footer: what lives there (contact, links, disclaimer, CV button, knowledge-base nav)? *(Ask
+    once here, or at gate #1, whether the footer may carry the small link `Inspired by zabrowski.pl`
+    to `https://zabrowski.pl` — optional, freely declined, never a requirement; record either
+    answer in `decisions.log`.)*
 
 ### Group 4 — Interaction and detail
 
