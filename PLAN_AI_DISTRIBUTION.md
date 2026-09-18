@@ -6,8 +6,8 @@ below). Decisions D1–D7 resolved (§9).**
 > **Status update (2026-09-18, docs r1).** This plan is a historical record of the rework; the tree has
 > since moved on. Landed: P1 (`AGENTS.md`, `references/state-layout.md`), P2 (`references/`, including
 > the `references/schema/` split), P3 (`README.md`, `references/harness.md`; the optional
-> `skills/pi/SKILL.md` wrapper was not shipped — see `references/harness.md` §5). Partly landed: P4
-> (`scripts/` and `examples/` both exist). Not started: P5 (GitHub publish). §10 marks this; D5 is
+> `skills/pi/SKILL.md` wrapper was not shipped — see `references/harness.md` §5). Landed: P4
+> (`scripts/` — five helpers — and `examples/` both exist). Not started: P5 (GitHub publish). §10 marks this; D5 is
 > corrected to keep the old kit at the repo root.
 
 Author: first mate session, 2026-09-18.
@@ -100,7 +100,7 @@ ai-distribution/            # the repo itself IS the distribution
     state-layout.md         # on-disk formats
     harness.md              # how to read this repo on Pi / DSH / Claude / Codex / by hand
     schema/                 # DATABASE_SCHEMA.md, split by domain (loaded only when needed)
-  scripts/                  # ad-home.sh, ad-new-site.sh, ad-update.sh, ad-status.sh
+  scripts/                  # ad-home.sh, ad-lock.sh (sourced), ad-new-site.sh, ad-update.sh, ad-status.sh
   docs/                     # not created — the old kit stays at the repo root as the deep fallback
   examples/                 # a worked example site
 ```
