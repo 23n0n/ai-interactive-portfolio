@@ -1,5 +1,14 @@
 # Build an Interactive Portfolio with AI — Step-by-Step Walkthrough
 
+> **Status — deep reference, not the primary path.** `AGENTS.md` is the
+> current contract: six stages and four owner gates. This walkthrough is the
+> older linear kit — a fuller, step-by-step expansion of the same build, kept
+> as a deep reference. It was written around one agent harness and names that
+> harness's screens; the harness-neutral install-and-connect procedure is
+> `references/harness.md` §4. Throughout this guide **the agent runs and
+> verifies every gate and shows the evidence; the owner approves only the
+> four gates in `AGENTS.md` §4.** Nothing here overrides `AGENTS.md`.
+
 Complete, hand-holding guide to build a project like **zabrowski.pl** — an
 interactive portfolio/CV site — from zero. You will build: a homepage
 (spotlight, skills matrix, experience timeline, testimonials, just-for-fun
@@ -10,24 +19,24 @@ a **Turnstile-gated CV download**, recurring holiday banners, and
 machine-readable AI surfaces (`llms.txt`, `sitemap.xml`, `robots.txt`,
 `openapi.json`, `Accept: text/markdown`, `.well-known/`).
 
-**The AI supports you at every step.** Step 1 installs the DeepSeek Harness
-(DSH) and connects your DeepSeek key — before anything else. Every later
-step tells you exactly what to copy into your terminal and what to paste
-into the DSH chat.
+**The AI supports you at every step.** Step 1 connects your agent to a model
+provider — before anything else. Every later step tells you exactly what to
+copy into your terminal and what to paste into your agent's chat.
 
-> **⚠ Read this first — verify everything yourself.** The AI generates the
-> code and reports success, but **its claims are unverified**. Every
-> `[Check]` gate in this guide is YOUR check: run the command, look at the
-> output, decide. This starts at the very beginning — verify the accounts,
-> the keys, the tools and the AI connection yourself before trusting
-> anything the agent reports. Nothing in this kit replaces your own
+> **⚠ Read this first — verified evidence, never a claim.** The AI generates
+> the code and reports success, but **its claims are unverified**. The agent
+> runs every `[Check]` gate in this guide and shows the command and its
+> output; you are the owner and approve at the four gates in `AGENTS.md` §4.
+> This starts at the very beginning — require the accounts, the keys, the
+> tools and the model connection to be verified with evidence before
+> trusting anything the agent reports. Nothing in this kit replaces that
 > verification. If a gate fails, do not move on — fix it first.
 
 **How to use this guide:**
 
 - Follow the steps **in order**. Each step has `[Copy]` blocks (terminal)
-  and `[Prompt]` blocks (paste into DSH chat) and a `[Check]` gate —
-  do not move to the next step until the gate passes.
+  and `[Prompt]` blocks (paste into your agent's chat) and a `[Check]` gate —
+  the agent shows the gate result before moving on.
 - `$` at the start of a line means "run this in your terminal" (macOS /
   Linux; on Windows use WSL or Git Bash).
 - Two companion files sit next to this guide:
@@ -37,7 +46,7 @@ into the DSH chat.
     do not need to read it, but it is the source of truth.
   - **`SKILL_INTERACTIVE_PORTFOLIO.md`** — the build skill (also embedded
     as Appendix A here). The AI executes it phase by phase.
-- Time: one focused day (casual: a weekend). Cost: **~$1–3** of DeepSeek
+- Time: one focused day (casual: a weekend). Cost: **~$1–3** of model
   tokens for the whole build + **~$10/yr** if you buy a domain.
 
 ---
@@ -50,18 +59,32 @@ into the DSH chat.
 > nothing on any platform, charges nothing, and you can stop any time; come
 > back here to Step 1 when you are ready to build for real.
 
-## Step 1 — Install DSH and connect DeepSeek (DO THIS FIRST)
+## Step 1 — Connect your agent to a model (DO THIS FIRST)
 
 You want AI support before you do anything else. Do this step before
 creating accounts or installing tools.
 
-### 1.1 Create the DeepSeek account and API key
+This kit is harness-neutral (`AGENTS.md` §6): any agent that can read and
+edit files and run commands will do, and a human working by hand is a
+supported path too. The neutral install-and-connect procedure is
+`references/harness.md` §4. Steps 1.1–1.7 below therefore speak about "your
+agent"; where they name a settings screen, use the equivalent in whatever
+harness you run.
 
-1. Go to https://platform.deepseek.com → **Register** (email + password, or
+> **One worked example — explicitly an example, not a requirement.** The
+> reference setup uses the **DeepSeek Harness (DSH)**, started with
+> `npx @deepseek-ai/dsh web`, authenticated with a **DeepSeek** API key
+> (`sk-...`); its Web UI opens at **http://127.0.0.1:3080**. Any other
+> harness and provider work the same way — nothing in the build depends on
+> this choice.
+
+### 1.1 Get an API key from your model provider
+
+1. Go to your provider's console → **Register** (email + password, or
    phone) → verify your email.
 2. **Top up a small amount** (a few USD lasts a long time for coding).
-3. **API Keys** → **Create new key** → name it `dsh` → **copy the key now**
-   (it is shown only once, starts with `sk-...`).
+3. Open the **API Keys** page → **Create new key** → give it a
+   recognisable name → **copy the key now** (it is shown only once).
 
 > **Save the key somewhere safe** (password manager). You need it in
 > Step 1.4. Treat it as a secret: never commit it, never paste it into
@@ -69,7 +92,8 @@ creating accounts or installing tools.
 
 ### 1.2 Install Node.js 22
 
-DSH runs on Node. Install Node 22 LTS or newer.
+Most agent harnesses (including the example) run on Node. Install Node 22
+LTS or newer.
 
 `[Copy]` — macOS (Homebrew):
 
@@ -88,41 +112,34 @@ node -v
 
 Expect `v22.x` or newer.
 
-### 1.3 Install and start DSH
+### 1.3 Install and start your agent
 
-`[Copy]`:
+Install and start your harness following its own instructions (the example
+harness's command is shown in the box above). A harness is an agent that
+reads and edits your files, runs commands, delegates work and keeps a plan.
+Most open a local Web UI — the example at **http://127.0.0.1:3080**.
 
-```sh
-npx @deepseek-ai/dsh web
-```
+> Harnesses move fast — expect occasional breaking changes between versions.
+> If the installer asks to fetch a package, confirm.
 
-This downloads and starts the DeepSeek Harness — the agent that reads and
-edits your files, runs commands, delegates work and keeps a plan. The Web
-UI opens at **http://127.0.0.1:3080** (add `--no-open` to skip opening the
-browser, `--port <n>` to change the port).
+### 1.4 Add the key to your agent
 
-> DSH is in developer preview — expect occasional breaking changes between
-> versions. If `npx` asks to install the package, confirm.
-
-### 1.4 Add your DeepSeek key
-
-1. In the DSH Web UI: **Settings → Models**.
-2. Paste your `sk-...` key from Step 1.1 → **Save**.
-3. The DeepSeek model route becomes usable immediately — no restart.
+1. Open your agent's model settings (in the example: **Settings → Models**).
+2. Paste the API key from Step 1.1 → **Save**.
+3. The model route becomes usable immediately — no restart.
 
 ### 1.5 Choose the recommended model: high capability, high reasoning effort
 
 **Recommended:** use a high-capability model with **maximum reasoning
-effort** for this build (e.g. `deepseek-v4-flash`, high effort). The build
-generates security-sensitive code — RLS policies, auth, edge functions —
-and the final RLS audit is only as good as the model that runs it. The
-default chat model works, but the high-effort configuration is the
-recommended one. Set it in **Settings → Models** (select the model and its
-effort level) before starting Step 5.
+effort** for this build. The build generates security-sensitive code — RLS
+policies, auth, edge functions — and the final RLS audit is only as good as
+the model that runs it. The default chat model works, but the high-effort
+configuration is the recommended one. Set it in your agent's model settings
+(select the model and its effort level) before starting Step 5.
 
 ### 1.6 Verify the AI works
 
-Open a session in the DSH Web UI and paste:
+Start a session with your agent and paste:
 
 `[Prompt]`:
 
@@ -132,8 +149,10 @@ Postgres Row Level Security (RLS) is.
 ```
 
 Expect: `AI READY` plus three correct bullets. If you get an error, check
-the key in **Settings → Models** and try again. **Verify this yourself —
-do not accept the AI's own "I am working" claim without seeing the reply.**
+the key in your agent's model settings and try again. **Require the reply
+as evidence — do not accept the AI's own "I am working" claim without
+seeing it.** (Verification is the agent's job and it shows the evidence;
+approval is the owner's — `AGENTS.md` §5.3.)
 
 ### 1.7 Optional: local Ollama models (cheap offline tasks)
 
@@ -148,7 +167,8 @@ ollama pull llama3.2:3b
 
 (Ollama serves at http://127.0.0.1:11434. `llama3.2:3b` is a known-good
 small model; pick any model from https://ollama.com/library.) Add it as a
-provider in DSH **Settings → Models** (`ollama-local` route).
+provider in your agent's model settings (the example calls this route
+`ollama-local`).
 
 ---
 
@@ -231,7 +251,7 @@ provider in DSH **Settings → Models** (`ollama-local` route).
 
 | Tool | Why | `[Copy]` |
 |---|---|---|
-| Node.js 22 LTS+ | DSH + tooling | done in Step 1.2 |
+| Node.js 22 LTS+ | agent + tooling | done in Step 1.2 |
 | **Bun 1.4.x+** | package manager + scripts (stack pins it) | `curl -fsSL https://bun.sh/install \| bash` (or `brew install bun`) |
 | **Git** | version control | `brew install git` (macOS) / package manager |
 | **Supabase CLI** | migrations + edge functions (CI pins 2.115.0) | `brew install supabase/tap/supabase` (or `npm i -g supabase`) |
@@ -293,11 +313,12 @@ VITE_TURNSTILE_SITE_KEY=0x4AAAA...
 
 ## Step 5 — Give yourself AI support on the project (load the skill)
 
-You now hand the build over to DSH. The AI executes a written **skill**
-phase by phase; you answer questions and verify gates.
+You now hand the build over to your agent. It executes a written **skill**
+phase by phase; you answer questions and approve the gates.
 
-**Option A — quick start (recommended):** open a new DSH session, paste the
-**full skill text from Appendix A** into the chat, then paste:
+**Option A — quick start (recommended):** start a new session with your
+agent, paste the **full skill text from Appendix A** into the chat, then
+paste:
 
 `[Prompt]`:
 
@@ -309,16 +330,11 @@ wait for my answers before writing any layout code.
 
 **Option B — install it as a project skill** (keeps future sessions clean):
 
-`[Copy]`:
-
-```sh
-mkdir -p .dsh/skills/interactive-portfolio
-cp <path-to>/SKILL_INTERACTIVE_PORTFOLIO.md .dsh/skills/interactive-portfolio/SKILL.md
-```
-
-Then in DSH: choose your repo as the **workspace** (Click **Choose
-workspace** → add the project directory → select it; sessions are disabled
-until a workspace is selected), and start a session with:
+Copy `SKILL_INTERACTIVE_PORTFOLIO.md` to the project-skill location your
+harness uses. The convention in this kit is `skills/<harness>/SKILL.md`
+(`references/harness.md` §5); check your harness's own documentation for the
+exact path and file name. Then start your agent with the project directory as
+its working folder and prompt:
 
 `[Prompt]`:
 
@@ -338,7 +354,7 @@ cp <path-to>/DATABASE_SCHEMA.md docs/DATABASE_SCHEMA.md
 ```
 
 Now the AI has everything: the skill (what to build), the schema (how the
-database looks) and your workspace (where to build).
+database looks) and your project directory (where to build).
 
 ---
 
@@ -379,8 +395,8 @@ bun install --frozen-lockfile && bun run typecheck && bun run lint && bun run bu
 
 All four green, and `bun run dev` serves the app locally.
 
-`[Fix]` if anything fails: paste the error output into DSH and ask the
-agent to fix it. Repeat until the gate passes.
+`[Fix]` if anything fails: paste the error output into your agent and ask it
+to fix it. Repeat until the gate passes.
 
 ---
 
@@ -440,9 +456,9 @@ admin panel later): the profile row, experiences, skills, gaps,
 recommendations, private AI-context (values, FAQs, AI instructions) and
 the CV settings row. **Nothing renders until this data exists.**
 
-`[Fix]` on `supabase db push` errors: paste the error into DSH. Common
-cause: a migration conflicts with an object created in the dashboard —
-the agent will reconcile.
+`[Fix]` on `supabase db push` errors: paste the error into your agent's
+chat. Common cause: a migration conflicts with an object created in the
+dashboard — the agent will reconcile.
 
 ---
 
@@ -628,7 +644,7 @@ mandatory gates:
    boundary — any deviation is a launch blocker.
 2. **Admin-function auth test** — for each admin edge function: no token →
    401, forged token → 401, non-admin token → 403, admin token → works.
-3. **Independent security review** — open a FRESH DSH session (new
+3. **Independent security review** — start a FRESH agent session (new
    conversation, no memory of the build) and paste this brief:
    `[Prompt]`:
    ```
@@ -711,7 +727,7 @@ findings; one restore tested.
 
 ### If you get stuck
 
-Paste the error into the DSH session and ask: "Fix this, explain what
+Paste the error into your agent session and ask: "Fix this, explain what
 happened in one sentence." The agent reads your files, so it can debug
 its own output. The security checklist below is the acceptance test —
 do not skip it.
@@ -848,7 +864,7 @@ unverified.
 
 ## Appendix A — The interactive-portfolio skill (full text)
 
-Paste the text below into a DSH session to run the build (Step 5,
+Paste the text below into a session with your agent to run the build (Step 5,
 Option A). It is the same file as `SKILL_INTERACTIVE_PORTFOLIO.md`.
 
 `````
