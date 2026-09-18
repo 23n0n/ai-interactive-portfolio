@@ -5,7 +5,7 @@
 > **Loaded at:** Build — migrations stage, before `supabase db push`.
 > **Source:** `DATABASE_SCHEMA.md` §2.2 (the two declared seed-value relocations reproduced below)
 > and §11, byte-identical — the schema is unchanged. The source's closing reference-files paragraph
-> (source §12, lines 773–776) is reproduced at the end of §12 in [`audit.md`](audit.md).
+> (source §12, lines 797–800) is reproduced at the end of §12 in [`audit.md`](audit.md).
 > **Cross-references:** the profile domain is deliberately not seeded — see the §2.1 population note
 > in `profile.md`; **§12 final RLS audit → `audit.md`**; table definitions → `profile.md`,
 > `content.md`, `ai-ops.md`. The source's own seed pointer lines stay in `content.md` and point here.
@@ -18,12 +18,12 @@ The lines below are the **only** §2.2 lines not reproduced in `content.md`. The
 relocations **R1** and **R2** (see `README.md` → "Declared relocations"). Each line is
 byte-identical to `DATABASE_SCHEMA.md`.
 
-### R1 — `public.site_sections` seed values (source §2.2 lines 253–254)
+### R1 — `public.site_sections` seed values (source §2.2 lines 259–260)
 
 `spotlight`, `experience`, `skills`, `jd`, `testimonials`, `transparency`,
 `disclaimer`, `footer`, `fun`.
 
-### R2 — `public.holiday_banners` seed values (source §2.2 lines 291–293)
+### R2 — `public.holiday_banners` seed values (source §2.2 lines 297–299)
 
 live in the migrations (New Year, HR Day, Christmas, System Administrator
 Day, Programmer Day, Computer Security Day, Password Day, Safer Internet
