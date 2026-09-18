@@ -30,7 +30,7 @@ after registration; the domain may.
       "id": "zbw",
       "owner": "Piotr Żabrowski",
       "domain": "zabrowski.pl",
-      "tier": "free",
+      "plan": "free",
       "repo": "git@github.com:owner/zabrowski-pl.git",
       "status": "live",
       "created": "2026-09-18T15:00:00Z",
@@ -45,7 +45,7 @@ after registration; the domain may.
 | `id` | Stable site slug; the directory name under `data/` |
 | `owner` | Name of the person whose site this is (the approving party) |
 | `domain` | Primary public domain; `""` until one is chosen |
-| `tier` | Cost posture: `free` = free tiers only, `paid` = any paid service, plan or domain |
+| `plan` | Cost posture: `free` = free tiers only, `paid` = any paid service, plan or domain |
 | `repo` | Where the site's source lives (URL or local path) |
 | `status` | Lifecycle value (below) |
 | `created` | ISO-8601 UTC, set at registration, never edited |
@@ -179,7 +179,7 @@ Directory-based lock (`state/.lock/` with an owner file) so acquisition is atomi
 first agent session that opens the owner's home; a second session that cannot acquire stays
 read-only and reports why.
 
-- The owner token is `$PI_SESSION_ID`, falling back to the shell pid when that variable is absent.
+- The owner token is the session id supplied by whatever harness is running you (any agent, any vendor, or a human). When no session id is available, fall back to the shell pid.
 - Releases on session end or explicit unlock.
 - **Recovery rule:** if the owner token is a numeric pid and that process is dead, the lock may be
   reclaimed. A token that is a session id is assumed live until that session unlocks — never
