@@ -138,7 +138,7 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   advertised anchor, and again as an in-page click. Playwright warm-reload checks do not catch it.
 - **Origin.** field log 2026-09-02 12:52 (prod `bb27c8f`, registry+driver); old kit
   `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 4 (deferred-section anchor paragraph, backported in
-  `0ab76c6`); `AGENTS.md` §Stage 3 step 3.
+  `0ab76c6`); `AGENTS.md` §3, Stage 3 step 3.
 
 ---
 
@@ -160,7 +160,7 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   single foreign host.
 - **Origin.** field log 2026-09-02 13:08, commit `666394f`; old kit
   `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 1 (dependency-source-hygiene paragraph); `AGENTS.md`
-  §Stage 3 step 1.
+  §3, Stage 3 step 1.
 
 ### C2. Route filenames must be lowercase on disk
 
@@ -171,7 +171,7 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   machine-readable route).
 - **Check.** After every build, `git diff src/routeTree.gen.ts` and confirm the expected routes were
   added. Then probe `/llms.txt` and `/llms-full.txt` for `200`.
-- **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 14; `AGENTS.md` §Stage 5 (route filenames
+- **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 14; `AGENTS.md` §3, Stage 5 (route filenames
   lowercase on disk).
 
 ### C3. A build without the public env vars produces a broken worker
@@ -193,7 +193,7 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   and production sitemaps disagree.
 - **Cause.** Both the worker SSR and an edge function generated a sitemap from different data;
   trailing-slash / canonical rules were applied in only one of them.
-- **Fix.** Single source: the worker SSR generator only; remove the edge-function sitemap; make
+- **Fix.** Single source: the **`sitemap` edge function** only; remove any Worker-SSR sitemap; make
   canonical URLs explicit (`/terminal/`, `/angband/`) with the correct priorities and `lastmod`.
 - **Check.** Fetch every URL in `sitemap.xml` and assert `200` with no redirect; diff
   `sitemap.xml` between production and staging. The reference verified 103 URLs, zero bare paths,
@@ -265,7 +265,7 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
 - **Check.** Run `supabase projects list` (or `supabase db push --dry-run` against the linked
   project) as the first command of the data-layer stage on a fresh machine; it fails fast if the
   token is missing.
-- **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 3 and Phase 0;
+- **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 3;
   `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 0.
 
 ### E2. PAT churn
@@ -370,7 +370,7 @@ repository** and was read read-only. `old kit` entries come from the files in th
 | D1 | CSP nonce that never matches | old kit | `GUIDE_FROM_SCRATCH.md` Step 13 + verification checklist; `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 8 |
 | D2 | Revoking a "dead" anon grant (`cv_settings`) | old kit | `GUIDE_FROM_SCRATCH.md` Step 14 + security checklist |
 | D3 | Rate-limit IP header trust | old kit | `GUIDE_FROM_SCRATCH.md` Step 11 + Step 14 |
-| E1 | Supabase CLI auth order | old kit | `GUIDE_FROM_SCRATCH.md` Step 3, Phase 0; `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 0 |
+| E1 | Supabase CLI auth order | old kit | `GUIDE_FROM_SCRATCH.md` Step 3; `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 0 |
 | E2 | PAT churn | old kit | `GUIDE_FROM_SCRATCH.md` Step 14, Step 12 |
 | E3 | Migration history desync / additive-then-cleanup | field log | 2026-09-02 16:43 → 16:54, commits `44b7b8d` + `eb49635` |
 | E4 | Edge functions deploy only with production | old kit | `GUIDE_FROM_SCRATCH.md` Step 14 |
