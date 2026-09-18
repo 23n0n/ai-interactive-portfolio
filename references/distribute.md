@@ -127,7 +127,23 @@ One JSON-LD graph per page, emitted server-side, built from the same payload the
 - `Person` fields (`name`, `jobTitle`, `description`, `url`, `sameAs`) come from the profile data
   projected by the public views.
 - **A social image** is attached to the graph (`Person.image`, and the same URL as `og:image`) from
-  one content field, never a literal in the JSON-LD builder.
+  `profile_image_url` — the column on `public.candidate_profile`, read through the
+  `candidate_profile_public` view like every other public surface, never a literal in the JSON-LD
+  builder. It is the only image source for `Person.image` / `og:image`; no separate social-card
+  column or `og_image_url` override exists to fall back on.
+- **One field, two renderings** (the one-source-of-truth rule of §1, in miniature). The visible
+  spotlight portrait and the machine-readable image (`Person.image`, `og:image`) both come from that
+  same `profile_image_url`, so the portrait a visitor sees and the portrait a crawler fetches cannot
+  drift. Replacing the portrait in the admin changes both on the next request, with no redeploy.
+- **The URL must be absolute HTTPS.** `og:image` is not resolved against the page for a crawler, and
+  the JSON-LD `image` must be absolute too, so a bare path or a path-only Storage reference is a
+  defect. A public `kb-images` object URL satisfies this.
+- **The alt text is derived, not stored.** There is no alt column: the renderer builds
+  `og:image:alt`, and the equivalent alternative text on the JSON-LD image, from `name` — adding
+  `title` where it helps. Nothing about the portrait is edited twice.
+- **At least roughly 1200px wide.** Crawlers and social cards skip or upscale smaller portraits, so
+  the owner should publish an image about 1200px or wider on its long edge. This constrains the
+  asset, not the schema.
 - `WebSite` carries `name`, `url` and the site's canonical origin.
 
 ### Per-page types
