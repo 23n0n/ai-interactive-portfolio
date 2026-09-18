@@ -16,6 +16,10 @@ set -euo pipefail
 SELF="ad-status"
 err() { echo "$SELF: ERROR: $*" >&2; exit 2; }
 
+AD_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ad-lock.sh
+. "$AD_SCRIPT_DIR/ad-lock.sh"
+
 HOME_ARG="${1:-}"
 case "${2:-}" in
   '') ;;
@@ -49,39 +53,29 @@ else
 fi
 
 # -- lock -------------------------------------------------------------------------------------
-if [ ! -e "$LOCK_DIR" ]; then
-  echo "lock: free"
-elif [ ! -d "$LOCK_DIR" ]; then
-  echo "lock: state/.lock exists but is not a directory — inspect it and ask the owner"
-else
-  holder="$(cat "$LOCK_DIR/owner" 2>/dev/null || true)"
-  since=""
-  if [ -f "$LOCK_DIR/acquired" ]; then
-    since=" since $(cat "$LOCK_DIR/acquired" 2>/dev/null || true)"
-  fi
-  case "$holder" in
-    pid:*)
-      n="${holder#pid:}"
-      case "$n" in
-        ''|*[!0-9]*) echo "lock: held by '$holder' (invalid pid token — ask the owner)" ;;
-        *)
-          if kill -0 "$n" 2>/dev/null; then
-            echo "lock: held by pid:$n (process alive)$since"
-          else
-            echo "lock: held by pid:$n (STALE — process gone; ad-home.sh lock reclaims it)$since"
-          fi ;;
-      esac ;;
-    session:*)
-      id="${holder#session:}"
-      if [ -n "$id" ]; then
-        echo "lock: held by session:$id (assumed live; never reclaimed by guessing)$since"
-      else
-        echo "lock: held by '$holder' (malformed session token — ask the owner)"
-      fi ;;
-    '') echo "lock: held, owner token unreadable or missing — fail-closed, ask the owner" ;;
-    *) echo "lock: held by '$holder' (unknown token type — ask the owner)" ;;
-  esac
+# Read-only: classify through the same ad-lock.sh probe the writing commands use, so the report
+# cannot disagree with what ad-home.sh lock / ad-new-site.sh / ad-update.sh will decide.
+probe="$(ad_lock_probe "$LOCK_DIR" "")"
+since=""
+if [ "$probe" != "free" ] && [ -f "$LOCK_DIR/acquired" ]; then
+  since=" since $(cat "$LOCK_DIR/acquired" 2>/dev/null || true)"
 fi
+case "$probe" in
+  free)
+    echo "lock: free" ;;
+  notdir)
+    echo "lock: state/.lock exists but is not a directory — inspect it and ask the owner" ;;
+  unreadable)
+    echo "lock: held, owner token unreadable or missing — fail-closed, ask the owner" ;;
+  unknown:*)
+    echo "lock: held by '${probe#unknown:}' (unknown or malformed token — ask the owner)" ;;
+  live-pid:*)
+    echo "lock: held by pid:${probe#live-pid:} (process alive)$since" ;;
+  dead-pid:*)
+    echo "lock: held by pid:${probe#dead-pid:} (STALE — process gone; the next ad-* command reclaims it)$since" ;;
+  session:*)
+    echo "lock: held by session:${probe#session:} (assumed live; never reclaimed by guessing)$since" ;;
+esac
 
 # -- registry ---------------------------------------------------------------------------------
 if [ ! -e "$STATE" ]; then

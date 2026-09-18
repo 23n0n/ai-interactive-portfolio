@@ -4,7 +4,7 @@
 #
 # Usage:
 #   ad-new-site.sh <site-id> [HOME] [--owner <name>] [--domain <domain>]
-#                              [--plan free|paid] [--repo <url|path>] [--session <id>]
+#                              [--plan free|paid] [--repo <url|path>] [--session <lock-id>]
 #
 # <site-id> is a short, stable, lowercase slug (a-z 0-9 and single hyphens, <= 40 chars).
 # A row is appended to HOME/state/sites.json with status 'registered' and the fields
@@ -17,17 +17,24 @@
 # $AD_HOME is the only environment contract. Nothing is written outside the home; a site repo
 # is never touched. The registry is rewritten via a temp file and moved, never in place.
 #
-# Lock: if state/.lock is held by another live session the write is refused (read-only) — pass
-# --session <id> with the id the session locked with. A lock held by a dead pid is reported and
-# stepped over (ad-home.sh lock reclaims it); an unreadable/unknown token is a refusal.
+# Lock: the lock owner token is resolved by ad-lock.sh as $AD_SESSION_ID -> --session <lock-id>
+# (tagged 'session:<id>') -> pid:$PPID (the invoking shell). Note --owner here names the site's
+# owner (a person), not the lock token. If another live session holds state/.lock the write is
+# refused (read-only, exit 1) and the lock is never touched. A lock held by a dead 'pid:<n>' is
+# reclaimed in exactly one place (ad-lock.sh) and re-acquired as this invocation's token; a
+# 'session:<id>' lock is never reclaimed. An unreadable or unknown token is a refusal (exit 2).
 # Exit: 0 ok, 1 lock held elsewhere, 2 refusal (bad input, duplicate id, bad state).
 set -euo pipefail
 
 SELF="ad-new-site"
 err() { echo "$SELF: ERROR: $*" >&2; exit 2; }
 
+AD_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ad-lock.sh
+. "$AD_SCRIPT_DIR/ad-lock.sh"
+
 ID="${1:-}"
-[ -n "$ID" ] || err "usage: ad-new-site.sh <site-id> [HOME] [--owner <name>] [--domain <domain>] [--plan free|paid] [--repo <url|path>] [--session <id>]"
+[ -n "$ID" ] || err "usage: ad-new-site.sh <site-id> [HOME] [--owner <name>] [--domain <domain>] [--plan free|paid] [--repo <url|path>] [--session <lock-id>]"
 shift
 
 HOME_ARG=""
@@ -35,13 +42,18 @@ OWNER=""
 DOMAIN=""
 PLAN="free"
 REPO=""
-SESSION_ID=""
+AD_OWNER_ARG=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --owner)
-      [ $# -ge 2 ] || err "--owner needs a value"
+      [ $# -ge 2 ] || err "--owner needs a value (the site owner's name)"
       case "$2" in --*) err "--owner needs a value, got option '$2'" ;; esac
       OWNER="$2"; shift 2 ;;
+    --session)
+      [ $# -ge 2 ] || err "--session needs a value"
+      case "$2" in --*) err "--session needs a value, got option '$2'" ;; esac
+      [ -z "$AD_OWNER_ARG" ] || err "give only one --session"
+      AD_OWNER_ARG="session:$2"; shift 2 ;;
     --domain)
       [ $# -ge 2 ] || err "--domain needs a value (use '' for not chosen yet)"
       case "$2" in --*) err "--domain needs a value, got option '$2'" ;; esac
@@ -54,10 +66,6 @@ while [ $# -gt 0 ]; do
       [ $# -ge 2 ] || err "--repo needs a value"
       case "$2" in --*) err "--repo needs a value, got option '$2'" ;; esac
       REPO="$2"; shift 2 ;;
-    --session)
-      [ $# -ge 2 ] || err "--session needs a value"
-      case "$2" in --*) err "--session needs a value, got option '$2'" ;; esac
-      SESSION_ID="$2"; shift 2 ;;
     --*) err "unknown option '$1'" ;;
     *) [ -z "$HOME_ARG" ] || err "unexpected extra argument '$1'"; HOME_ARG="$1"; shift ;;
   esac
@@ -88,39 +96,8 @@ SITE_DIR="$AD_HOME_DIR/data/$ID"
 MANIFEST="$SITE_DIR/manifest.md"
 LOG="$SITE_DIR/decisions.log"
 
-# lock_guard: fail closed against another live session; step over a dead-pid lock with a warning.
-lock_guard() {
-  local holder kind n id
-  if [ ! -e "$LOCK_DIR" ]; then
-    echo "$SELF: warning: no session lock held (state/.lock absent); run ad-home.sh lock" >&2
-    return 0
-  fi
-  [ -d "$LOCK_DIR" ] || err "state/.lock exists but is not a directory; fail-closed — ask the owner"
-  holder="$(cat "$LOCK_DIR/owner" 2>/dev/null || true)"
-  kind="${holder%%:*}"
-  case "$kind" in
-    pid)
-      n="${holder#pid:}"
-      case "$n" in ''|*[!0-9]*) err "state/.lock owner '$holder' is not a valid pid token; fail-closed — ask the owner" ;; esac
-      if kill -0 "$n" 2>/dev/null; then
-        echo "$SELF: ERROR: lock held by live pid:$n (another session); staying read-only" >&2
-        exit 1
-      fi
-      echo "$SELF: warning: stale lock from dead pid:$n; proceeding (ad-home.sh lock reclaims it)" >&2
-      ;;
-    session)
-      id="${holder#session:}"
-      [ -n "$id" ] || err "state/.lock owner '$holder' is malformed; fail-closed — ask the owner"
-      if [ -n "$SESSION_ID" ] && [ "$SESSION_ID" = "$id" ]; then
-        return 0
-      fi
-      echo "$SELF: ERROR: lock held by session:$id (another session); staying read-only" >&2
-      exit 1
-      ;;
-    '') err "state/.lock owner token is unreadable; fail-closed — ask the owner" ;;
-    *) err "state/.lock owner '$holder' has an unknown token type; fail-closed — ask the owner" ;;
-  esac
-}
+# lock_guard: the one lock decision for this write, shared by all ad-* commands (ad-lock.sh).
+lock_guard() { ad_guard_write "$LOCK_DIR" "$(ad_token)"; }
 
 lock_guard
 
