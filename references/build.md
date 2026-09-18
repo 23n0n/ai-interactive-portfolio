@@ -146,7 +146,12 @@ Section list and order (home page):
 9. Contact surface
 10. Footer
 
-The `site_sections` registry seed is the runtime order; its values live in
+The list above is the design's core-section set, and that is the order to build it. It is **not**
+the runtime order: the `site_sections` registry seed is authoritative for the runtime order and
+visibility of the registry-backed home sections. Its frozen keys — `spotlight`, `experience`,
+`skills`, `jd`, `testimonials`, `transparency`, `disclaimer`, `footer`, `fun` — do not match this
+list one-for-one (no `about`/`contact`; the seed adds `jd`/`transparency`), so defer to the seed and
+never restate the section list as the runtime order. The seed values live in
 `references/schema/seeds.md`.
 
 Rules:
@@ -193,9 +198,9 @@ Blocks admins can author: `p`, `h2`, `h3`, `list`, `steps`, `table`, `checklist`
 
 ### 4.2 `ContentDoc` shape
 
-`slug`, `title`, `h1`, `description`, `intro`, `tags`, `blocks`, `faqs`, `related` refs. The JSONB
-shape and its owning table are in `references/schema/content.md` (§6 of the source schema) — do not
-restate it here.
+`h1`, `label`, `description`, `intro`, `tags`, `related`, `faqs`, `blocks`. The JSONB shape and its
+owning table are in `references/schema/content.md` (§6 of the source schema) — do not restate it
+here. `slug` is a `content_docs` column, not a key in `doc`.
 
 ### 4.3 Collections, routes, admin
 
@@ -245,9 +250,9 @@ and `data:` URIs.
 2. **Server-side `siteverify`** — never trust a client-side result. The endpoint accepts `GET`, `HEAD`
    and `POST`, and the Turnstile check runs on **every accepted method** — a `POST`-only guard leaves
    a `GET` bypass of the CV/abuse gate.
-3. Diagnostics use hyphenated error codes: `no-token`, `no-secret`, `http-*`, `error-codes`. The
-   token diagnostics and their handling are owned by `references/secure.md` — do not restate them
-   here.
+3. Diagnostics use hyphenated error codes: `no-token`, `no-secret`, `http-*`, `error-codes`. These
+   four are enumerated here because `references/secure.md` documents only `invalid-input-response`;
+   this file is their only owner — do not reduce them to a pointer.
 4. Missing or dummy token → `403`, on every accepted method. The endpoint is rate-limited across
    `GET`, `HEAD` and `POST` alike.
 5. Content comes from `cv_settings` (headline, summary, achievements, keywords, certifications,
