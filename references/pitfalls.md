@@ -321,6 +321,14 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   backup that was never restored is an unverified claim.
 - **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 13 and Step 14.
 
+### E6. A hand-made dashboard object collides with the next migration
+
+- **Symptom.** `supabase db push` fails, or succeeds while the live schema disagrees with the migrations: a table, column or view exists in the dashboard but in no migration file (or the reverse). This is schema drift, not migration-history drift — `supabase migration list` can still be clean.
+- **Cause.** An object was created or changed by hand in the Supabase dashboard. Migrations are the single source of truth, so a hand-made object is drift, not a second source; the next migration that touches the same object collides with it.
+- **Fix.** Reconcile in the direction of the migrations — never the reverse. Bring the dashboard object into a migration, or drop it and re-create it through a migration. The fix is a *migration*, not another dashboard edit, and the applied migrations are the record.
+- **Check.** Compare the live schema against the migration files before pushing, and treat any object with no migration as drift. The RLS audit in `references/secure.md` re-runs after every schema change, so an un-migrated object is also un-audited RLS; `references/deploy.md` requires migrations applied before schema-dependent deploys.
+- **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 8 (`[Fix]` on `supabase db push` errors: "a migration conflicts with an object created in the dashboard — the agent will reconcile").
+
 ---
 
 ## F. Distribution surfaces
