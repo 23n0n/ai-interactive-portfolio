@@ -27,6 +27,24 @@ Frozen stack, verbatim — do not substitute a layer:
 | Toolchain | Bun 1.4.x + Wrangler 4 |
 | AI features | DeepSeek, called server-side; key held server-side |
 
+**Prerequisites** — install and verify these before the first `bun create vite`. The toolchain
+requires them, and none of the versions below are guesswork (CI pins the Supabase CLI):
+
+| Tool | Version | Install | Check |
+|---|---|---|---|
+| Node.js | **22 LTS or newer** — the toolchain requires it (Vite, TanStack Start and Wrangler all build on it; `nodejs_compat` in `wrangler.jsonc` is not a substitute for it locally) | macOS: `brew install node@22`; Windows: installer from https://nodejs.org (LTS); Linux: `nvm install 22` | `node -v` → `v22.x` or newer |
+| Bun | **1.4.x or newer** (the stack pins it) | `curl -fsSL https://bun.sh/install \| bash` (or `brew install bun`) | `bun -v` |
+| git | any current release | `brew install git` (macOS) or your package manager | `git --version` |
+| Supabase CLI | **2.115.0** — the version CI pins; a local/CI CLI mismatch breaks `supabase db push` | `brew install supabase/tap/supabase` (or `npm i -g supabase`) | `supabase --version` |
+
+Verify before you start:
+
+```sh
+node -v && bun -v && git --version && supabase --version
+```
+
+Expect four version lines, with `bun` reporting 1.4.x.
+
 Dependency set (exact; nothing more is required for the scaffold):
 
 - Base: `react@19`, `react-dom@19`, `typescript`, `vite`, `@vitejs/plugin-react`.
@@ -209,7 +227,12 @@ and `data:` URIs.
    the **`deepseek`** secret via `Deno.env.get("deepseek")`. Never expose the key to the browser.
 2. **Per-IP rate limits** via `check_rate_limit`, keyed on `cf-connecting-ip`: `chat` 30/15 min,
    `analyze-jd` 10/15 min.
-3. **Strict input length caps** on every user-supplied field.
+3. **Strict input validation** on every user-supplied field: **length caps and role caps** (a cap on
+   each field's length, and each field constrained to the role the endpoint expects — no extra keys,
+   no field-type swaps). **NFKC normalization** applied to user text before it reaches a prompt or a
+   cache key; the reference calls `.normalize("NFKC")` explicitly, so match that call. **JSON-only
+   bodies** — the 415 guard rejects non-JSON at the transport layer; the validation control itself is
+   owned by `references/secure.md`.
 4. **Response caching** — `chat_response_cache` for chat, `jd_analysis_cache` for JD analysis.
 5. **No Turnstile** on `chat` or `analyze-jd` (ADR-0007); the compensating controls are the rate
    limits, input caps and caching.
@@ -219,9 +242,14 @@ and `data:` URIs.
 ### 5.2 CV download (Turnstile-gated)
 
 1. Edge function `generate-cv`; Turnstile widget in the download dialog.
-2. **Server-side `siteverify`** — never trust a client-side result.
-3. Diagnostics use hyphenated error codes: `no-token`, `no-secret`, `http-*`, `error-codes`.
-4. Missing or dummy token → `403`. The endpoint is rate-limited.
+2. **Server-side `siteverify`** — never trust a client-side result. The endpoint accepts `GET`, `HEAD`
+   and `POST`, and the Turnstile check runs on **every accepted method** — a `POST`-only guard leaves
+   a `GET` bypass of the CV/abuse gate.
+3. Diagnostics use hyphenated error codes: `no-token`, `no-secret`, `http-*`, `error-codes`. The
+   token diagnostics and their handling are owned by `references/secure.md` — do not restate them
+   here.
+4. Missing or dummy token → `403`, on every accepted method. The endpoint is rate-limited across
+   `GET`, `HEAD` and `POST` alike.
 5. Content comes from `cv_settings` (headline, summary, achievements, keywords, certifications,
    education, notes, plus the admin-editable `creation_prompt` custom rules); the generated PDF is
    cached in `cv_documents`.
