@@ -91,7 +91,13 @@ Conventions:
 | `availability_date` | date | |
 | `location` | text | |
 | `remote_preference` | text | |
-| `github_url`, `linkedin_url`, `twitter_url` | text | `linkedin_url` is the only URL projected publicly |
+| `github_url`, `linkedin_url`, `twitter_url` | text | `linkedin_url` and `profile_image_url` are the only URLs projected publicly |
+| `profile_image_url` | text | absolute HTTPS URL (required for `og:image`), portrait; a public `kb-images` object URL satisfies this. Feeds the visible spotlight image and `og:image` / `Person.image` |
+
+> **Social image — future override (not in this schema):** `profile_image_url` is used directly for
+> the visible spotlight image, `og:image` and JSON-LD `Person.image`. A purpose-built 1200x630 social
+> card could later be added as a separate override column; this schema deliberately adds the
+> portrait column only.
 
 #### `public.experiences` — work history
 
@@ -381,7 +387,7 @@ gets `SELECT` (edge functions). Writes on views are revoked for all roles.
 
 | View | Projected columns |
 |---|---|
-| `candidate_profile_public` | `id, name, title, elevator_pitch, availability_status, target_company_stages, linkedin_url` |
+| `candidate_profile_public` | `id, name, title, elevator_pitch, availability_status, target_company_stages, linkedin_url, profile_image_url` |
 | `experiences_public` | `id, candidate_id, company_name, title, title_progression, start_date, end_date, is_current, bullet_points, display_order` |
 | `skills_public` | `id, candidate_id, skill_name, category, self_rating, years_experience` |
 | `gaps_weaknesses_public` | `id, candidate_id, gap_type, description, interest_in_learning` |
@@ -680,7 +686,7 @@ select grantee, table_name, privilege_type
 from information_schema.role_table_grants
 where table_schema = 'public'
   and table_name like '%\_public'
-  and grantee in ('anon', 'authenticated', 'public')
+  and lower(grantee) in ('anon', 'authenticated', 'public')
   and privilege_type <> 'SELECT'
 order by table_name, grantee;
 ```
@@ -692,18 +698,25 @@ They are NOT part of this check; only anon/authenticated/public write grants
 on the view layer are launch blockers (they would let a client write
 through an auto-updatable view).
 
+> **Catalog trap in C:** `information_schema.role_table_grants.grantee` is
+> text-like and the `anon`/`authenticated` role names are lowercase in
+> Postgres, but `PUBLIC` appears in that view as the uppercase literal
+> `'PUBLIC'`. A filter listing lowercase `'public'` therefore matches
+> nothing, which is why the comparison above is `lower(grantee)`.
+
 **D. Write-RPC EXECUTE grants — only the owner and service_role may have
 them (no anon/authenticated/public):**
 
 ```sql
-select p.proname, g.grantee
+select p.proname,
+       case when g.grantee = 0 then 'public' else pg_get_userbyid(g.grantee) end as grantee
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
 where n.nspname = 'public'
   and p.proname in ('check_rate_limit','get_chat_cache','set_chat_cache',
                     'get_jd_cache','set_jd_cache','insert_rag_metric')
-  and g.grantee in ('anon', 'authenticated', 'public')
+  and (g.grantee = 0 or pg_get_userbyid(g.grantee) in ('anon', 'authenticated'))
 order by p.proname;
 ```
 
@@ -711,6 +724,17 @@ Must return **zero rows**. The owner implicitly holds EXECUTE and
 `service_role` is granted explicitly — neither is a finding; any
 anon/authenticated/public EXECUTE on the cache/rate-limit RPCs is a launch
 blocker.
+
+> **Catalog traps in D:** `aclexplode()` exposes `grantee` as `oid`, not
+> text, so comparing it directly to `'anon'` raises
+> `invalid input syntax for type oid` and the query never returns. `PUBLIC`
+> is oid **0**, and `pg_get_userbyid(0)` returns `unknown (OID=0)`, **not**
+> `'public'`, so a filter spelled `pg_get_userbyid(g.grantee) = 'public'`
+> silently misses every `PUBLIC` grant. That matters here because a function
+> whose ACL was never revoked from `PUBLIC` shows up only through
+> `coalesce(p.proacl, acldefault('f', p.proowner))`; the `g.grantee = 0` arm
+> is what catches it. The `case` in the select list prints `'public'`
+> instead of a bare oid.
 
 **E. Deny-all policies still deny (show the actual qualifiers):**
 
