@@ -1,0 +1,77 @@
+{
+  "h1": "Senior Backend Engineer at Northwind Data",
+  "label": "Northwind Data",
+  "description": "How I built and ran the event-ingestion team at Northwind Data, and what I would do differently.",
+  "intro": "Northwind Data hired me in 2021 to make a fragile nightly batch job boring. That took three years and one rewrite.",
+  "tags": ["backend", "data-engineering", "team-leadership"],
+  "related": ["experience/early-career-at-lumen", "articles/keeping-pipelines-boring"],
+  "faqs": [
+    {
+      "q": "How big was the team?",
+      "a": "Six engineers at the end, split across ingestion and platform."
+    },
+    {
+      "q": "Why did you leave?",
+      "a": "The platform moved into maintenance mode and I wanted another hard migration."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "p",
+      "text": "I owned the event-ingestion path from the collector to the warehouse tables, and I led the team that kept it running."
+    },
+    {
+      "type": "h2",
+      "text": "What the pipeline looked like on day one"
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "items": [
+        "One nightly job that ran for six hours and failed about twice a week.",
+        "No replay path: a bad deploy meant re-sending events by hand.",
+        "Alerting that fired after the job had already missed its window."
+      ]
+    },
+    {
+      "type": "steps",
+      "items": [
+        {
+          "title": "Make failures visible",
+          "text": "Added per-stage metrics and a replay endpoint before touching throughput."
+        },
+        {
+          "title": "Move to streaming",
+          "text": "Migrated the collector to an at-least-once stream with idempotent writes."
+        },
+        {
+          "title": "Delete the old job",
+          "text": "Ran both paths in parallel for two weeks, then removed the nightly batch."
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "caption": "Nightly batch vs. streaming path",
+      "headers": ["Property", "Nightly batch", "Streaming path"],
+      "rows": [
+        ["Time to first event", "up to 24h", "under 1 minute"],
+        ["Manual recovery", "common", "replay endpoint"]
+      ]
+    },
+    {
+      "type": "callout",
+      "title": "The number that mattered",
+      "text": "Missed delivery windows fell from roughly two per week to none in the last year."
+    },
+    {
+      "type": "checklist",
+      "title": "What I would repeat",
+      "items": [
+        "Measure before optimising.",
+        "Ship a replay path before a faster path.",
+        "Run the old and new systems side by side until the numbers agree."
+      ]
+    }
+  ]
+}
