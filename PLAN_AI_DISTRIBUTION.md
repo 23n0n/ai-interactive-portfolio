@@ -1,6 +1,6 @@
 # Plan — from `ai-interactive-portfolio` to `ai-distribution`
 
-Status: **historical planning record — P1–P3 landed, P4 partial, P5 not started (see the status note
+Status: **historical planning record — P1–P4 landed, P5 not started (see the status note
 below). Decisions D1–D7 resolved (§9).**
 
 > **Status update (2026-09-18, docs r1).** This plan is a historical record of the rework; the tree has
