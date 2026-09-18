@@ -16,6 +16,15 @@ stored-XSS surfaces and the "never raw `innerHTML`" rule (§2 item 21), and the 
 `Access-Control-Allow-Origin` and MIME-derived-extension details (§2 items 6 and 15). Additive
 only: no existing control is weakened and no section is renumbered.
 
+Revision **r6** (task `fm-20260918-30`) corrects two launch gates that false-failed the frozen
+schema. §4.1 now teaches the two view families separately — `security_invoker` is required on
+`public.*_public` only, and the `private.api_*` views are the deliberate definer layer (adding
+`security_invoker` there breaks anonymous reads). §4.2's definer gate is enumerate-and-match: it
+whitelists `is_admin` and the three admin-guarded `private.get_*` monitoring RPCs, and records that
+the five `public.get_public_*` RPCs are `security invoker`, not definer rows. It also restores the
+"least-privilege and revocable" deploy-token property (§2 item 11). Corrective only: no control is
+weakened.
+
 Reference `DATABASE_SCHEMA.md` sections by number (P2 target: `references/schema/`). Do not copy
 full DDL here. SQL, identifiers, env var names, header names and error strings below are exact —
 keep them exact.
@@ -35,10 +44,11 @@ use — not against a determined attacker.** Those are the third of three layers
 The layering matters because RLS only governs the roles that RLS applies to. **Two paths bypass it
 outright, and both must be audited alongside the policies:**
 
-1. **A view without `security_invoker = on`.** On PG15+ such a view executes as its **owner** and
-   bypasses the RLS policies underneath it — the base-table policies never run. A view missing
-   `security_invoker` is a **launch blocker** (§4.1), and Supabase's own database linter flags
-   this class of view.
+1. **A `public.*_public` view without `security_invoker = on`.** On PG15+ such a view executes as
+   its **owner** and bypasses the RLS policies underneath it — the base-table policies never run. A
+   `public` view missing `security_invoker` is a **launch blocker** (§4.1), and Supabase's own
+   database linter flags this class of view. The `private.api_*` views are the deliberate definer
+   layer and are **not** in this class — see §4.1.
 2. **`SECURITY DEFINER` functions, and the `service_role` key.** A `SECURITY DEFINER` body runs as
    its owner and bypasses RLS for its duration; the `service_role` key bypasses RLS completely.
    One over-broad `EXECUTE` grant is a full read/write hole (§4.2). A leaked service-role key is
@@ -103,7 +113,9 @@ needs an ADR.
     (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY`) and is
     gitignored. Secrets go to Supabase secrets / Wrangler secrets. The DeepSeek key is read as the
     `deepseek` edge-function secret (`Deno.env.get("deepseek")`) and never shipped to the browser.
-    Never echo secrets in chat/logs.
+    Never echo secrets in chat/logs. **Deploy tokens are least-privilege and revocable**: scope
+    each CI token to the minimum permission it needs and keep it rotatable — see
+    `references/deploy.md` §5.
 12. **Dependency + secret scanning in CI** — GitHub secret scanning AND `gitleaks` (both,
     enforced — failures block the build); Dependabot or equivalent; pin the lockfile
     (`bun install --frozen-lockfile`). Not optional.
@@ -206,16 +218,19 @@ Assertions — all must hold:
 8. The authenticated non-admin probe (§12 G2) **fails** on private reads and admin writes, and
    **succeeds** on public views.
 9. Service-role grants match the edge-function access matrix in `DATABASE_SCHEMA.md` §9.
-10. **Every view carries the hardening options** (§4.1): all `public.*_public` views and all
-    `private.api_*` views have BOTH `security_invoker = on` and `security_barrier = true`. A view
-    missing `security_invoker` is a **launch blocker** — it runs as its owner and bypasses the RLS
-    policies underneath it.
-11. **No over-broad `EXECUTE` grant on any `SECURITY DEFINER` function** (§4.2): zero
-    `anon`/`authenticated`/`public` `EXECUTE` on any definer function except the whitelisted
-    `is_admin` (`authenticated`, required for RLS policies to evaluate). This generalizes
-    assertion 6 from the six cache/rate-limit RPCs to every definer function. Every
-    `SECURITY DEFINER` function reachable by `anon`/`authenticated` must check the caller in its
-    body (`is_admin()` or `auth.uid()`).
+10. **Every view carries the hardening options for its family** (§4.1): all `public.*_public`
+    views have BOTH `security_invoker = on` and `security_barrier = true`; all `private.api_*`
+    views have `security_barrier = true` and are deliberately left as the definer layer — do
+    **not** add `security_invoker` there. A `public` view missing `security_invoker` is a **launch
+    blocker** — it runs as its owner and bypasses the RLS policies underneath it.
+11. **No over-broad `EXECUTE` grant on any `SECURITY DEFINER` function** (§4.2): every
+    `anon`/`authenticated`/`public` `EXECUTE` on a definer function is a finding unless it is on
+    the explicit whitelist — `is_admin` (`authenticated`, required for RLS policies to evaluate)
+    and the three admin-guarded `private.get_*` monitoring RPCs (`authenticated`). Any other
+    reachable definer function is a finding, and any `EXECUTE` to `anon` or `public` on a definer
+    function is a **launch blocker**. This generalizes assertion 6 from the six cache/rate-limit
+    RPCs to every definer function. Every `SECURITY DEFINER` function reachable by
+    `anon`/`authenticated` must check the caller in its body (`is_admin()` or `auth.uid()`).
 12. **`storage.objects` policies are exactly the four admin policies** (§4.3): `kb-images admin
     select|insert|update|delete`, `TO authenticated`, `is_admin()` in `qual`/`with_check`,
     `bucket_id = 'kb-images'`; bucket `file_size_limit = 5242880`; `allowed_mime_types` excludes
@@ -223,9 +238,28 @@ Assertions — all must hold:
 
 ### 4.1 View options — `security_invoker` / `security_barrier` (launch blocker)
 
-A view without `security_invoker = on` executes as its **owner** and bypasses the RLS policies on
-the tables underneath it. The DDL sets the option (`DATABASE_SCHEMA.md` §3, §5); this check proves
-it is actually set. Run the enumeration, then the violation query:
+**The two view families are not the same and must not be "fixed" the same way.**
+
+- **`public.<table>_public` — the invoker layer.** These wrappers are
+  `WITH (security_invoker = on, security_barrier = true)` (`DATABASE_SCHEMA.md` §1, §3). With
+  `security_invoker = on` the view runs as the **caller**, so the base-table RLS policies
+  underneath it apply. A `public` view missing `security_invoker` runs as its **owner**, bypasses
+  those policies, and is a **launch blocker** — the class Supabase's database linter flags.
+- **`private.api_*` — the deliberate DEFINER layer.** These are `(security_barrier = true)` only
+  (`DATABASE_SCHEMA.md` §5); `security_invoker` is intentionally **absent**. They are the definer
+  layer that lets `anon` read the curated, publish-filtered columns, because the final state of
+  `DATABASE_SCHEMA.md` §10 is **no anon base-table access** — `anon` has no grants on the base
+  tables behind the public profile/content surfaces. The compensating control is exactly that
+  pairing: the private view projects only curated columns and applies the published/active/
+  `is_public` filters, and no API role can reach the base tables directly. Admin writes are still
+  gated by RLS `is_admin()` policies plus grants.
+
+> **Never "fix" a `private.api_*` view by adding `security_invoker = on`.** Because §10 removes
+> `anon`'s base-table grants, an invoker private view would run as `anon`, find no base-table
+> privilege, and **break anonymous reads** — blanking or erroring the public site. On the private
+> layer `security_invoker` is a defect, not a hardening.
+
+Run the enumeration, then the violation query:
 
 ```sql
 -- Enumerate every view and its options.
@@ -240,9 +274,22 @@ order by 1, 2;
 ```sql
 -- Launch gate: must return zero rows. Accepts both spellings Postgres stores for a boolean
 -- reloption (`=on` and `=true`).
+-- public.*_public require BOTH security_invoker and security_barrier.
+-- private.api_* require security_barrier only; a missing security_invoker there is NOT a
+-- violation (it is the deliberate definer layer — see above).
 select n.nspname as schema,
        c.relname as view_name,
-       coalesce(array_to_string(c.reloptions, ', '), '(no options)') as reloptions
+       coalesce(array_to_string(c.reloptions, ', '), '(no options)') as reloptions,
+       concat_ws(', ',
+         case when not exists (
+           select 1 from unnest(coalesce(c.reloptions, '{}')) as opt
+           where opt in ('security_barrier=on', 'security_barrier=true', 'security_barrier')
+         ) then 'missing security_barrier' end,
+         case when n.nspname = 'public' and not exists (
+           select 1 from unnest(coalesce(c.reloptions, '{}')) as opt
+           where opt in ('security_invoker=on', 'security_invoker=true', 'security_invoker')
+         ) then 'missing security_invoker' end
+       ) as problem
 from pg_class c
 join pg_namespace n on n.oid = c.relnamespace
 where c.relkind = 'v'
@@ -250,11 +297,14 @@ where c.relkind = 'v'
   and (
     not exists (
       select 1 from unnest(coalesce(c.reloptions, '{}')) as opt
-      where opt in ('security_invoker=on', 'security_invoker=true', 'security_invoker')
-    )
-    or not exists (
-      select 1 from unnest(coalesce(c.reloptions, '{}')) as opt
       where opt in ('security_barrier=on', 'security_barrier=true', 'security_barrier')
+    )
+    or (
+      n.nspname = 'public'
+      and not exists (
+        select 1 from unnest(coalesce(c.reloptions, '{}')) as opt
+        where opt in ('security_invoker=on', 'security_invoker=true', 'security_invoker')
+      )
     )
   )
 order by 1, 2;
@@ -262,16 +312,19 @@ order by 1, 2;
 
 Assert, on the enumeration:
 
-1. Every `public.*_public` view and every `private.api_*` view carries BOTH `security_invoker=on`
-   and `security_barrier=true` in `reloptions`. Because the only views in `public` are `*_public`
-   and the only views in `private` are `api_*`, the schema-wide query is equivalent.
-2. The violation query returns **zero rows**. A view missing `security_invoker=on` is a **launch
-   blocker**: it runs as its owner and bypasses RLS underneath. Supabase's database linter flags
-   this class of view.
+1. Every `public.*_public` view carries **both** `security_invoker=on` and `security_barrier=true`
+   in `reloptions`; every `private.api_*` view carries `security_barrier=true`. The
+   `security_invoker` requirement is scoped to `public` — because the only views in `public` are
+   `*_public` and the only views in `private` are `api_*`, the violation query enforces exactly
+   that split.
+2. The violation query returns **zero rows**. A `public` view missing `security_invoker=on` is a
+   **launch blocker**: it runs as its owner and bypasses RLS underneath. A view of either family
+   missing `security_barrier=true` is also a finding.
 3. `security_invoker` requires PG15+ (Supabase is PG15+). On an older engine the option does not
    exist and the whole view layer cannot be trusted — upgrade instead of proceeding.
-4. Any new view added to `public` or `private` must ship with both options in the same migration
-   that creates it.
+4. Any new view must ship with the options for its family in the same migration that creates it:
+   both options for a new `public.*_public` view, `security_barrier` only for a new
+   `private.api_*` view.
 
 ### 4.2 `EXECUTE` grants on `SECURITY DEFINER` functions (every definer, not just the cache RPCs)
 
@@ -296,7 +349,8 @@ order by 1, 2, 5;
 ```
 
 ```sql
--- Launch gate: MUST return zero rows.
+-- Launch gate: enumerate every API-reachable SECURITY DEFINER grant. Any row NOT on the
+-- whitelist below is a finding, so on a correct schema this returns zero rows.
 select n.nspname as schema,
        p.proname as function_name,
        pg_get_userbyid(p.proowner) as owner,
@@ -308,8 +362,17 @@ cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
 where n.nspname in ('public', 'private')
   and p.prosecdef                                   -- SECURITY DEFINER only
   and (g.grantee = 0 or pg_get_userbyid(g.grantee) in ('anon', 'authenticated'))
-  -- whitelisted: `is_admin` to authenticated only (see below)
-  and not (p.proname = 'is_admin' and pg_get_userbyid(g.grantee) = 'authenticated')
+  -- whitelisted definer grants (see the table below):
+  --   is_admin to authenticated
+  --   private.get_monitoring_stats / get_cache_sizes / get_database_size to authenticated
+  and not (
+    (p.proname = 'is_admin' and pg_get_userbyid(g.grantee) = 'authenticated')
+    or (
+      n.nspname = 'private'
+      and p.proname in ('get_monitoring_stats', 'get_cache_sizes', 'get_database_size')
+      and pg_get_userbyid(g.grantee) = 'authenticated'
+    )
+  )
 order by 1, 2, 4;
 ```
 
@@ -327,13 +390,19 @@ precisely the case this check exists to catch. Match `PUBLIC` as `g.grantee = 0`
 
 | Function | Grantee | Kind | Why |
 |---|---|---|---|
-| `get_public_homepage_data`, `get_public_homepage_route`, `get_public_content_catalog`, `get_public_content_route`, `get_public_sitemap_data` | `anon`, `authenticated` | `security invoker` | The deliberate public read RPCs (`DATABASE_SCHEMA.md` §4). They are invoker, so they do **not** bypass RLS; they must be `REVOKE ... FROM public` (§4). |
+| `get_public_homepage_data`, `get_public_homepage_route`, `get_public_content_catalog`, `get_public_content_route`, `get_public_sitemap_data` | `anon`, `authenticated` | `security invoker` | The deliberate public read RPCs (`DATABASE_SCHEMA.md` §4). They are invoker, so they do **not** bypass RLS and they are **not** `SECURITY DEFINER` rows — they do not belong in this gate; they must be `REVOKE ... FROM public` (§4). |
 | `is_admin` | `authenticated` | `SECURITY DEFINER` | RLS policies call `is_admin()`; the grant is required for policies to evaluate. The body returns only the caller's own `app_metadata` role claim — it reads no table rows. |
+| `private.get_monitoring_stats`, `private.get_cache_sizes`, `private.get_database_size` | `authenticated` | `SECURITY DEFINER` | Admin-guarded monitoring RPCs (`DATABASE_SCHEMA.md` §5); each body raises unless `is_admin()`. The thin `public` wrappers around them are `security invoker` and are revoked from `anon`/`authenticated` — they are not definer rows and do not belong in this gate. |
 
 Assert, on the enumeration:
 
-1. The only `security_definer = true` rows are `is_admin` with `grantee = authenticated`. The
-   launch gate above returns **zero rows**.
+1. **Enumerate, then match the whitelist.** The only `security_definer = true` rows reachable by
+   `anon`, `authenticated` or `public` are exactly the whitelisted definer set: `is_admin` granted
+   to `authenticated`, and `private.get_monitoring_stats`, `private.get_cache_sizes`,
+   `private.get_database_size` granted to `authenticated` (each body admin-guarded with
+   `is_admin()`). The gate above returns **zero non-whitelisted rows**. Any other reachable definer
+   function is a finding; any `EXECUTE` to `anon` or `public` on a definer function is a **launch
+   blocker**.
 2. The only `security_definer = false` rows are the five `get_public_*` read RPCs. Any other
    function reachable by `anon`/`authenticated` — including `public` (the `PUBLIC` pseudo-role) on
    a function whose ACL was never migrated — is a finding: `REVOKE EXECUTE ... FROM public, anon,
@@ -434,13 +503,16 @@ audit is one command. It is **not yet built**; until it lands, run the SQL by ha
       policy inventory (F) has no permissive non-admin policy on admin/private tables;
       authenticated non-admin probe (G2) fails on private reads and admin writes; anon write denied
       on ALL tables; views read-only for API roles; RPC `EXECUTE` grants clean
-- [ ] **View hardening check (§4.1)** — every `public.*_public` and `private.api_*` view reports
-      `security_invoker=on` AND `security_barrier=true`; the violation query returns zero rows. A
-      view missing `security_invoker` is a **launch blocker**
-- [ ] **`SECURITY DEFINER` `EXECUTE` sweep (§4.2)** — the definer gate returns zero rows: no
-      anon/authenticated/public `EXECUTE` on any `SECURITY DEFINER` function except the whitelisted
-      `is_admin`; the only other API-reachable functions are the five `get_public_*` read RPCs;
-      every reachable definer body checks the caller (`is_admin()` / `auth.uid()`)
+- [ ] **View hardening check (§4.1)** — every `public.*_public` view reports `security_invoker=on`
+      AND `security_barrier=true`; every `private.api_*` view reports `security_barrier=true` and is
+      left as the definer layer (never add `security_invoker` there); the violation query returns
+      zero rows. A `public` view missing `security_invoker` is a **launch blocker**
+- [ ] **`SECURITY DEFINER` `EXECUTE` sweep (§4.2)** — enumerate every API-reachable definer grant
+      and match the whitelist: only `is_admin` and the three admin-guarded `private.get_*`
+      monitoring RPCs, all `TO authenticated`, every body checking the caller (`is_admin()`);
+      the five `public.get_public_*` read RPCs are `security invoker`, so they are **not** definer
+      rows; the non-whitelist gate returns zero rows; any other reachable definer function is a
+      finding, and any `EXECUTE` to `anon` or `public` on a definer function is a **launch blocker**
 - [ ] **`storage.objects` policy audit (§4.3)** — exactly four `kb-images admin *` policies, `TO
       authenticated`, `is_admin()` in `qual`/`with_check`; `file_size_limit = 5242880`;
       `allowed_mime_types` excludes SVG; no other non-empty bucket
@@ -512,8 +584,8 @@ owner. It must PASS in full — any failure means the build is not done.
 1. **RLS check (the security boundary).** Run `DATABASE_SCHEMA.md` §12 A–G (or
    `scripts/audit-rls.mjs` once it exists). Assert everything in section 4 above — that now
    includes the view-options check (§4.1), the `SECURITY DEFINER` `EXECUTE` sweep (§4.2) and the
-   `storage.objects` audit (§4.3). A view missing `security_invoker`, or a reachable definer
-   function without a caller check, is a blocker.
+   `storage.objects` audit (§4.3). A `public` view missing `security_invoker`, or a reachable
+   definer function without a caller check, is a blocker.
 2. **Anon probe.** As a raw anon client, reads succeed on public views/RPCs and every write attempt
    returns a permission error.
 3. **Admin-function auth.** Per admin function: no token = `401`, forged/tampered token = `401`,
@@ -565,6 +637,6 @@ of queries to re-run.
 | 5. Verification checklist | `SKILL_INTERACTIVE_PORTFOLIO.md` "Verification checklist (run at end)" + "Security self-test — final gate" |
 | 6. Independent security review | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 8 "Independent security review" |
 | 1. Threat model (layered perimeter) | Restated to the three-layer model in revision r3 (task `fm-20260918-10`, captain-approved); the old-kit "abuse vs attack" sentence is retained verbatim |
-| 4.1 View options (`security_invoker`) | New in revision r3 (task `fm-20260918-10`) — not present in the old kit |
-| 4.2 `SECURITY DEFINER` `EXECUTE` sweep | Generalizes `DATABASE_SCHEMA.md` §12 D from the six cache/rate-limit RPCs to every definer function (revision r3) |
+| 4.1 View options (`security_invoker`) | New in revision r3 (task `fm-20260918-10`) — not present in the old kit; corrected in r6 to scope `security_invoker` to `public.*_public` and treat `private.api_*` as the definer layer |
+| 4.2 `SECURITY DEFINER` `EXECUTE` sweep | Generalizes `DATABASE_SCHEMA.md` §12 D from the six cache/rate-limit RPCs to every definer function (revision r3); corrected in r6 to enumerate-and-whitelist the admin-guarded `private.get_*` RPCs |
 | 4.3 `storage.objects` policy audit | New in revision r3; `DATABASE_SCHEMA.md` §8 covers the bucket table only |
