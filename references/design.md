@@ -6,8 +6,9 @@ colours and layout, not tables. **No section code is written before owner gate #
 
 Stage 2 turns the verbatim intake answers (`references/intake.md`) into an approved design
 contract: a token set, a type scale, a spacing rhythm, a layout concept, responsive and
-accessibility rules, and an ASCII wireframe. The owner approves tokens **and** sketch before any
-section is built.
+accessibility rules, and an ASCII wireframe. The 25 design questions were asked once, in the Stage 1
+conversation (`references/intake.md` §2); Stage 2 does not re-ask them — it derives from the
+recorded answers. The owner approves tokens **and** sketch before any section is built.
 
 ## 1. What Stage 2 produces
 
@@ -143,7 +144,9 @@ These apply to every section and are verified by the agent, not the owner.
   mobile.
 - Below-the-fold sections may be deferred for performance; wherever that happens, each section
   declares the anchor ids it renders and hash navigation routes through the shared driver, so links
-  work on first load (see the anchor rule in the build reference).
+  work on first load (see the code-split/anchor rule in `SKILL_INTERACTIVE_PORTFOLIO.md`,
+  "Phase 4 — Core sections": declare anchor ids, force the owning section to mount, then scroll once
+  the element exists).
 
 **Accessibility**
 

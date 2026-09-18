@@ -4,9 +4,10 @@ Load this at **Stage 1 (Intake)**. Progressive loading applies: with this file y
 `references/harness.md` (planned). Do **not** load the schema, deploy or security references here
 (`AGENTS.md` §8). The owner never reads this file; you run the conversation from it.
 
-Intake turns a person who says "I want my own site" into a registered site with a recorded design
-contract. It ends when the answers are on disk, the sandbox decision is made, and the placeholder
-state is known. It does **not** write layout code — that is Stage 2 (`references/design.md`).
+Intake turns a person who says "I want my own site" into a registered site with the recorded design
+answers — the design-contract **input**, not the approved contract. It ends when the answers are on
+disk, the sandbox decision is made, and the placeholder state is known. The approved design contract
+is Stage 2's output (`references/design.md`); Intake does **not** write layout code.
 
 ## 1. How to ask
 
@@ -37,9 +38,11 @@ state is known. It does **not** write layout code — that is Stage 2 (`referenc
 
 ## 2. The question set — all 25, six groups
 
-Ask **every** question. Keep the numbering below (the design contract and the records can cite
-"Q7" or "group 2"). Grouping is the old kit's six themes: identity, vision, layout and structure,
-interaction and detail, content scope, constraints.
+Ask **every** question. This is the single design-questionnaire conversation: the questions are
+asked here, and Stage 2 (`references/design.md`) derives tokens, the wireframe and the approval from
+the answers recorded here rather than re-asking them. Keep the numbering below (the design contract
+and the records can cite "Q7" or "group 2"). Grouping is the old kit's six themes: identity,
+vision, layout and structure, interaction and detail, content scope, constraints.
 
 ### Group 1 — Identity: who and for whom
 
@@ -197,9 +200,11 @@ If the owner does not provide a full name (first **and** last):
 - use the placeholder name `Zygfryd Niewiadomski-Nieśmiałek` everywhere the name is needed;
 - tell the owner plainly that it is a placeholder, not a final name;
 - record `placeholder name in use: yes` in `manifest.md` (`references/state-layout.md`); it must be
-  `no` before the go-live gate;
-- carry the flag into the design contract and the pre-launch checklist so the name is replaced
-  before launch. A live site must never ship the placeholder.
+  `no` before the go-live gate (owner gate #3, `AGENTS.md` §4);
+- carry the flag into the design contract so the name is replaced before launch. The requirement is
+  anchored in `AGENTS.md` §11.3 ("No placeholders left in a live artifact") and in
+  `references/state-layout.md`, whose manifest rule is that `placeholder name in use` must be `no`
+  before the go-live gate. A live site must never ship the placeholder.
 
 ## 6. What to record before leaving intake
 
