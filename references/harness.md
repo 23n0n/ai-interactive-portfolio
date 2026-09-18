@@ -46,7 +46,7 @@ Two runner notes:
   contract loads itself. Where it does not, point the session at `AGENTS.md` in the first message —
   that is the entire integration.
 - The contract is model-agnostic. A model that follows written procedure and can use shell will run
-  it; see §6 for choosing which model runs which stage.
+  it; see §7 for choosing which model runs which stage.
 
 ## 3. By hand — the same contract, no agent
 
@@ -72,7 +72,130 @@ runner.
 - **What you never lose:** fail-closed behaviour, no silent swaps, the frozen stack and schema, and
   the four gates as decision points.
 
-## 4. The per-harness adapter — a thin wrapper
+## 4. Installing a runner and connecting a model
+
+§2 gives the minimum: an agent that can read files and run shell commands. This section is the
+setup that gets a person there on a real machine — pick a runner, install it, point it at a model,
+prove the connection — before any stage of the work starts. It is a procedure, not a dependency:
+the steps below are runner-agnostic, and the runner named in any example is one option among many.
+
+### 4.1 Pick a runner
+
+Any agent that can read files and run shell commands is a runner (§2). Pick one against the
+capabilities table in §6, then follow **that runner's own** install, model and authentication
+documentation. This file does not require, ship or test a particular runner, and no runner may be
+cited as a requirement (`AGENTS.md` §6). Choosing one here is a runner note, not a contract term.
+
+### 4.2 Model capability and reasoning effort
+
+Two dials, set in the runner's model settings: **capability** and **reasoning effort**. The old kit
+recommends the highest capability at maximum reasoning effort for the security-sensitive build —
+the per-stage split, the weaker-model caveat and the "verify it yourself" rule are all in
+**§7 Model choice**; use that table rather than restating it. Set the model and effort level in the
+steps your runner documents. The exact setting names are confirmed at connect time, not assumed.
+
+### 4.3 The connect checklist
+
+Do these in order. Versions and flags come from the runner's own documentation — this list fixes
+the sequence, not the exact commands.
+
+1. **Install the runtime the runner needs.** The old kit's tooling targets **Node.js 22 LTS or
+   newer**; a chosen runner may need that or something else, so take the version from its install
+   docs. The old kit's commands were one option among many:
+
+   ```sh
+   # One example among many — macOS/Homebrew. Replace with your platform's method.
+   # The section still works with this block removed.
+   brew install node@22
+   ```
+
+   Confirm it with a version command such as `node -v`, expecting `v22.x` or newer for the old
+   kit's target. (Its other examples were the installer at nodejs.org on Windows and
+   `nvm install 22` on Linux.) If the runner documents a different runtime or version, that wins —
+   resolve it before connecting.
+
+2. **Install the agent.** Use the runner's documented install method — a package manager, an
+   installer, or a package-runner invocation such as `npx <agent-package>` (illustrative
+   placeholder, not a recommendation). The old kit installed one particular harness here; any
+   runner that can read files and run shell works. Record the exact command in the run report.
+
+3. **Authenticate the agent to a model provider.** Create the agent's model-provider account and
+   key, then enter the key in the runner's model/provider settings. In the old kit the key was
+   shown once at creation — save it before closing the page. The provider and its key format are
+   confirmed at connect time; do not assume a key from another service works. (The old kit's
+   example provider was DeepSeek.)
+
+4. **Confirm the working directory is the cloned repository.** Point the session at the repository
+   that holds `AGENTS.md` — or tell it to read that file directly. If the session starts somewhere
+   else, including the distro repository, stop and correct it before Stage 1; a runner in the
+   wrong directory reads the wrong files (§8 Working directory and state).
+
+5. **Verify the agent can read `AGENTS.md`.** Ask it to quote a line from `AGENTS.md` and to name
+   the reference it would load first for Stage 1. That proves read access and that it followed the
+   path — before any work is claimed.
+
+6. **Run one throwaway prompt to prove the connection.** A known-answer question exercises the
+   model, the key, the runner and the reply path end to end. The old kit's prompt was:
+
+   ```text
+   Reply with exactly: AI READY. Then explain in three short bullets what
+   Postgres Row Level Security (RLS) is.
+   ```
+
+   Expect `AI READY` plus three correct bullets. If it errors, fix the key in the runner's model
+   settings and repeat. Never rest on the model's own claim that it is working — read the reply
+   (`AGENTS.md` §5.3).
+
+### 4.4 Where the keys live
+
+Two different keys are easy to conflate:
+
+| Key | What it is for | Where it goes |
+|---|---|---|
+| **The agent's provider key** | The runner authenticating to a model so it can read files and run commands (this section) | The runner's own model/provider settings or key store. Never in a repository, never in `ad-home/`, never in `AGENTS.md`. |
+| **The site's AI key** | The deployed site's AI features (chat, job analysis), read by the edge functions at runtime | A **server-side secret**, never shipped to the browser. The account procedure is in `references/intake.md`; the security rules are in `references/secure.md`. |
+
+- **They are separate.** The agent's key runs the build; the site's key runs the owner's product.
+  A harness whose model is cheap does not license swapping the site's provider (`AGENTS.md` §6.4).
+- **Neither belongs in browser build variables.** The gitignored `.env.local` holds public `VITE_`
+  values only and ships to the browser; no agent key and no site secret goes there.
+- **Neither is committed or pasted.** Not in the repository, not in `ad-home/`, not in chat or
+  logs (`references/secure.md`).
+
+### 4.5 Optional local models
+
+A runner may accept a local model as an extra provider. The old kit offered Ollama for cheap,
+offline summaries and rewrites. It is **optional, not a recommendation for this build**.
+
+- **What it is for:** low-stakes, offline tasks where a smaller model is enough.
+- **What it is not for:** the security-sensitive build and its audit — those need the
+  highest-capability configuration (§7).
+- **Limits:** a local model is smaller and weaker than a hosted high-capability route. Expect more
+  owner-visible verification, not an equivalent substitute. The old kit's example was
+  `llama3.2:3b` served by Ollama at `http://127.0.0.1:11434`; the model name and endpoint are its
+  example, confirmed at install time.
+- The old kit's commands, one option among many:
+
+  ```sh
+  # One example among many (macOS/Homebrew). Optional; skip if you do not want local models.
+  # The section still works with this block removed.
+  brew install ollama
+  ollama pull llama3.2:3b
+  ```
+
+  Add the local route in the runner's model settings. Ignore this subsection entirely if local
+  models are not wanted.
+
+### 4.6 The first gate — verify the connection before Stage 1
+
+Order matters: **connection first, build second** (old kit Step 1.6). Do not start the intake
+conversation, create accounts or install build tools until checklist step 6 has passed in front of
+you. This is the fail-closed discipline of `AGENTS.md` §11 and the verification rule of
+`AGENTS.md` §5.3: a connection that errors becomes one concise question to the owner and a fix, not
+a stage that "should work later". Record the runner, the model and the verified reply in the run
+report, so the next session resumes from evidence rather than memory (`AGENTS.md` §10).
+
+## 5. The per-harness adapter — a thin wrapper
 
 Some harnesses discover skills in a fixed directory. For those, an adapter is exactly one file:
 `skills/<harness>/SKILL.md`. It does **one** thing — point at `AGENTS.md`.
@@ -102,7 +225,7 @@ Rules for wrappers:
 - Directory names such as `skills/pi/`, `skills/dsh/`, `skills/claude/` or `skills/codex/` are
   examples of the pattern only. They name runners, never requirements.
 
-## 5. Capabilities to check in any harness
+## 6. Capabilities to check in any harness
 
 Check these before Stage 1 and tell the owner what you found. Subagents are an optimisation, never
 a requirement.
@@ -115,7 +238,7 @@ a requirement.
 | **Spawn subagents** | Parallel work; the independent fresh-session security review at Stage 6 (`AGENTS.md` §3, Stage 6) | Slower, not blocked. Do the work sequentially inline. The Stage 6 review done in the same session is a second pass, not an independent review — say so in the run report. |
 | **Persistent workspace** | Restart reconciliation; a site lives for months (`AGENTS.md` §10) | If the workspace is ephemeral, `ad-home/` must live on durable storage the next session can read. If nothing is durable, the site cannot be resumed — say so before building. |
 
-## 6. Model choice
+## 7. Model choice
 
 Two dials in any harness: **capability** and **reasoning effort**. The contract sets no required
 model and works on any of them; this is a recommendation about quality, not a constraint.
@@ -137,7 +260,7 @@ model and works on any of them; this is a recommendation about quality, not a co
   distribution. The site's own AI features stay on the frozen stack's provider, held server-side
   (`AGENTS.md` §6.4, §7). A harness whose model is cheap does not license swapping the site's.
 
-## 7. Working directory and state
+## 8. Working directory and state
 
 Three independent things, never conflated:
 
@@ -159,7 +282,7 @@ Three independent things, never conflated:
 - No secret value ever lands in `ad-home/` (`references/state-layout.md`). A harness that logs
   conversation is not an exception.
 
-## 8. Failure modes by harness class
+## 9. Failure modes by harness class
 
 Every case below is **fail closed** (`AGENTS.md` §11): tell the owner what is missing, in their
 words, before work starts; name the fallback; never silently degrade. An agent that quietly drops
@@ -183,10 +306,11 @@ old kit's install step and Non-negotiable 8; both are restated neutrally below.
 | Section here | Source |
 |---|---|
 | §1 What this file is for | new — derived from `AGENTS.md` §6 (neutrality rule); `PLAN_AI_DISTRIBUTION.md` §8 |
-| §2 The universal path | new — derived from `AGENTS.md` §6.1, §6.3, §8, §10, §11; container for `GUIDE_FROM_SCRATCH.md` Step 1 (install a harness and connect a model), stated neutrally and made runner-agnostic |
+| §2 The universal path | new — derived from `AGENTS.md` §6.1, §6.3, §8, §10, §11 |
 | §3 By hand | new — derived from `AGENTS.md` §6.3; `GUIDE_FROM_SCRATCH.md` as the human-followed fallback, `SKILL_INTERACTIVE_PORTFOLIO.md` and `DATABASE_SCHEMA.md` as the deep technical source |
-| §4 The per-harness adapter | new — derived from `AGENTS.md` §6.2; container for `GUIDE_FROM_SCRATCH.md` Step 5 (placing the skill file into the harness), reduced to a pointer |
-| §5 Capabilities | new — derived from `AGENTS.md` §6.1, §6.3 and the Stage 6 fresh-session review; container for `GUIDE_FROM_SCRATCH.md` Step 1.3 ("delegates work") |
-| §6 Model choice | `SKILL_INTERACTIVE_PORTFOLIO.md` Non-negotiable 8; `GUIDE_FROM_SCRATCH.md` Steps 1.5–1.6; `AGENTS.md` §5.8, §6.4 |
-| §7 Working directory and state | `references/state-layout.md`; `AGENTS.md` §10 |
-| §8 Failure modes | new — derived from `AGENTS.md` §6.3 and §11 (fail closed) |
+| §4 Connect a runner and a model | `GUIDE_FROM_SCRATCH.md` Step 1 (1.1–1.7: create the provider key, install the runtime, install the harness, add the key, choose the model/effort, verify, optional local models) and the Step 3 tool table (Node.js 22 LTS+); `AGENTS.md` §5.3, §5.8, §11; `references/intake.md` (the site's AI key) and `references/secure.md` (secrets server-side) |
+| §5 The per-harness adapter | new — derived from `AGENTS.md` §6.2; container for `GUIDE_FROM_SCRATCH.md` Step 5 (placing the skill file into the harness), reduced to a pointer |
+| §6 Capabilities | new — derived from `AGENTS.md` §6.1, §6.3 and the Stage 6 fresh-session review; container for `GUIDE_FROM_SCRATCH.md` Step 1.3 ("delegates work") |
+| §7 Model choice | `SKILL_INTERACTIVE_PORTFOLIO.md` Non-negotiable 8; `GUIDE_FROM_SCRATCH.md` Steps 1.5–1.6; `AGENTS.md` §5.8, §6.4 |
+| §8 Working directory and state | `references/state-layout.md`; `AGENTS.md` §10 |
+| §9 Failure modes | new — derived from `AGENTS.md` §6.3 and §11 (fail closed) |
