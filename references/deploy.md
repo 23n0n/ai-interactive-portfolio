@@ -21,10 +21,11 @@ per `references/state-layout.md`; the security controls that back every live tar
 
 ## 2. Environments
 
-One Cloudflare Worker, two configured targets, one Supabase project.
+One Cloudflare Worker definition, two configured targets, and a separate Supabase project per environment.
 
 | | Staging / preview | Production |
 |---|---|---|
+| Supabase | the **staging project** — its own database, Auth/JWT issuer, storage buckets, edge functions and keys | the **production project** — the same set, never shared |
 | Worker | persistent preview worker | the site worker |
 | Host | `<name>-preview.<account>.workers.dev` | custom domains: apex + `www` |
 | `workers_dev` | on (workers.dev URL) | `false` |
@@ -38,9 +39,22 @@ One Cloudflare Worker, two configured targets, one Supabase project.
   `*-preview` worker name; prod sets `workers_dev=false` and attaches the custom domains. Never
   hand-edit `dist/`.
 - The apex is the canonical origin; `www` redirects to it with a `301`, worker-side.
-- **One Supabase project serves both targets.** There is no database-level staging and **no
-  function-level staging**: edge functions deploy only with production, so a function deploy changes
-  production immediately (§3, §6). Treat every edge-function deploy as a production event.
+- **Production and staging are separate Supabase projects** (the pair the Free plan affords —
+  `references/operate.md` §7 ADR-0012): pending migrations are applied to staging first, and only
+  then to production, so schema changes never first touch production. The **function set is promoted
+  the same way** — deployed to the staging project and exercised there before the production job
+  deploys it — so a function reaches production only after it has run against staging (§3, §6). Treat
+  every production edge-function deploy as a production change. **The same migration and the same
+  function artifact are promoted through both environments** — there is no environment-specific
+  build, so staging exercises exactly what production will run.
+- **Each environment has its own credentials and configuration.** Because staging and production are
+  two Supabase projects, the database, the Auth/JWT issuer, the storage buckets and the edge
+  functions are per-environment — and so is every secret: its own `SUPABASE_SERVICE_ROLE_KEY`, its
+  own webhook credential, its own AI provider key and its own Turnstile site and secret keys. A
+  compromised staging credential reaches staging resources only. Development is the local Supabase
+  stack (`references/operate.md` §7 ADR-0012) — two hosted projects, not three.
+- **Staging data is synthetic or anonymized — never real user content.** The staging project is
+  seeded from a sanitized production-like dump (§6), so no production row reaches it unmasked.
 - Custom domains and TLS: with the domain on Cloudflare DNS, add apex and `www` under the Worker's
   **Settings → Domains & Routes → Custom domain**; Cloudflare provisions DNS and TLS automatically.
 
@@ -53,10 +67,10 @@ All live under `.github/workflows/`.
 | `ci.yml` | push, pull request | always-on CI: `bun install --frozen-lockfile`, `bun run typecheck`, `bun run lint`, `bun run test`, `bun run build` |
 | `cloudflare-migration.yml` | push, pull request | Cloudflare-side validation of the built Worker: `wrangler deploy --dry-run` plus `scripts/verify-built-worker.mjs` — the fail-closed SSR smoke with placeholder public env |
 | `deploy.yml` | staging: push to deploy branch; production: `workflow_dispatch` | the two-target deploy below |
-| `rollback.yml` | manual (`workflow_dispatch`) | restores the recorded previous Worker version (§7) |
-| `apply-migration.yml` | manual (`workflow_dispatch`) against the protected `production` environment | applies committed migrations to the linked Supabase project — the workflow form of `supabase db push` (§6). `environment: production` (required reviewers, branch restricted to the deploy branch) so no unguarded dispatch can reshape production; the job ends with the post-migration check (§6) |
+| `rollback.yml` | manual (`workflow_dispatch`) | restores the recorded previous Worker version and re-deploys that release's function set from the manifest — the whole release rolls back together (§7) |
+| `apply-migration.yml` | manual (`workflow_dispatch`) against the protected `production` environment | applies committed migrations to the staging project first, then to the linked production project — the workflow form of `supabase db push` (§6). `environment: production` (required reviewers, branch restricted to the deploy branch) so no unguarded dispatch can reshape production; the job ends with the post-migration check (§6) |
 | `cloudflare-preview.yml` | `workflow_dispatch` restricted to the deploy branch, optional | public build vars only; build + `wrangler deploy --dry-run` + deploy to a workers.dev preview URL, `noindex`. A **build-validation surface only**: never the link the owner is given, never a staging substitute, never a place content is reviewed — staging covers that ground |
-| `backup.yml` | scheduled (`cron`, daily) and manual | the database dump plus the `kb-images` export, uploaded to the off-platform destination with 14-day retention — the policy is in `references/operate.md` §3 |
+| `backup.yml` | scheduled (`cron`, daily) and manual | the database dump plus the `kb-images` export, uploaded to the off-platform destination under the tiered retention — the policy is in `references/operate.md` §3 |
 
 The old kit records `ci.yml` and `cloudflare-migration.yml` as one validation block
 (build/typecheck/lint/test + dry-run + fail-closed SSR smoke); treat them as the always-on pair that
@@ -67,12 +81,14 @@ must be green before either target moves.
 - **Staging job** — auto on push to the deploy branch, docs-only paths ignored: build;
   `scripts/patch-wrangler.mjs preview`; `wrangler deploy` to the persistent preview worker
   (workers.dev, `noindex`); live smoke (`scripts/smoke-test-live.mjs`, `EXPECT_NOINDEX=true`);
-  blue/green parity against production (`scripts/verify-public-parity.mjs`).
+  blue/green parity against production (`scripts/verify-public-parity.mjs`); the edge-function deploy
+  (`scripts/deploy-edge-functions.sh`, `--no-verify-jwt`) against the **staging project**.
 - **Production job** — `workflow_dispatch` against the protected `production` environment (required
   reviewers, branch restriction to the deploy branch): build; `scripts/patch-wrangler.mjs prod`;
   `wrangler deploy` to the custom domains (apex + `www`, `www` 301 to apex worker-side); live smoke;
-  the edge-function deploy job (`scripts/deploy-edge-functions.sh`, `--no-verify-jwt`, production
-  only); the live CORS check (`scripts/verify-cors-live.mjs`); the human browser checklist.
+  the edge-function deploy (`scripts/deploy-edge-functions.sh`, `--no-verify-jwt`) against the
+  **production project**; the live CORS check (`scripts/verify-cors-live.mjs`); the human browser
+  checklist.
 - A **docs-only** push skips deploy on both targets.
 
 ## 4. Script contracts
@@ -113,6 +129,8 @@ Every script below is CI-wired. Write each to its contract; names, flags and env
 
 ### `scripts/deploy-edge-functions.sh`
 - Loops `supabase/functions/*/index.ts`; skips `_shared`.
+- Target: the linked project for that job — the **staging project** in the staging job, the
+  **production project** in the production job. A function is deployed to staging first (§2).
 - Deploys each function with `--no-verify-jwt`.
 - Idempotent: re-running deploys the same functions without side effects.
 - Records what it deployed: each function's source hash and the bundle id, written to the release
@@ -140,11 +158,16 @@ Repo **Settings → Secrets and variables → Actions**:
   build vars only) or in any `ad-home/` record. Server-side secrets (service role, Turnstile secret,
   the `deepseek` key) live in Supabase secrets / Wrangler secrets; set them once with
   `supabase secrets set` (`references/secure.md`).
-- **PAT churn:** when deploys start failing with auth errors, refresh `SUPABASE_ACCESS_TOKEN` from
-  the dashboard.
+- **PAT churn:** `SUPABASE_ACCESS_TOKEN` is rotated on the twice-yearly schedule as well as on
+  suspicion (`references/operate.md` §6); when deploys start failing with auth errors, refresh it
+  from the dashboard.
 - MFA is required on every account that can deploy or hold secrets (GitHub, Cloudflare, Supabase,
   DeepSeek) — phishing-resistant (passkey or security key) on those accounts, per
   `references/secure.md` §2 item 13.
+- **Prefer short-lived, federated credentials over stored secrets** wherever the platform supports
+  them — GitHub Actions OIDC into Cloudflare (and Supabase where it offers a workload-identity
+  exchange) — so no deploy secret outlives the job. Where a provider offers only a long-lived token,
+  the rest of this section applies (scope, scheduled rotation, out-of-workflow alerts).
 - **The tokens are long-lived, so treat them as compromised-by-default**: scope each to the one
   project, environment and API surface it needs (no account-wide tokens), rotate them on a schedule
   as well as on suspicion (`references/operate.md` §6), and alert on any use outside the approved
@@ -164,7 +187,7 @@ or the dashboard SQL editor.
 
 Ordering — and why it is not negotiable:
 
-1. Apply pending migrations to the linked project first.
+1. Apply pending migrations to the staging project first, then to the linked production project.
 2. Only then deploy the schema-dependent Worker change.
 
 The Worker reads the schema at request time; a Worker that expects a new column, view or RPC would
@@ -191,13 +214,13 @@ migration is the first step of that deploy, not a follow-up.**
   the expected lock duration and execution time for anything that rewrites a table. A migration that
   cannot be described in those terms is not ready to apply.
 - **Compatibility is tested in both directions on a restore of production** where the change is not
-  purely additive: the migration runs against a scratch project seeded from a sanitized dump, then
+  purely additive: the migration runs against the staging project seeded from a sanitized dump, then
   the previous application version is exercised against the migrated schema. Destructive or breaking
   changes use **expand-and-contract** — add, deploy, migrate data, deploy, then remove — so no
   release requires every component to change at once.
-- Staging and production share one project on the free tier (`references/operate.md` §7 records that
-  acceptance), which makes this section the whole of the safety net: there is no database-level
-  staging to catch a mistake first.
+- **Production and staging are separate Supabase projects** (the pair the Free plan affords —
+  `references/operate.md` §7 ADR-0012): pending migrations are applied to staging first, and only
+  then to production, so schema changes never first touch production.
 
 ## 7. Rollback
 
@@ -205,12 +228,12 @@ migration is the first step of that deploy, not a follow-up.**
   currently live and the restore command; that record is what makes the deploy reversible
   (`references/state-layout.md`).
 - `rollback.yml` restores the **Worker** to the recorded previous version — the Worker-level undo of
-  a bad deploy.
+  a bad deploy; step 3 below is the function-level half of the same dispatch.
 - What it does **not** restore: **database migrations**, which deploy workflows never apply and a
-  Worker rollback does not reverse — recover data from the `supabase db dump` backup instead. It
-  also does not version **edge functions**: one Supabase project is shared by both targets, a
-  function deploy changes production immediately, and there is no function-level staging; recover by
-  re-deploying the previous function code.
+  Worker rollback does not reverse — recover data from the `supabase db dump` backup instead. The
+  **edge functions** are restored by the same dispatch: `rollback.yml` re-deploys the previous
+  release's function set from the release manifest alongside the Worker, so the whole release rolls
+  back together (step 3).
 - A rollback is a deploy: after it, run the live smoke on the affected target and record the run
   like any other.
 
@@ -219,12 +242,14 @@ The rollback runbook, in order:
 1. Identify the last known-good Worker version id recorded in the run report of the last good deploy
    (`references/state-layout.md`).
 2. Dispatch `rollback.yml` with that version id against the protected `production` environment.
-3. Re-deploy the matching edge-function code if the bad deploy changed any function — there is no
-   function-level rollback.
+3. Deploy function rollback is one dispatch, not an archaeology exercise: `rollback.yml` reads the
+   previous release's per-function source hashes from the run report and re-deploys that exact set
+   alongside the Worker, so the whole release — Worker and functions — rolls back together. A
+   release whose manifest is missing a function hash cannot be rolled back and does not ship.
 4. Run the live smoke on the affected target (`scripts/smoke-test-live.mjs`; `EXPECT_NOINDEX=true`
    on staging) and the parity check against the other target.
-5. Record the run; state plainly which of the three things a rollback did not undo (database
-   migrations, edge functions, the DNS/domain configuration).
+5. Record the run; state plainly which of the two things a rollback did not undo (database
+   migrations, the DNS/domain configuration).
 
 **Declare the rollback successful only after step 4 passes.** If the smoke still fails, the site is
 down: go to `references/operate.md` §8 (Recovery) rather than rolling further back — stacking
@@ -238,9 +263,9 @@ manifest is what a roll-forward uses when the honest fix is forward, not backwar
 §6's expand-and-contract is what makes roll-forward the normal path).
 
 **Edge functions are versioned in the repository, not by the platform.** Keep the deployed function
-source for each release (a tag or a manifest entry pointing at the commit is enough) so the previous
-set can be re-deployed deliberately: one Supabase project serves both targets, so re-deploying old
-function code is the only function-level restore that exists.
+source for each release (a tag or a manifest entry pointing at the commit is enough): that retained
+source is what the one-dispatch rollback reads, so re-deploying the previous function set is a
+lookup, not an archaeology exercise.
 
 ## 8. Deploy gates
 
@@ -253,10 +278,13 @@ Nothing reaches a target whose gates are not green. The security-side gates are 
 | `wrangler deploy --dry-run` + built-Worker fail-closed SSR smoke with placeholder env (`cloudflare-migration.yml`) | ✓ | ✓ |
 | Pending migrations applied (§6) — required when the change is schema-dependent | ✓ | ✓ |
 | Live smoke: every core route `200`, and `noindex` on staging (`scripts/smoke-test-live.mjs`) | ✓ | ✓ |
+| Live security-header assertion: `frame-ancestors` present on every route including the error responses (5xx/404) (`references/secure.md` §5) | ✓ | ✓ |
 | Blue/green parity against production (`scripts/verify-public-parity.mjs`) | ✓ | ✓ |
 | Recorded rollback: previous version id + restore command in the run report (§7) | — | ✓ |
-| Final RLS audit (`DATABASE_SCHEMA.md` §12 A–G), admin-function auth test, independent security review, backups configured and one restore tested | — | ✓ |
+| Final RLS audit (`DATABASE_SCHEMA.md` §12 A–G), the service-role auth test for every endpoint (`references/secure.md` §3 item 7, §5), independent security review, backups configured and one restore tested | — | ✓ |
 | Live CORS check (`scripts/verify-cors-live.mjs`) — exit 0 required; exit 1 or 2 blocks the deploy | — | ✓ |
+| Acceptance register current — no expired critical acceptance (`references/operate.md` §7, `references/assurance.md` §3) | — | ✓ |
+| Synthetic availability check configured and firing (`references/secure.md` §2 item 22) | — | ✓ |
 | Owner gate: go live publicly (`AGENTS.md` §4, gate 3) — explicit yes | — | ✓ |
 | Human browser checklist: Turnstile widget, WYSIWYG image flow, admin CRUD, CV download on desktop + mobile, cold-load anchor check (open each advertised #anchor in a fresh tab and confirm it lands without scrolling) | — | ✓ |
 
@@ -267,10 +295,10 @@ Nothing reaches a target whose gates are not green. The security-side gates are 
 | Section here | Old-kit source |
 |---|---|
 | 1. Staging first | `AGENTS.md` Stage 4 (Publish); `GUIDE_FROM_SCRATCH.md` Step 12; `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 7 |
-| 2. Environments | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 1 (`preview` env), Phase 7 (`patch-wrangler.mjs`, `www` 301 apex); `GUIDE_FROM_SCRATCH.md` §2.2 (custom domain), Step 14 (edge functions deploy only with production) |
+| 2. Environments | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 1 (`preview` env), Phase 7 (`patch-wrangler.mjs`, `www` 301 apex); `GUIDE_FROM_SCRATCH.md` §2.2 (custom domain), Step 14 (staging and production are separate projects, the function set is promoted staging-first) |
 | 3. Workflows | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 7 "Workflows" + `deploy.yml`; `GUIDE_FROM_SCRATCH.md` Step 12 |
 | 4. Script contracts | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 7 "Script contracts" |
 | 5. Auth and secrets | `GUIDE_FROM_SCRATCH.md` Step 12 credentials checklist, §2.2 (API token); `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 0 (Supabase CLI auth), Phase 7 "Auth"; `GUIDE_FROM_SCRATCH.md` Step 14 (PAT churn) |
 | 6. Migrations | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 3, Phase 7 ("DB migrations NOT applied by deploy workflows"); `GUIDE_FROM_SCRATCH.md` Step 12; `DATABASE_SCHEMA.md` preamble + §11 |
-| 7. Rollback | `AGENTS.md` Stage 4 ("a recorded rollback before each production deploy"); `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 7 (`rollback.yml`); `references/state-layout.md` run-report rollback field; `GUIDE_FROM_SCRATCH.md` Step 14 (edge functions deploy only with production) |
+| 7. Rollback | `AGENTS.md` Stage 4 ("a recorded rollback before each production deploy"); `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 7 (`rollback.yml`); `references/state-layout.md` run-report rollback field; `GUIDE_FROM_SCRATCH.md` Step 14 (one rollback restores the Worker version and re-deploys that release's function set) |
 | 8. Deploy gates | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 7 gate, "Verification checklist", Phase 8; `GUIDE_FROM_SCRATCH.md` Step 12 `[Check]`, Step 13; `AGENTS.md` Stage 4 |

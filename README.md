@@ -93,8 +93,9 @@ pandoc GUIDE_FROM_SCRATCH.md -o GUIDE_FROM_SCRATCH.pdf \
 Two notes on the flags, because both are easy to get wrong:
 
 - **`--toc` must keep its default depth.** `--toc-depth=1` looks harmless but the guide's only H1 is the
-  title, so it renders an *empty* table of contents — 30 pages with no TOC entries instead of 31
-  pages and 50.
+  title, so it renders a table of contents holding nothing but that title — 1 entry instead of the 33
+  the default depth reaches, and a reader who scans for a Step cannot find it. The render is 39
+  pages either way; the entries are what move.
 - **The Lua filter stays.** It rewrites heading ids and in-document links into typst-safe labels (a
   `sec-` prefix, collapsed hyphen runs). The original render used it, and dropping it changes every
   label. It is harmless — same pages, same links — but it keeps the ids stable across rebuilds.

@@ -76,7 +76,7 @@ Partial index: `site_sections_visible_order_idx (display_order) WHERE
 is_visible = true`. Trigger: `set_updated_at`. Seed rows (adapt wording):
 
 > Seed values relocated verbatim to [`seeds.md`](seeds.md) — declared relocation **R1**
-> (source §2.2 lines 274–275). The pointer line above is the source's own, unchanged.
+> (source §2.2 lines 280–281). The pointer line above is the source's own, unchanged.
 
 #### `public.fun_links` — just-for-fun links
 
@@ -115,7 +115,7 @@ Partial index: `holiday_banners_active_window_idx (start_date, end_date,
 display_order) WHERE is_active = true`. Trigger: `set_updated_at`. Seed rows
 
 > Seed values relocated verbatim to [`seeds.md`](seeds.md) — declared relocation **R2**
-> (source §2.2 lines 312–314). The pointer line above is the source's own, unchanged.
+> (source §2.2 lines 318–320). The pointer line above is the source's own, unchanged.
 
 ---
 
@@ -148,5 +148,8 @@ display_order) WHERE is_active = true`. Trigger: `set_updated_at`. Seed rows
 `rich` HTML is sanitized server-side (parse5 allow-list: `img` with an
 **https** source only — no `http:`, no `data:` URIs, no SVG — restricted to the
 hosts in the CSP `img-src` allowlist; self-hosted `kb-images` objects are the
-default, third-party origins are the exception) at read time. The admin TipTap editor produces
+default, third-party origins are the exception) at read time. An approved external image is
+downloaded, validated and stored in `kb-images` before it is referenced; the site serves images
+from controlled storage, so an approved third-party host is an exception that is mirrored, not
+hot-linked. The admin TipTap editor produces
 `blocks`; the AI generation functions produce the same shape.

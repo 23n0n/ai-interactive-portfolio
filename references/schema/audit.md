@@ -149,7 +149,7 @@ base-table read policies are `is_admin()` only, and the visible/active/window
 row filters plus the `creation_prompt` exclusion live in the `private.api_*`
 views behind the public view wrappers.
 
-**G. Behavioral probe (REST, two keys):**
+**G. Behavioral probe (REST, three keys):**
 
 1. **anon** (publishable key): for EVERY table in §10 attempt `INSERT`,
    `UPDATE`, `DELETE` and expect `401/403`. `SELECT` on base tables must
@@ -162,6 +162,9 @@ views behind the public view wrappers.
    must FAIL; reads on public views must SUCCEED. A permissive
    `is_admin()` typo or a missing `is_admin()` check is exactly what this
    probe catches — do not skip it.
+3. **admin** (the admin user's JWT): reads on the admin tables and `abuse_alerts` must SUCCEED;
+   `admin_audit` remains read-only (no write grant for any API role); `values_culture` /
+   `faq_responses` / `ai_instructions` reads must SUCCEED.
 
 Automate B–G in a script (`scripts/audit-rls.mjs`) so the Phase 8 RLS audit
 in the skill is one command; the script's expected output is the §10 matrix

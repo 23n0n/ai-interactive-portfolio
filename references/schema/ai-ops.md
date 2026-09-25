@@ -27,25 +27,33 @@ the SECURITY DEFINER function). Rows older than **1 hour** are deleted inside
 
 `id` (uuid PK), `question_hash` (text NOT NULL UNIQUE), `question` (text NOT
 NULL), `ai_response` (text NOT NULL), `cache_version` (text NOT NULL — model id,
-system-prompt hash, context hash and policy version concatenated),
+system-prompt hash, context hash, content version and policy version concatenated),
 `created_at` (timestamptz NOT NULL default `now()`). RLS: deny-all; accessed only
 via `get_chat_cache` / `set_chat_cache` (service role). TTL 48h.
 
 Cache rules, all enforced in the functions: the lookup key includes
-`cache_version`, so a model, prompt, context or policy change is a cache miss
+`cache_version`, so a model, prompt, context, content or policy change is a cache miss
 rather than a stale answer; a response that trips a safety or leakage check is
 **never written** to the cache; `values_culture`, `faq_responses` and
 `ai_instructions` changes purge the cache (`cache_version` changes with the
 context hash, and the `purge_ai_caches` trigger below deletes the rows); and a
 cache hit is validated exactly like a fresh response, never trusted because it was
-cached. Store the hash of the question, not the raw text, wherever the hash is
-enough to answer.
+cached. The hash is the lookup key, not the raw text: a raw `question` or
+`job_description` row is retained only as the cache entry's own content under its stated TTL
+(48h for chat, 7 days for JD), so a near-match can be compared by the hybrid fuzzy match in
+`get_chat_cache`; no raw user text is kept anywhere else, and `rag_metrics.question_preview`
+stays PII-scrubbed and truncated (below).
 
 #### `public.jd_analysis_cache` — job-description analysis cache
 
 `id` (uuid PK), `jd_hash` (text NOT NULL UNIQUE), `job_description` (text NOT
-NULL), `analysis_result` (jsonb NOT NULL), `created_at`. RLS: deny-all;
-accessed only via `get_jd_cache` / `set_jd_cache` (service role). TTL 7 days.
+NULL), `analysis_result` (jsonb NOT NULL), `cache_version` (text NOT NULL — the same
+model/system-prompt/context/content/policy concatenation as `chat_response_cache`),
+`created_at`. RLS: deny-all;
+accessed only via `get_jd_cache` / `set_jd_cache` (service role). TTL 7 days. The
+version-miss rule is the same: the lookup key includes the version, so a model, prompt,
+context, content or policy change is a cache miss rather than a stale analysis, and a
+response that trips a safety or leakage check is never written.
 
 #### `public.rag_metrics` — AI usage + abuse-watchdog metrics
 
@@ -124,7 +132,7 @@ record of acting. `audit_admin_change()` is attached
 `experiences`, `skills`, `gaps_weaknesses`, `recommendations`, `values_culture`,
 `faq_responses`, `ai_instructions`, `content_collections`, `content_docs`,
 `site_content`, `site_sections`, `fun_links`, `holiday_banners` and
-`cv_settings`. Content hashes only — never a copy of the row. Retention 400 days,
+`cv_settings`. Content hashes only — never a copy of the row. Retention at least 400 days,
 exported off-platform before pruning (`references/operate.md` §4.1).
 
 #### `public.abuse_alerts` — abuse-watchdog inbox (admin panel)

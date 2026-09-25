@@ -28,6 +28,11 @@ as a requirement on the build, and the only artifact this repository ships that 
 its own `scripts/check-docs.py`, which checks the distribution's internal consistency and nothing
 else.
 
+The site repository must contain, for the reviewed commit, the application code, the timestamped
+migrations under `supabase/migrations/`, the edge functions, the workflow definitions, the tests,
+the lockfile and the infrastructure configuration; anything missing there is a release with an open
+finding.
+
 **What can therefore be verified here:** that the specification is internally consistent, complete
 against the control list, and free of the development-node artifacts that would make it
 un-reviewable.
@@ -47,15 +52,19 @@ where the artifact contains operational data, never a token, a key or a row of p
 | 2 | RLS audit output — §12 A–G, run against the deployed project, sanitized | every table has RLS; no API-role base-table grants; views read-only; grants on the cache/rate-limit RPCs clean; deny-all tables still deny | `DATABASE_SCHEMA.md` §12, `references/secure.md` §4 |
 | 3 | Behavioural probes — anon, non-admin authenticated, admin | the policy matrix holds for a real client, not just in the catalog | `DATABASE_SCHEMA.md` §12 G |
 | 4 | View-option, `SECURITY DEFINER` and `storage.objects` sweeps | the three perimeter checks in `references/secure.md` §4.1–4.3 return zero findings | `references/secure.md` §4 |
-| 5 | Projection and predicate tests per `private.api_*` view, with negative tests for every private field | the definer layer exposes exactly the allowlisted columns and rows | `references/secure.md` §7 (change control) |
+| 5 | Projection and predicate tests per `private.api_*` view, with negative tests for every private field | the definer layer exposes exactly the allowlisted columns and rows | `references/secure.md` §4.1 (the view allowlist, the projection/predicate test and the negative tests) |
 | 6 | The admin-function case matrix for **every** service-role endpoint, plus the ordering cases | no endpoint can be reached without a verified caller, and no path returns before the check | `references/secure.md` §3, `DATABASE_SCHEMA.md` §9 |
 | 7 | Live header and route results | CSP with the nonce matching hydration, `frame-ancestors` on every HTML response, HSTS, `nosniff`, referrer and permissions policies, `405`/`415` guards | `references/secure.md` §5 |
 | 8 | The spoofed-header and direct-invocation tests | the rate-limit key comes from the trusted ingress and cannot be influenced by a caller | `references/secure.md` §7 (ingress) |
 | 9 | A restore record: when the last restore was tested, and the measured recovery point and time | the backup actually restores, and against an objective rather than an assumption | `references/operate.md` §3 |
 | 10 | A controlled-event test per alert, and the audit export receipt | the telemetry fires, and the audit trail survives off-platform | `references/operate.md` §4.1 |
 | 11 | SBOM, dependency-review result, provenance, and the artifact/bundle secret scan | the shipped artifacts, not only the source tree, were checked | `references/secure.md` §2 item 12 |
-| 12 | The prompt-injection red-team result, and the AI data-flow note | the model context holds the minimum data, and leakage is detected rather than assumed impossible | `references/secure.md` §7 (AI data) |
+| 12 | The prompt-injection red-team result, and the AI data-flow note (what is sent to the provider, the provider's retention and model-training terms with the date they were checked, the transfer and subprocessor position, the redaction pass before transmission, the pre-submission notice, the non-AI alternative, and the deletion limits) | the model context holds the minimum data, leakage is detected rather than assumed impossible, and the provider's terms are recorded rather than assumed | `references/secure.md` §7 (AI data) |
 | 13 | The independent review artifact (§4) | somebody who did not build it tried to break it | `references/secure.md` §6 |
+| 14 | The successful CI run for the reviewed commit (workflow run id / artifact URLs) | the gates that run were executed against the code being released, not asserted | `references/deploy.md` §3, §4, §8 |
+| 15 | The migration inventory — `supabase migration list` against the linked project, with no pending migration | the schema history is complete and the release's migration versions are a real set, not a list | `references/deploy.md` §6, `DATABASE_SCHEMA.md` §11 |
+| 16 | The cache-key schema and the cache-invalidation test | a cached response cannot outlive the model, prompt, context, policy or content version that produced it | `references/secure.md` §7 (AI caches), `DATABASE_SCHEMA.md` §2.3 |
+| 17 | The service-role key rotation record | the rotation procedure works, and the affected functions were re-deployed and re-checked after it | `references/operate.md` §6 |
 
 A release that omits a row is a release with an open finding. Record the omission, and the run report
 carries it until it is closed — silence is the one thing that is not allowed.
@@ -69,7 +78,9 @@ An acceptance is a decision with an owner and a shelf life. The register lives i
   cadence, the trigger that invalidates it, and the remediation it is waiting for.
 - **Expired means expired.** A critical acceptance past its expiry **blocks promotion**: the site may
   keep running, but the next release does not ship until the acceptance is renewed with a new date
-  or the remediation lands. A review that finds an expired acceptance records it as a finding.
+  or the remediation lands. The `check-docs` gate (or the release checklist) flags an acceptance
+  whose expiry has passed, and the release does not ship until it is renewed; a review that finds an
+  expired acceptance records it as a finding.
 - **Renewal is a decision, not a default.** Renewing writes a new date and says what changed; a
   renewal because nobody got round to it is how a temporary assumption becomes permanent
   architecture.
@@ -98,8 +109,10 @@ When several of these are open at once, this is the order that risks the least:
 1. Provide the implementation and the deployment target (the commit that is running).
 2. Isolate staging from production — separate projects, credentials and data.
 3. Run and preserve the database, view, grant and storage audits (§2 rows 2–5).
-4. Reduce service-role exposure: authenticate every write path, scope every function.
-5. Make deployments atomic and edge functions versioned and rollback-capable.
+4. Reduce service-role exposure: authenticate every write path, scope every function, isolate the
+   high-risk functions and their secrets, and rehearse the service-role rotation.
+5. Make deployments atomic and edge functions versioned and rollback-capable — the whole release,
+   Worker and functions, rolls back in one dispatch.
 6. Require MFA, and disable public signup.
 7. Close the ingress boundary; prove the rate-limit key cannot be spoofed.
 8. Add the AI data controls, the cost limits and the wider injection testing.

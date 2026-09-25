@@ -94,12 +94,12 @@ both are reproduced byte-for-byte in [`seeds.md`](seeds.md); no other source lin
 
 | ID | Source lines (`DATABASE_SCHEMA.md`) | Moved from | Moved to | Reason |
 | --- | --- | --- | --- | --- |
-| R1 | 274–275 | §2.2 `public.site_sections` seed values | `seeds.md` → "R1" | seed values belong with the migration ordering notes |
-| R2 | 312–314 | §2.2 `public.holiday_banners` seed values | `seeds.md` → "R2" | seed values belong with the migration ordering notes |
+| R1 | 280–281 | §2.2 `public.site_sections` seed values | `seeds.md` → "R1" | seed values belong with the migration ordering notes |
+| R2 | 318–320 | §2.2 `public.holiday_banners` seed values | `seeds.md` → "R2" | seed values belong with the migration ordering notes |
 
-The source's own pointer lines for both (`… Seed rows (adapt wording):` at line 273 and `… Seed
-rows` at line 311) stay in `content.md`, reproduced verbatim. The §12 closing "Reference files in
-the source project…" paragraph (`DATABASE_SCHEMA.md` lines 975–978) is **not** relocated: it is
+The source's own pointer lines for both (`… Seed rows (adapt wording):` at line 279 and `… Seed
+rows` at line 317) stay in `content.md`, reproduced verbatim. The §12 closing "Reference files in
+the source project…" paragraph (`DATABASE_SCHEMA.md` lines 1049–1052) is **not** relocated: it is
 reproduced at the end of §12 in [`audit.md`](audit.md).
 
 Markdown scaffolding added by the split (file titles, `> **Holds:** / **Loaded at:** / **Source:** /

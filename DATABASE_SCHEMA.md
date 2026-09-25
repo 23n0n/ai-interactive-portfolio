@@ -40,13 +40,19 @@ project.
 | `service_role` | Bypasses RLS. Used exclusively by edge functions (chat, analyze-jd, generate-cv, abuse-alert, ...). Explicit grants per the access matrix (§9). |
 
 Admin identification: `public.is_admin()` returns
-`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`. The admin user is
+`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'` **and** `auth.uid()` is present in the
+immutable user-id allowlist below. The admin user is
 created manually in Supabase Auth (email/password); set `role: "admin"` in
 their `app_metadata` (Dashboard → Authentication → Users → user → edit
 metadata, or SQL). **Public signup is disabled** (`[auth] enable_signup = false`); the single
 administrator is provisioned by hand (Dashboard → Authentication → Users, or an
 invite), and the privileged path is an **immutable user-id allowlist** checked
-next to `is_admin()`. Domain restriction is defence in depth for the day signup is
+next to `is_admin()`. The allowlist is a deny-by-default row set:
+`private.admin_allowlist` holds one row per administrator (`user_id uuid primary key`), has RLS
+enabled, carries no grant to `anon`, `authenticated` or `public`, and no
+`INSERT`/`UPDATE`/`DELETE` path exists for `authenticated`, so only a reviewed migration can change
+it; `is_admin()`'s companion check reads it, which is why a `role` claim alone — or a dashboard
+role edit — does not open the privileged path. Domain restriction is defence in depth for the day signup is
 re-enabled, not the control: a `BEFORE INSERT` trigger on `auth.users`
 (`public.check_email_domain`) plus the Supabase auth hook
 `public.hook_restrict_signup_by_email_domain(event jsonb)` reject any email not
@@ -328,25 +334,33 @@ the SECURITY DEFINER function). Rows older than **1 hour** are deleted inside
 
 `id` (uuid PK), `question_hash` (text NOT NULL UNIQUE), `question` (text NOT
 NULL), `ai_response` (text NOT NULL), `cache_version` (text NOT NULL — model id,
-system-prompt hash, context hash and policy version concatenated),
+system-prompt hash, context hash, content version and policy version concatenated),
 `created_at` (timestamptz NOT NULL default `now()`). RLS: deny-all; accessed only
 via `get_chat_cache` / `set_chat_cache` (service role). TTL 48h.
 
 Cache rules, all enforced in the functions: the lookup key includes
-`cache_version`, so a model, prompt, context or policy change is a cache miss
+`cache_version`, so a model, prompt, context, content or policy change is a cache miss
 rather than a stale answer; a response that trips a safety or leakage check is
 **never written** to the cache; `values_culture`, `faq_responses` and
 `ai_instructions` changes purge the cache (`cache_version` changes with the
 context hash, and the `purge_ai_caches` trigger below deletes the rows); and a
 cache hit is validated exactly like a fresh response, never trusted because it was
-cached. Store the hash of the question, not the raw text, wherever the hash is
-enough to answer.
+cached. The hash is the lookup key, not the raw text: a raw `question` or
+`job_description` row is retained only as the cache entry's own content under its stated TTL
+(48h for chat, 7 days for JD), so a near-match can be compared by the hybrid fuzzy match in
+`get_chat_cache`; no raw user text is kept anywhere else, and `rag_metrics.question_preview`
+stays PII-scrubbed and truncated (below).
 
 #### `public.jd_analysis_cache` — job-description analysis cache
 
 `id` (uuid PK), `jd_hash` (text NOT NULL UNIQUE), `job_description` (text NOT
-NULL), `analysis_result` (jsonb NOT NULL), `created_at`. RLS: deny-all;
-accessed only via `get_jd_cache` / `set_jd_cache` (service role). TTL 7 days.
+NULL), `analysis_result` (jsonb NOT NULL), `cache_version` (text NOT NULL — the same
+model/system-prompt/context/content/policy concatenation as `chat_response_cache`),
+`created_at`. RLS: deny-all;
+accessed only via `get_jd_cache` / `set_jd_cache` (service role). TTL 7 days. The
+version-miss rule is the same: the lookup key includes the version, so a model, prompt,
+context, content or policy change is a cache miss rather than a stale analysis, and a
+response that trips a safety or leakage check is never written.
 
 #### `public.rag_metrics` — AI usage + abuse-watchdog metrics
 
@@ -426,7 +440,7 @@ Index: `admin_audit_at_idx (at desc)`. RLS: **no policy for `anon` or
 `public.audit_admin_change()` trigger (SECURITY DEFINER), never by a client. No
 `UPDATE` or `DELETE` grant exists for any API role, and the trigger raises on an
 attempt to modify or delete an existing audit row — so a compromised admin session
-can still act, but cannot quietly erase the record of acting. Retention: 400 days,
+can still act, but cannot quietly erase the record of acting. Retention: at least 400 days,
 exported off-platform by `references/operate.md` §4.1 before pruning.
 
 `audit_admin_change()` is attached (`AFTER INSERT OR UPDATE OR DELETE ... FOR
@@ -521,6 +535,16 @@ List: `api_candidate_profile_public`, `api_experiences_public`,
 `SELECT` granted to `anon`, `authenticated`, `service_role`; revoked from
 `public`.
 
+**Every change to a `private.api_*` view is an authorization change.** The view
+executes outside the caller's base-table privileges, so its row filters and projected columns
+are part of the effective authorization boundary: keep the projected columns and required
+predicates as an explicit allowlist beside the view (`supabase/views/api_*.columns.json` or an
+inline table in the migration), compare the definition against that allowlist with a schema test
+(`pg_get_viewdef('private.api_<table>', true)`), one negative test for every private field
+(`SELECT <column> FROM private.api_<table>` as `anon` must fail), and an approval for any
+expansion of a public view — the release evidence carries a migration review showing no
+unapproved view expansion (`references/secure.md` §4.1).
+
 Monitoring RPCs live in `private` as SECURITY DEFINER bodies:
 `private.get_monitoring_stats()`, `private.get_cache_sizes()`,
 `private.get_database_size()` (admin-guarded with `is_admin()`), with thin
@@ -559,7 +583,10 @@ only (the site never calls them; keep them out of the client bundle).
 `rich` HTML is sanitized server-side (parse5 allow-list: `img` with an
 **https** source only — no `http:`, no `data:` URIs, no SVG — restricted to the
 hosts in the CSP `img-src` allowlist; self-hosted `kb-images` objects are the
-default, third-party origins are the exception) at read time. The admin TipTap editor produces
+default, third-party origins are the exception) at read time. An approved external image is
+downloaded, validated and stored in `kb-images` before it is referenced; the site serves images
+from controlled storage, so an approved third-party host is an exception that is mirrored, not
+hot-linked. The admin TipTap editor produces
 `blocks`; the AI generation functions produce the same shape.
 
 ---
@@ -654,9 +681,9 @@ Policies on `storage.objects`:
 Uploads are named server-side (a generated UUID plus a format-derived
 extension, never the client filename); the sanitizer allow-list (`<img>` **https
 only**, no `data:` URIs, hosts limited to the CSP `img-src` allowlist) applies at
-render time, and uploads are served from the bucket's own origin under
+render time, and objects are served from a dedicated cookieless origin under
 `Referrer-Policy: no-referrer` so an external page cannot learn a visitor's
-requests.
+requests and an object request carries no cookie.
 
 **The ingest pipeline is stricter than the bucket.** MIME allow-lists and the size
 cap are the outer bound; the upload path also (1) verifies the **detected** format
@@ -672,13 +699,24 @@ plain words, non-public material belongs in a private bucket served by signed
 URLs, and a takedown path exists — delete the object, purge the CDN/browser cache
 entry, and record the removal (`references/operate.md` §4.3).
 
+The upload flow classifies before it stores: only publishable material is accepted, and the object
+URL answers with `X-Robots-Tag: noindex` so a known URL is not crawled. Every upload, replacement
+and deletion is recorded with actor, object, timestamp and request id — storage-object changes are
+outside `audit_admin_change` (`DATABASE_SCHEMA.md` §2.3), so the recording step belongs in the
+upload path.
+
 ---
 
 ## 9. Edge functions and the service-role access matrix
 
-All edge functions deploy with `--no-verify-jwt` (auth by Turnstile / admin
-check / origin gate) and enforce CORS allowlists (prod domains + staging
-only) plus 405/415 guards (`_shared/http.ts`). DeepSeek calls go through the
+All edge functions deploy with `--no-verify-jwt` (auth by the ingress shared secret / Turnstile /
+admin check / origin gate) and enforce CORS allowlists (prod domains + staging
+only) plus 405/415 guards (`_shared/http.ts`). **The function URL is not a public entry point:**
+the Worker proxies public AI/CV requests to the functions and carries a shared secret (or a signed,
+short-lived assertion) that the function verifies before any handling; the client address is taken
+only from the header the Worker sets; a request without the secret is rejected before rate-limit
+evaluation. `--no-verify-jwt` switches off the platform's JWT check only — it does not make the
+function an unauthenticated surface. DeepSeek calls go through the
 shared client `_shared/deepseek.ts` — the API key is read from the
 **`deepseek`** edge-function secret (`Deno.env.get("deepseek")`), never
 shipped to the browser. Set it with `supabase secrets set deepseek=<sk-...>`.
@@ -694,7 +732,7 @@ shipped to the browser. Set it with `supabase secrets set deepseek=<sk-...>`.
 | `translate-recommendation` | Admin: DeepSeek translates a recommendation to English → writes `recommendations.recommendation_text_en` and forces `translation_reviewed = false`; the view serves the translation only after an admin confirms it (`is_translated` then true) | authenticated admin JWT |
 | `get-contact` | Public contact endpoint: `GET /functions/v1/get-contact` → `candidate_profile_public` fields (`name, title, elevator_pitch, availability_status, linkedin_url, target_company_stages`); 404 when no profile row; contact info never includes email/phone | `candidate_profile_public` read |
 | `sitemap` | Dynamic `sitemap.xml` from the catalog (published docs only) — crawlers see publish/unpublish without redeploy | `get_public_sitemap_data()` |
-| `abuse-alert` | Scheduled watchdog (every 15 min via `supabase/config.toml` `schedule = "*/15 * * * *"`): aggregates `rag_metrics` over the window, compares against env thresholds (`ABUSE_WINDOW_MINUTES`, `ABUSE_MAX_CALLS_CHAT/JD/CV`, `ABUSE_MAX_TOKENS`), writes breaches to `abuse_alerts`; `detail` is built from aggregates only — counts, thresholds, window sizes, timestamps, function names, never question text, user content, IPs or PII; optional counts-only webhook mirror (`ABUSE_ALERT_WEBHOOK_URL` — counts only, same rule) | `rag_metrics` read, `abuse_alerts` write |
+| `abuse-alert` | Scheduled watchdog (every 15 min via `supabase/config.toml` `schedule = "*/15 * * * *"`): aggregates `rag_metrics` over the window, compares against env thresholds (`ABUSE_WINDOW_MINUTES`, `ABUSE_MAX_CALLS_CHAT/JD/CV`, `ABUSE_MAX_TOKENS`), writes breaches to `abuse_alerts`; `detail` is built from aggregates only — counts, thresholds, window sizes, timestamps, function names, never question text, user content, IPs or PII; optional counts-only webhook mirror (`ABUSE_ALERT_WEBHOOK_URL` — counts only, same rule). The 15-minute run is the aggregate watchdog, not the whole cost control: the AI endpoints enforce a global token/cost budget, a per-endpoint concurrency cap and a maximum output size ahead of the provider, the prepaid provider balance is the hard stop (ADR-0014 — the provider documents no console-level cap), and a budget or breaker trip alerts immediately rather than waiting for this window | `rag_metrics` read, `abuse_alerts` write |
 
 **Admin-function authentication (non-negotiable):** because the four admin
 functions deploy `--no-verify-jwt`, they must verify the caller's JWT
@@ -707,7 +745,7 @@ verifying the signature is NOT authentication). Behaviour contract:
 - valid token of a NON-admin user → `403`;
 - valid admin token → works.
 
-The Phase 8 audit and the Step 11 gates test exactly these four cases.
+The Phase 8 audit and the Step 11 gates test these four cases plus the two ordering cases below.
 
 **Ordering is part of the contract.** The `OPTIONS` CORS preflight — which
 carries no credentials by design — is the **only** response a function may
@@ -725,6 +763,29 @@ audit covers the data boundary and cannot see a function's control flow, so the 
 proven by reading each function's source (the first statement after the preflight is the
 signature-verifying `auth.getUser()`; the preflight is entered only for `OPTIONS`) alongside the two
 probes above — `references/secure.md` §3 item 6.
+
+**The same ordering rule covers every service-role endpoint, not only these four.** For the
+non-admin service-role endpoints — `chat`, `analyze-jd`, `generate-cv`, `get-contact`, `sitemap`,
+`abuse-alert` — the check that must precede method parsing, body parsing, business logic and
+database access is their real control: the origin/rate-limit check, the Turnstile `siteverify` on
+`generate-cv`, and the scheduler for `abuse-alert`. Their case matrix is adapted accordingly — no
+credential, forged credential, expired/replayed credential, degraded rate-limit key, unsupported
+method, malformed body, plus the two ordering cases above — and it is recorded per release
+(`references/secure.md` §3, §5).
+
+**Who uses the service role, and who must not.** The matrix above names the client each function
+uses: the four admin functions read and write with the caller's admin JWT, and the service-role
+client is confined to the functions that genuinely need the RLS bypass (`chat`, `analyze-jd`,
+`generate-cv`, `get-contact`, `sitemap`, `abuse-alert`). Where a handler does not need to bypass
+RLS it reads and writes with the caller's JWT or an invoker RPC — never a general service-role
+client on a user-controlled path. Each function reaches the database only through the grants the
+migration gives it — the per-function access matrix above is enforced by those grants, and every
+function carries a negative test proving an out-of-scope table fails (`references/secure.md` §7).
+The service-role key is held only by the functions that require it, and no other secret is readable
+from those functions; the `SUPABASE_SERVICE_ROLE_KEY` rotation
+is rehearsed — rotated on the schedule in `references/operate.md` §6, with the affected functions
+re-deployed and the live smoke re-run — before launch and at each release, and the rotation record
+is release evidence (`references/assurance.md` §2).
 
 Explicit service-role grants the migrations add (idempotent, additive):
 
@@ -744,10 +805,10 @@ that header — that is the IP-header trust test (`references/secure.md` §5), a
 mandatory gate, not a smoke test.
 
 Edge functions with `verify_jwt = false` must not be reachable without a
-credential or origin check: CORS allowlist + Turnstile (CV) + per-IP rate
+credential or origin check: the ingress shared secret + CORS allowlist + Turnstile (CV) + per-IP rate
 limits (AI) + admin JWT checks cover this. Remember: CORS is browser-only —
-the functions are publicly reachable endpoints; the rate limits / Turnstile
-/ JWT checks are the actual access control.
+the function URLs stay internet-reachable and a direct call without the ingress secret is answered
+`401`/`403`; the rate limits / Turnstile / JWT checks are the actual access control.
 
 ---
 
@@ -770,6 +831,11 @@ Base tables: RLS **enabled everywhere**. Pattern per table family:
 | CV | `cv_settings`, `cv_documents` | `cv_settings`: denied directly; the public CV content reads through `cv_settings_public` (never `creation_prompt`); `cv_documents`: denied (deny-all) | `cv_settings`: `is_admin()` reads and writes; `cv_documents`: denied | bypasses RLS |
 | Ops | `rate_limits`, `chat_response_cache`, `jd_analysis_cache`, `rag_metrics`, `abuse_alerts`, `admin_audit` | denied (deny-all policies; `abuse_alerts` additionally has explicit REVOKEs; `admin_audit` has no policy for any API role) | `abuse_alerts`: admin `SELECT`/`UPDATE`; `admin_audit`: read only through the `is_admin()`-guarded RPC, no write grant | bypasses RLS |
 
+**Privileged writes need a completed second factor.** Privileged write policies on the admin tables
+and the admin-guarded `private.get_*` monitoring RPCs carry a restrictive
+`(select auth.jwt()->>'aal') = 'aal2'` check, so a session that has not completed the second
+factor cannot write (`references/secure.md` §2 item 13).
+
 Grant hygiene (from the hardening migrations, keep them):
 
 - Revoke `INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER` on all
@@ -791,6 +857,9 @@ Grant hygiene (from the hardening migrations, keep them):
   wider public grant.
 - `EXECUTE` on cache/utility RPCs: `service_role` only. `is_admin()`:
   `authenticated` (RLS uses it via SECURITY DEFINER regardless).
+- The admin path is two conditions, not one: `is_admin()` **and** the caller's
+  `auth.uid()` present in `private.admin_allowlist` (§1). A `role` claim alone does
+  not open the admin tables, and the allowlist changes only by a reviewed migration.
 
 ---
 
@@ -799,7 +868,9 @@ Grant hygiene (from the hardening migrations, keep them):
 1. Commit migrations under `supabase/migrations/` with timestamped names
    (`YYYYMMDDHHMMSS_description.sql`).
 2. `supabase db push` (or Management API / dashboard SQL editor) — aligns
-   local with remote.
+   local with remote. Keep the **migration inventory** — `supabase migration list` against the
+   linked project — with the release: the schema history is complete and no migration is pending,
+   and a pending migration blocks the release.
 3. Gate:
    - **RLS enumeration (§12)** — every table RLS-enabled, anon write denied
      on EVERY base table (raw client test per table, not just one), anon
@@ -809,7 +880,7 @@ Grant hygiene (from the hardening migrations, keep them):
      included) and call every `get_public_*` RPC;
    - admin JWT can write (admin panel CRUD works);
    - `kb-images`: anon URL fetch 200, anon listing `[]`, admin upload works;
-   - signup with foreign-domain email → rejected; `@<your-domain>` → allowed;
+   - signup is disabled (`[auth] enable_signup = false`); a foreign-domain attempt is refused as defence in depth;
    - `check_rate_limit` returns true then false past the cap.
 4. Apply migrations **before** deploying schema-dependent Worker changes —
    deploy workflows never run migrations.
@@ -954,7 +1025,7 @@ base-table read policies are `is_admin()` only, and the visible/active/window
 row filters plus the `creation_prompt` exclusion live in the `private.api_*`
 views behind the public view wrappers.
 
-**G. Behavioral probe (REST, two keys):**
+**G. Behavioral probe (REST, three keys):**
 
 1. **anon** (publishable key): for EVERY table in §10 attempt `INSERT`,
    `UPDATE`, `DELETE` and expect `401/403`. `SELECT` on base tables must
@@ -967,6 +1038,9 @@ views behind the public view wrappers.
    must FAIL; reads on public views must SUCCEED. A permissive
    `is_admin()` typo or a missing `is_admin()` check is exactly what this
    probe catches — do not skip it.
+3. **admin** (the admin user's JWT): reads on the admin tables and `abuse_alerts` must SUCCEED;
+   `admin_audit` remains read-only (no write grant for any API role); `values_culture` /
+   `faq_responses` / `ai_instructions` reads must SUCCEED.
 
 Automate B–G in a script (`scripts/audit-rls.mjs`) so the Phase 8 RLS audit
 in the skill is one command; the script's expected output is the §10 matrix

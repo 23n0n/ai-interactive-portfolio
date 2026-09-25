@@ -214,8 +214,10 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
 - **Cause.** The per-response nonce is generated but not stamped onto the inline scripts, or not
   exposed for hydration to reuse. A nonce that matches nothing is not a CSP.
 - **Fix.** Generate 16 random bytes per response, stamp via `router.options.ssr.nonce`, expose it
-  to hydration through `<meta property="csp-nonce">`, and keep `style-src 'unsafe-inline'` only for
-  React inline styles. Error pages are JS-free with `script-src 'self'`.
+  to hydration through `<meta property="csp-nonce">`, and keep `style-src 'unsafe-inline'` only
+  while React inline styles need it — move those to controlled classes where practical, prefer
+  nonce- or hash-authorized styles, and collect `report-to` violations before tightening. Error
+  pages are JS-free with `script-src 'self'`.
 - **Check.** Load the page, parse the `Content-Security-Policy` header, extract the `script-src`
   nonce, and assert that **every** inline script in the rendered HTML carries the same nonce
   attribute. Assert `'unsafe-inline'` is absent from `script-src`. Load twice and assert the nonce
@@ -252,13 +254,18 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   `x-forwarded-for` header.
 - **Cause.** If the edge-function platform forwards the client-supplied header instead of stripping
   it, `check_rate_limit` keys on attacker-controlled input.
-- **Fix.** Run the IP-header trust test. Trust exactly one header — the one the platform sets and
-  strips (`cf-connecting-ip` on the reference) — and **never** read `x-forwarded-for`: not as a
-  primary, not as a fallback. When the platform header is absent, fail closed (structured error +
-  alert) rather than keying the limit on input the caller controls. If the platform does not strip
-  the header, move the limit to the Worker, where the platform-set value is available.
-- **Check.** Send a request with a spoofed `cf-connecting-ip` / `x-forwarded-for` and assert the
-  limit still triggers. This is a mandatory test in the security self-test, not an optional one.
+- **Fix.** Run the IP-header trust test. Trust exactly one header — the one the trusted ingress sets
+  (`cf-connecting-ip`, forwarded by the Worker on the reference) — and **never** read
+  `x-forwarded-for`: not as a primary, not as a fallback. When that header is absent, fail closed
+  (structured error + alert) rather than keying the limit on input the caller controls. If the
+  platform does not strip the header, move the limit to the Worker, where the platform-set value is
+  available.
+- **Check.** Send the spoofed `cf-connecting-ip` / `x-forwarded-for` burst **through the trusted
+  ingress** and assert the limit still triggers on the real client address; a **direct call to the
+  function URL without the ingress secret must fail** (`401`/`403`) rather than reach the rate-limit
+  key; and a **distributed-source variant** from several source networks, with the headers rotated,
+  still keys on the real address. This is a mandatory test in the security self-test, not an
+  optional one.
 - **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 11 (IP-header trust test) and Step 14.
 
 ---
@@ -292,34 +299,40 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   not a one-off.
 - **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 14 ("PAT churn") and Step 12 (secret wiring).
 
-### E3. Migration history desync on a project shared by staging and production
+### E3. Migration history desync blocks `supabase db push`
 
 - **Symptom.** `supabase db push` is blocked with a migration-history conflict; recorded as
-  "shared prod Supabase migration history desynced (legacy remote version names vs regenerated
-  local) - db push needs documented migration repair on live DB first".
+  "migration history desynced (legacy remote version names vs regenerated local) - db push needs
+  documented migration repair on live DB first".
 - **Cause.** Local migration files were regenerated with new version names while the remote history
-  kept the legacy names. One Supabase project is shared by staging and production, so the repair
-  must be done on the live database and must be documented.
-- **Fix.** Document a migration repair on the live DB first (`supabase migration repair`), then
-  push. For renames, use the additive-then-cleanup pattern the reference used for `hero` →
+  kept the legacy names. **Production and staging are separate Supabase projects** (the pair the
+  Free plan affords — `references/operate.md` §7 ADR-0012): pending migrations are applied to
+  staging first, and only then to production, so schema changes never first touch production — and
+  each project carries its own history, which is what has to be brought back in step.
+- **Fix.** Document a migration repair on the affected project first (`supabase migration repair`),
+  then push. For renames, use the additive-then-cleanup pattern the reference used for `hero` →
   `spotlight`: apply an additive migration (new keys + new section row), re-key the code, deploy,
   then apply a cleanup migration that drops the old keys. Zero downtime.
 - **Check.** Compare `supabase migration list` local vs remote before authoring new migrations, and
-  run the same comparison in CI. Never push onto a desynced history.
+  run the same comparison in CI — against the staging project first. Never push onto a desynced
+  history.
 - **Origin.** field log 2026-09-02 16:43 (blocker) → 16:54 (resolved).
 
-### E4. Edge functions deploy only with production — there is no function-level staging
+### E4. Edge functions belong to the project they are deployed to — a staging deploy is not production
 
-- **Symptom.** Deploying an edge function changes production immediately, even when the intent was
-  to test on staging.
-- **Cause.** One Supabase project is shared by both worker environments. The worker has a preview
-  environment; the database and its functions do not.
-- **Fix.** Treat every edge-function deploy as a production change: migrations applied before
-  schema-dependent code, a recorded rollback, and explicit go-live approval. Never assume a staging
-  worker deploy proves anything about the functions.
-- **Check.** A pre-deploy diff of `supabase/functions/**` that flags function changes as
-  production-affecting, and a parity checklist that states plainly that functions are not covered by
-  staging.
+- **Symptom.** Deploying an edge function changes the environment it lands in immediately, even when
+  the intent was to test on staging.
+- **Cause.** **Production and staging are separate Supabase projects** (the pair the Free plan
+  affords — `references/operate.md` §7 ADR-0012), each with its own database, functions and keys, so
+  a staging function deploy proves nothing about production and a production function deploy is live
+  the moment it lands.
+- **Fix.** Treat every production edge-function deploy as a production change: migrations applied
+  before schema-dependent code, the function set promoted staging-first, a recorded rollback, and
+  explicit go-live approval. Never assume a staging worker deploy proves anything about the
+  production functions.
+- **Check.** A pre-deploy diff of `supabase/functions/**` that flags production function changes as
+  production-affecting, and a parity checklist that names, for every function, the project and
+  environment it was promoted to.
 - **Origin.** old kit `GUIDE_FROM_SCRATCH.md` Step 14.
 
 ### E5. No backups = no site
@@ -327,10 +340,10 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
 - **Symptom.** Content loss. The database holds every section, document and setting; there is no
   copy anywhere else.
 - **Cause.** Backups were deferred as an operations task.
-- **Fix.** Before launch: schedule the `supabase db dump` plus a Storage export (daily), keep
-  14-day retention, store the copies **off** the Supabase project's own platform, and test one
-  restore. The backup policy, the destination rule and the restore procedure are in
-  `references/operate.md` §3.
+- **Fix.** Before launch: schedule the `supabase db dump` plus a Storage export, keep the daily,
+  weekly and monthly tiers (14 days, 8 weeks and 12 months), store the copies **off** the Supabase
+  project's own platform, and test one restore. The backup policy, the destination rule and the
+  restore procedure are in `references/operate.md` §3.
 - **Check.** Restore the dump into a scratch database and load one page from it. A configured
   backup that was never restored is an unverified claim — so the restore is repeated at least
   monthly and the date is recorded in the run report.
@@ -388,7 +401,7 @@ repository** and was read read-only. `old kit` entries come from the files in th
 | E1 | Supabase CLI auth order | old kit | `GUIDE_FROM_SCRATCH.md` Step 3; `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 0 |
 | E2 | PAT churn | old kit | `GUIDE_FROM_SCRATCH.md` Step 14, Step 12 |
 | E3 | Migration history desync / additive-then-cleanup | field log | 2026-09-02 16:43 → 16:54 |
-| E4 | Edge functions deploy only with production | old kit | `GUIDE_FROM_SCRATCH.md` Step 14 |
+| E4 | Edge functions belong to the project they are deployed to | old kit | `GUIDE_FROM_SCRATCH.md` Step 14 |
 | E5 | Backups and a tested restore | old kit + 2026-09-25 hardening revision | `GUIDE_FROM_SCRATCH.md` Step 13 + Step 14; policy in `references/operate.md` §3 |
 | F1 | SERP metadata caps | field log | 2026-09-02 11:44 and 13:21 |
 

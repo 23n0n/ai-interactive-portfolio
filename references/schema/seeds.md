@@ -5,7 +5,7 @@
 > **Loaded at:** Build — migrations stage, before `supabase db push`.
 > **Source:** `DATABASE_SCHEMA.md` §2.2 (the two declared seed-value relocations reproduced below)
 > and §11, byte-identical, including the 2026-09-25 hardening revision. The source's closing
-> reference-files paragraph (source §12, lines 975–978) is reproduced at the end of §12 in
+> reference-files paragraph (source §12, lines 1049–1052) is reproduced at the end of §12 in
 > [`audit.md`](audit.md).
 > **Cross-references:** the profile domain is deliberately not seeded — see the §2.1 population note
 > in `profile.md`; **§12 final RLS audit → `audit.md`**; table definitions → `profile.md`,
@@ -20,12 +20,12 @@ relocations **R1** and **R2** (see `README.md` → "Declared relocations"). Each
 byte-identical to `DATABASE_SCHEMA.md` (line numbers are the post-hardening-revision source
 lines).
 
-### R1 — `public.site_sections` seed values (source §2.2 lines 274–275)
+### R1 — `public.site_sections` seed values (source §2.2 lines 280–281)
 
 `spotlight`, `experience`, `skills`, `jd`, `testimonials`, `transparency`,
 `disclaimer`, `footer`, `fun`.
 
-### R2 — `public.holiday_banners` seed values (source §2.2 lines 312–314)
+### R2 — `public.holiday_banners` seed values (source §2.2 lines 318–320)
 
 live in the migrations (New Year, HR Day, Christmas, System Administrator
 Day, Programmer Day, Computer Security Day, Password Day, Safer Internet
@@ -49,7 +49,9 @@ seeded by migrations in the reference. There are no seed rows for `candidate_pro
 1. Commit migrations under `supabase/migrations/` with timestamped names
    (`YYYYMMDDHHMMSS_description.sql`).
 2. `supabase db push` (or Management API / dashboard SQL editor) — aligns
-   local with remote.
+   local with remote. Keep the **migration inventory** — `supabase migration list` against the
+   linked project — with the release: the schema history is complete and no migration is pending,
+   and a pending migration blocks the release.
 3. Gate:
    - **RLS enumeration (§12)** — every table RLS-enabled, anon write denied
      on EVERY base table (raw client test per table, not just one), anon
@@ -59,7 +61,7 @@ seeded by migrations in the reference. There are no seed rows for `candidate_pro
      included) and call every `get_public_*` RPC;
    - admin JWT can write (admin panel CRUD works);
    - `kb-images`: anon URL fetch 200, anon listing `[]`, admin upload works;
-   - signup with foreign-domain email → rejected; `@<your-domain>` → allowed;
+   - signup is disabled (`[auth] enable_signup = false`); a foreign-domain attempt is refused as defence in depth;
    - `check_rate_limit` returns true then false past the cap.
 4. Apply migrations **before** deploying schema-dependent Worker changes —
    deploy workflows never run migrations.

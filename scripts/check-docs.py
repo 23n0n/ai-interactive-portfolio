@@ -235,7 +235,9 @@ def check_split_coverage() -> None:
 
 # Claims this repository has deliberately superseded. A paragraph may still
 # mention them only while saying that they are gone — otherwise the old wording
-# has crept back and the two files now disagree.
+# has crept back and the two files now disagree. Matching ignores line-wrap
+# whitespace, because several of these were hidden for a release by a wrap
+# (`http(s)\n    only`, `all 21\n  tables`).
 SUPERSEDED_CLAIMS = [
     ("no MFA for the single-operator admin", "ithdrawn", "the MFA acceptance was withdrawn"),
     ("signups restricted", None, "public signup is disabled now"),
@@ -250,12 +252,43 @@ SUPERSEDED_CLAIMS = [
     # the free plan, so the admin login must carry it. Both older framings are wrong.
     ("no MFA for the single-operator admin", None, "the admin login carries TOTP MFA — it is not a single-operator exemption"),
     ("no MFA for the single operator", None, "the admin login carries TOTP MFA — it is not a single-operator exemption"),
+    ("no MFA on the single-operator admin", None, "the admin login carries TOTP MFA — it is not a single-operator exemption"),
     ("MFA on Supabase is a paid feature", None, "Supabase's Basic (TOTP) MFA is included on the free plan; only phone MFA is paid"),
     ("Supabase's MFA is a paid", None, "Supabase's Basic (TOTP) MFA is included on the free plan; only phone MFA is paid"),
     ("MFA is available only in Paid", None, "TOTP MFA is included on the free plan; only phone MFA is paid"),
     ("Cloudflare Access in front of", None, "the free second factor is Supabase TOTP, which the provider docs confirm is included"),
     ("Cloudflare Access (free", None, "do not assert a Cloudflare plan limit that the docs do not state"),
     ("Supabase-hosted admin login", "TOTP", "the Supabase admin login must be described with its TOTP control"),
+    # The 2026-09 hardening revision retired these; each is a claim a reader would
+    # build to, and each now contradicts a reference.
+    ("14-day retention", None,
+     "backups run daily/weekly/monthly tiers, not a single 14-day window"),
+    ("One Supabase project serves both targets", None,
+     "production and staging are separate Supabase projects"),
+    ("one Supabase project is shared", None,
+     "production and staging are separate Supabase projects"),
+    ("shared by both worker environments", None,
+     "production and staging are separate Supabase projects"),
+    ("no function-level staging", None,
+     "the function set is promoted through the staging project first"),
+    ("no function-level rollback", None,
+     "rollback.yml re-deploys the previous release's function set in one dispatch"),
+    ("every accepted method", None,
+     "the CV challenge is verified on the POST only; GET/HEAD carry the signed download token"),
+    ("stays for React inline styles", None,
+     "style-src 'unsafe-inline' stays only while React inline styles need it"),
+    ("only for React inline styles", None,
+     "style-src 'unsafe-inline' stays only while React inline styles need it"),
+    ("provider-side spend cap", None,
+     "the provider documents no console-level cap; the prepaid balance is the hard stop (ADR-0014)"),
+    ("http(s) hosts", None, "images are https-only now"),
+    # The 2026-09 mirror closure retired the reactive-only deploy-token story:
+    # a paragraph may describe a refresh-on-failure only while it also states
+    # the schedule. (The old kit's four-case review brief is not guarded here,
+    # because `references/secure.md` §6 keeps that quoted brief on purpose and
+    # appends the extension to the eight-case matrix.)
+    ("deploys start failing with auth errors", "schedule",
+     "the deploy-token rotation is scheduled as well as reactive (`references/operate.md` §6)"),
 ]
 
 
@@ -264,13 +297,19 @@ def sentences(text: str) -> list[str]:
     return [p for p in re.split(r"\n\s*\n", text) if p.strip()]
 
 
+def flatten(text: str) -> str:
+    """Paragraph text with line-wrap whitespace collapsed, so a wrap cannot hide a claim."""
+    return re.sub(r"\s+", " ", text)
+
+
 def check_superseded_claims(files: list[str]) -> None:
     for rel in files:
         for para in sentences(read(rel)):
+            flat = flatten(para)
             for phrase, must_also, why in SUPERSEDED_CLAIMS:
-                if phrase not in para:
+                if flatten(phrase) not in flat:
                     continue
-                if must_also is not None and must_also not in para:
+                if must_also is not None and flatten(must_also) not in flat:
                     findings.append(f"{rel}: superseded wording {phrase!r} without the correction — {why}")
                 if must_also is None:
                     findings.append(f"{rel}: superseded wording {phrase!r} — {why}")

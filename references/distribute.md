@@ -58,6 +58,10 @@ names are load-bearing.
   staging host (the persistent `workers.dev` preview) with a robots policy that refuses indexing.
   Pair `robots.txt` with the `X-Robots-Tag: noindex` response header — `robots.txt` alone is a
   request, not a control.
+- **Object URLs are not crawl targets.** `robots.txt` cannot reach a Storage object URL, so the
+  object URL answers with `X-Robots-Tag: noindex` — set at the storage layer, not here — so a known
+  URL is not crawled; the upload flow accepts publishable material only (`references/secure.md` §7,
+  Uploads; `DATABASE_SCHEMA.md` §8).
 - Staging identity is decided by environment, not by a branch: the preview environment is the
   `noindex` one. See `references/deploy.md` and `references/secure.md`.
 

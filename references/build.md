@@ -133,9 +133,12 @@ Steps:
 6. Prove the access model with a raw anon client, not with eyeballs.
 
 Gate: migrations apply cleanly; **public read works** (public views and `get_public_*` RPCs return
-data, not a permission error); **anonymous write is denied** on every table; the admin path works;
-a foreign-domain signup is rejected. Keep the raw-client evidence — it is re-run at the Stage 6
-audit.
+data, not a permission error); **anonymous write is denied** on every table; the admin path works —
+the three behavioural probes of `DATABASE_SCHEMA.md` §12 G: anon reads public views only, the
+non-admin authenticated probe fails on private reads and admin writes, and the admin JWT reads the
+admin tables and `abuse_alerts` succeed while `admin_audit` stays read-only; signup is disabled
+(`enable_signup = false`); a foreign-domain attempt is refused as defence in depth. Keep the
+raw-client evidence — it is re-run at the Stage 6 audit.
 
 ## 3. Sections
 
@@ -231,7 +234,10 @@ here. `slug` is a `content_docs` column, not a key in `doc`.
      `png/jpeg/webp/gif` — **no SVG**, server-side filenames). The library states, in the admin UI,
      that **every upload is public**: the bucket serves object URLs to anyone holding them, so it
      carries publishable material only and non-public files belong in a private bucket behind signed
-     URLs (`DATABASE_SCHEMA.md` §8).
+     URLs (`DATABASE_SCHEMA.md` §8). The upload flow classifies before it stores — only publishable
+     material is accepted, and the object URL answers with `X-Robots-Tag: noindex` so a known URL is
+     not crawled; every upload, replacement and deletion is recorded with actor, object, timestamp
+     and request id, because storage-object changes are outside `audit_admin_change`.
    - Related-pages picker fed by the live catalog.
    - AI content helpers — tag generation, FAQ-label generation and content generation via the
      DeepSeek edge functions.
@@ -239,7 +245,13 @@ here. `slug` is a `content_docs` column, not a key in `doc`.
    allow-list (`<img>` over **https** only, no `data:` URIs, hosts limited to the CSP `img-src`
    allowlist — `http:` sources are mixed content and third-party origins are tracking pixels, so
    self-hosted objects are the default). Uploads are re-encoded server-side after the format is
-   verified against the bytes, metadata is stripped, and pixel/decompression limits apply.
+   verified against the bytes, metadata is stripped, pixel/decompression limits apply, and anything
+   that fails validation is quarantined, never stored. Reject images whose intrinsic dimensions are
+   at or below the tracking-pixel threshold (≤2×2) at sanitize time. An approved external image is
+   downloaded, validated and stored in `kb-images` before it is referenced; the site serves images
+   from controlled storage, so an approved third-party host is an exception that is mirrored, not
+   hot-linked. Objects are served from a dedicated cookieless origin under
+   `Referrer-Policy: no-referrer`.
 
 Gate: hub and document pages render from the database; admin create/edit/publish works; related
 links resolve; the sanitizer strips `<script>`, `<img onerror=…>`, `javascript:` hrefs, `<iframe>`
@@ -263,15 +275,25 @@ and `data:` URIs.
 4. **Response caching** — `chat_response_cache` for chat, `jd_analysis_cache` for JD analysis.
 5. **No Turnstile** on `chat` or `analyze-jd` (ADR-0007); the compensating controls are the rate
    limits, input caps and caching.
-6. Defend against prompt injection: delimit user content, instruct the model to ignore embedded
-   instructions, forbid echoing the system prompt or the private AI context, cap output length.
+6. Defend against prompt injection with **structure, not only instruction**: delimit user content,
+   separate instructions and untrusted content structurally, forbid echoing the system prompt or the
+   private AI context, cap output length, place **no secret or credential material** in the model
+   context, and validate outputs deterministically with canary strings that detect context leakage.
+7. **Provider privacy on the chat and JD surfaces.** Both surfaces show a notice **before** content
+   is submitted, stating that the question (with its retrieved context) or the JD text goes to the
+   AI provider, and each offers a non-AI alternative to the provider path — the knowledge base and
+   the contact surface — so a visitor who does not want their text sent can still get an answer. The
+   redaction pass (emails, phone numbers, addresses, identifiers, sensitive employment data) runs
+   **before** transmission; `references/secure.md` §7 (Provider privacy) owns the full data-flow
+   note.
 
 ### 5.2 CV download (Turnstile-gated)
 
 1. Edge function `generate-cv`; Turnstile widget in the download dialog.
 2. **Server-side `siteverify`** — never trust a client-side result. The endpoint accepts `GET`, `HEAD`
-   and `POST`, and the Turnstile check runs on **every accepted method** — a `POST`-only guard leaves
-   a `GET` bypass of the CV/abuse gate.
+   and `POST`. The Turnstile challenge is verified server-side on the `POST` only; `GET` and `HEAD`
+   carry the short-lived single-use signed download token — no accepted method is unverified and no
+   challenge reaches a URL.
 3. Diagnostics use hyphenated error codes: `no-token`, `no-secret`, `http-*`, `error-codes`. These
    four are enumerated here because `references/secure.md` documents only `invalid-input-response`;
    this file is their only owner — do not reduce them to a pointer.
@@ -290,8 +312,12 @@ and `data:` URIs.
 
 ### 5.3 Edge-function inventory
 
-All functions deploy `--no-verify-jwt` with the CORS allowlist and 405/415 guards. The DB access
-matrix is in `references/schema/access.md` (§9 of the source schema).
+All functions deploy `--no-verify-jwt` with the CORS allowlist and 405/415 guards. Public AI and CV
+traffic reaches them only through the trusted ingress: the Worker proxies the request and carries a
+shared secret (or a signed, short-lived assertion) that the function verifies before any handling — a
+request without it is rejected before rate-limit evaluation — so `--no-verify-jwt` does not leave the
+function URL open (`references/secure.md` §7, Ingress). The DB access matrix is in
+`references/schema/access.md` (§9 of the source schema).
 
 | Function | Role | Access control |
 |---|---|---|
@@ -318,10 +344,19 @@ Ordering matters as much as the check: the `OPTIONS` preflight is the only respo
 auth — every other request runs the signature-verifying `auth.getUser()` before the method guard, the
 body guard and any handler logic (`references/secure.md` §3).
 
-Gate: for each of the four functions — no token → `401`; tampered/forged token → `401`; valid
-non-admin token → `403`; admin token → works; plus the ordering cases: `OPTIONS` without a token
-returns the preflight, and a tokenless non-`OPTIONS` request returns `401` even for an unsupported
-method.
+**Every service-role endpoint carries the contract, not only the four admin functions.** For the
+non-admin service-role endpoints (`chat`, `analyze-jd`, `generate-cv`, `get-contact`, `sitemap`,
+`abuse-alert`) the same ordering rule applies to their real control — the origin/rate-limit check, the
+Turnstile `siteverify` on `generate-cv`, the scheduler for `abuse-alert` — and the case matrix is
+adapted accordingly (`references/secure.md` §3 item 7): no credential, forged credential,
+expired/replayed credential, degraded rate-limit key, unsupported method, malformed body, plus the two
+ordering cases.
+
+Gate: for **every** service-role endpoint — the eight-case matrix (no token, forged, expired,
+non-admin, revoked-admin, valid admin, unsupported method, malformed body); and for each of the four
+admin functions — no token → `401`; tampered/forged token → `401`; valid non-admin token → `403`;
+admin token → works; plus the ordering cases: `OPTIONS` without a token returns the preflight, and a
+tokenless non-`OPTIONS` request returns `401` even for an unsupported method.
 
 ### 5.5 Seasonal banners
 
@@ -348,10 +383,10 @@ it; never proceed and mention it later.
 | Sub-stage | Gate |
 |---|---|
 | Scaffold | `bun install --frozen-lockfile && bun run typecheck && bun run lint && bun run build` green; `bun run dev` serves the app; lockfile resolves from the public npm registry in CI; committed `.npmrc` pins `registry.npmjs.org` |
-| Data layer | `supabase db push` applies cleanly; public read works; anonymous write denied; admin path works; foreign-domain signup rejected |
+| Data layer | `supabase db push` applies cleanly; public read works; anonymous write denied; admin path works (the three behavioural probes of `DATABASE_SCHEMA.md` §12 G, admin reads included); signup is disabled (`enable_signup = false`); a foreign-domain attempt is refused as defence in depth |
 | Sections | typecheck, lint, build green; browser check on desktop and mobile; every anchor reaches its deferred section on first load; cold-load anchor test passes for every advertised anchor (fresh context, desktop + mobile) |
 | Content model and KB | hub and document pages render from the database; admin create/edit/publish works; related links resolve; sanitizer strips disallowed markup |
-| Interactive features | edge-function guards reject bad method (`405` + `Allow`) and bad body (`415`); Turnstile gate rejects missing (`403`) and dummy (`invalid-input-response`) tokens; rate limits enforced; admin functions reject missing (`401`), forged (`401`) and non-admin (`403`) tokens; no secret shapes in `dist/`; the CV cache key covers the whole CV input and a `cv_settings` edit purges the cached PDF |
+| Interactive features | edge-function guards reject bad method (`405` + `Allow`) and bad body (`415`); Turnstile gate rejects missing (`403`) and dummy (`invalid-input-response`) tokens; rate limits enforced; admin functions reject missing (`401`), forged (`401`) and non-admin (`403`) tokens, and the two ordering cases — `OPTIONS` without a token returns the preflight, and a tokenless non-`OPTIONS` request returns `401` even for an unsupported method; no secret shapes in `dist/`; the CV cache key covers the whole CV input and a `cv_settings` edit purges the cached PDF |
 | Security defaults | wired as part of the build, not after it — full header suite, CORS allowlist, secrets policy, CI secret and dependency scanning; any deviation recorded in an ADR. See `references/secure.md` |
 | Identity | `enable_signup = false`; the admin provisioned by hand and present in an immutable user-id allowlist; account creation and role changes raise an alert |
 | Production readiness | every row of `references/secure.md` §7 satisfied with its artifact, and the evidence list in `references/assurance.md` §2 complete — a release that cannot show the artifacts is not ready |

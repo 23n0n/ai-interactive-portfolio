@@ -112,8 +112,10 @@ Build in this order, verifying each part before moving on.
    `bun run typecheck`, `bun run lint`, `bun run build` all green; the dev server serves the app.
 2. **Data layer.** Apply the full schema from the frozen `DATABASE_SCHEMA.md`: every table, view,
    RPC, function, trigger, policy, grant, storage rule and seed. Populate the profile and content
-   domains through the admin surface. Gate: migrations apply cleanly; public read works; anonymous
-   write is denied; the admin path works.
+   domains through the admin surface. Gate: migrations apply cleanly; public read works (the three
+   behavioural probes of `DATABASE_SCHEMA.md` §12 G, the admin reads included); anonymous write is
+   denied; the admin path works; signup is disabled (`enable_signup = false`) and a foreign-domain
+   attempt is refused as defence in depth.
 3. **Core sections.** Navigation, spotlight, about, skills, experience, testimonials, fun links,
    disclaimer, contact, footer — approved design system only. Mobile-first and accessible. If the
    owner approved the footer credit (Stage 2), the footer renders `Inspired by zabrowski.pl` as an
@@ -124,16 +126,37 @@ Build in this order, verifying each part before moving on.
    typecheck, lint and build green; browser check on desktop and mobile.
 4. **Content collections and knowledge base.** The typed block model, hub and document routes with
    server-side related-link resolution, the WYSIWYG admin, the image library, AI content helpers,
-   and a server-side HTML sanitizer on all rich content. Gate: hub and document pages render from
-   the database; admin create/edit/publish works; the sanitizer strips disallowed markup.
-5. **Interactive features.** AI chat and job-description analysis (per-IP rate limits, input caps,
-   response caching, no key in the browser), the Turnstile-gated CV download with server-side
-   verification, the edge-function inventory, authenticated admin functions, and seasonal banners.
+   and a server-side HTML sanitizer on all rich content. The library is a **public bucket for
+   publishable material only** and says so in the admin UI; the upload flow classifies before it
+   stores, accepts an image only after decoding and re-encoding it server-side, checks the detected
+   format against the claimed MIME type, strips metadata (EXIF, colour profiles, comments), applies
+   pixel and decompression limits before decoding, quarantines anything that fails validation
+   instead of storing it, serves objects from a dedicated cookieless origin (under
+   `Referrer-Policy: no-referrer`, with object URLs answering `X-Robots-Tag: noindex`), and records
+   every upload, replacement and deletion with actor, object, timestamp and request id; approved
+   external images are downloaded, validated and mirrored into controlled storage rather than
+   hot-linked. Gate: hub and document pages render from the database; admin create/edit/publish
+   works; the sanitizer strips disallowed markup.
+5. **Interactive features.** AI chat and job-description analysis (per-IP rate limits behind the
+   trusted ingress, a global budget with a circuit breaker in front of the provider, input caps,
+   response caching, no key in the browser, a privacy notice **before** content is submitted on both
+   surfaces with a non-AI alternative and a redaction pass that runs **before** transmission —
+   `references/secure.md` §7, Provider privacy), the Turnstile-gated CV download with server-side
+   verification on the `POST` plus the signed single-use token on `GET`/`HEAD`, the edge-function
+   inventory behind the **trusted ingress** (the function URL is not a public entry point),
+   authenticated admin functions, and seasonal banners.
    Gate: wrong method returns 405 with `Allow`; non-JSON body returns
-   415; bad tokens are rejected; happy paths work end to end; admin functions reject missing,
-   forged and non-admin tokens.
+   415; bad tokens are rejected; happy paths work end to end; **every** service-role endpoint
+   passes the eight-case matrix (no token, forged, expired, non-admin, revoked-admin, valid admin,
+   unsupported method, malformed body), with the non-admin adaptation in `references/secure.md` §3
+   item 7.
 6. **Security defaults are not optional** (§5.4). Wire the full header suite, the CORS allowlist,
    the secrets policy, and CI secret and dependency scanning as part of the build, not after it.
+   The supply chain carries its evidence: SBOM (CycloneDX or SPDX) per release; dependency-review on
+   every pull request, blocking vulnerable additions; every third-party action pinned to a full
+   commit SHA (**never** a tag); SAST (CodeQL or equivalent) and a workflow-security analyzer
+   (`zizmor` or equivalent) in CI; signed provenance for the built artifacts, verified before
+   deploy; and the bundle/artifact secret scan run against what ships, not only the source tree.
    Record any decision that deviates in an ADR.
 
 - Reference: `build.md`, `pitfalls.md` for scaffold and for sections, content and
@@ -143,9 +166,19 @@ Build in this order, verifying each part before moving on.
 
 - Deploy to **staging first**. A staging link the owner can click must exist before anything is
   public; staging is `noindex`.
+- **Production and staging are separate Supabase projects** — the pair the Free plan affords
+  (`references/operate.md` §7 ADR-0012), each with its own database, functions and keys. Pending
+  migrations and the **same** edge-function artifact are promoted through staging first, so a
+  schema change or a function never first touches production.
 - Prepare the go-live set: domain and TLS, `www` redirecting to the apex, the CI deploy workflow,
-  a blue/green parity check against production, a smoke test of every core route, and a recorded
-  **rollback** before each production deploy.
+  a blue/green parity check against production, a smoke test of every core route, a current
+  acceptance register (no expired critical acceptance), a configured synthetic availability check,
+  and a recorded **rollback** before each production deploy.
+- **Credentials for the deploy are scoped and rotated**: short-lived, federated credentials where
+  the platform supports them (GitHub Actions OIDC into Cloudflare, workload identity into Supabase
+  where offered); otherwise a token scoped to one project, environment and API surface, rotated on a
+  schedule as well as on suspicion, with use outside the approved workflows raised as an alert and
+  pull-request workflows kept away from deployment secrets.
 - Run the inherited go-live checklist before asking for the gate (see
   `SKILL_INTERACTIVE_PORTFOLIO.md`, "Verification checklist").
 - Database migrations are applied **before** deploying schema-dependent changes.
@@ -168,10 +201,16 @@ Build in this order, verifying each part before moving on.
 ### Stage 6 — Operate
 
 - **Hardening and the security gate are mandatory before you call anything done.** Run the final
-  RLS audit (`DATABASE_SCHEMA.md` §12 A–G), the anonymous probe, the admin-function auth tests, the
-  IP-header trust test, the prompt-injection test, the sanitizer test, the bundle secret scan, and
-  an independent security review in a fresh session with no memory of the build. Fix every finding.
-- Set up backups (`supabase db dump` plus storage export) and test one restore.
+  RLS audit (`DATABASE_SCHEMA.md` §12 A–G), the anonymous probe, the service-role auth tests (the
+  eight-case matrix for every service-role endpoint), the IP-header trust test through the ingress
+  with its direct-call and distributed-source variants, the prompt-injection test with its breadth
+  and its cache replay, the sanitizer test and its fuzz run, the bundle secret scan, and
+  an independent security review in a fresh session with no memory of the build. Fix every finding;
+  close the open ones in the order `references/assurance.md` §5 gives.
+- Set up backups (`supabase db dump` plus storage export) in the daily, weekly and monthly tiers
+  with versioning or immutable retention at the off-platform destination, and test one restore.
+- Turn on security telemetry — separate from the cost watchdog (`references/operate.md` §4.1) —
+  and the synthetic availability check (`references/secure.md` §2 item 22).
 - Treat every later owner request as a **run**: make the change, verify it, record it in
   `runs/<run-id>/report.md`. Content edits, copy updates and design tweaks all follow the same
   path.
@@ -214,15 +253,42 @@ it does. Wait for a clear yes. A silence, a maybe, or an unanswered question is 
    model connection yourself before trusting anything. The owner approves only the four gates in
    §4.
 4. **Security defaults always — industry level.** Row-level security everywhere; anonymous access
-   is public **read-only views**; admin gated by `is_admin()`; writes are service-role only;
-   Turnstile is verified server-side on the CV endpoint only (not chat or job analysis, which use
-   per-IP rate limits); CORS allowlist; HSTS 180 days; the full header suite (CSP with a
-   per-response nonce and no `unsafe-inline`, `X-Content-Type-Options: nosniff`,
-   `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `X-Frame-Options`);
+   is public **read-only views**; admin gated by `is_admin()` **and** the immutable user-id
+   allowlist; writes are service-role only; the public AI/CV functions sit behind the **trusted
+   ingress** (the Worker proxies them and carries a shared secret the function verifies before any
+   handling — the function URL is not a public entry point); Turnstile is verified server-side on
+   the CV endpoint only, on the `POST` that mints the short-lived single-use signed download token
+   for `GET`/`HEAD` (never on chat or job analysis, which use
+   per-IP rate limits); CORS allowlist; HSTS 180 days (`preload` only with a ≥1-year `max-age` and
+   every subdomain on HTTPS); the full header suite (CSP with a
+   per-response nonce and no `unsafe-inline` in `script-src`, `frame-ancestors 'none'` on every
+   HTML response, `X-Content-Type-Options: nosniff`,
+   `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `X-Frame-Options` as
+   the legacy backstop) — proven by an automated live header assertion over every route including
+   the error responses (5xx/404), not only the core route list — and before the tightened
+   `style-src` policy is enforced, application rendering is tested under it (owner pages, KB
+   hub/detail, admin WYSIWYG and error pages render with no style breakage and no new CSP
+   violation reports); the public image bucket carries publishable material only and says so in the
+   admin UI, uploads are classified before they are stored (decoded and re-encoded, metadata
+   stripped, pixel and decompression limits, images at or below the tracking-pixel dimensions
+   (≤2×2) rejected at sanitize time, failures quarantined rather than stored, object URLs
+   answering `X-Robots-Tag: noindex` from a dedicated cookieless origin), every upload,
+   replacement and deletion is logged, and approved external images are mirrored into controlled
+   storage rather than hot-linked;
    405/415 guards on edge functions; fail-closed SSR; **secrets live server-side only** (Supabase
    secrets / Wrangler secrets) — never in `.env.local`, never committed, never in the browser
-   bundle; dependency and secret scanning enforced in CI; MFA on every account that deploys or
-   holds secrets. A partial control needs a compensating control; a risk acceptance needs an ADR.
+   bundle; dependency and secret scanning enforced in CI, with the supply-chain evidence the build
+   gate requires (SBOM, dependency-review, SHA-pinned actions, SAST, workflow analysis, signed
+   provenance, artifact/bundle scan); MFA on every account that deploys or holds secrets, with TOTP
+   on the Supabase-hosted admin login and `aal2` enforced server-side — and on any change to
+   `app_metadata.role`, password, MFA enrolment or account status the affected sessions are revoked
+   and the user is signed out, with the access-token lifetime set to the documented
+   `[auth] jwt_expiry` and privileged writes revalidating the caller; the controls are
+   machine-checkable — policy-as-code where the platform allows, migration linting including policy
+   diffs, generated test suites, machine-readable deviation and omission records, and a versioned
+   security baseline the release records itself against, so a release that omits required evidence
+   fails. A
+   partial control needs a compensating control; a risk acceptance needs an ADR.
    **Threat model — read once:** rate limits, input caps, response caching and Turnstile protect
    against **abuse and excessive AI use**, not against a determined attacker. The real security
    boundary is the **RLS model** (views, grants, policies), which is why the final RLS audit is

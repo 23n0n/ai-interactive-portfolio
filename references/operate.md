@@ -99,7 +99,8 @@ supabase storage cp -r ss:///kb-images ./backup/<date>-kb-images
   restore in the run report; a backup with no recorded location is not a backup.
 - **Frequency and retention:** `backup.yml` runs daily (off-peak) and on manual dispatch; it takes
   the schema, data and role dumps plus the `kb-images` export and uploads them to the off-platform
-  destination. Keep **14 days**; older copies are deleted by the same job.
+  destination. Retention is tiered, not a single window (below); expired copies are deleted by the
+  same job.
 - **Off-platform means off Supabase.** The destination is a different provider or account from
   the Supabase project (for example an object-storage bucket the owner controls) — a dump stored
   inside the platform it backs up does not survive that platform's failure or a lost account.
@@ -125,7 +126,9 @@ supabase storage cp -r ss:///kb-images ./backup/<date>-kb-images
   CI variables and environment protection rules, repository settings, and the **names** of every
   secret with its owner and rotation step (never the values — a password manager holds those). Plus
   a break-glass path that has been tested: the ability to regain access to GitHub, Cloudflare, the
-  Supabase project, the AI provider and the backup destination if a phone or a mailbox is lost.
+  Supabase project, the AI provider and the backup destination if a phone or a mailbox is lost. This
+  export is **manual** and kept beside the backups: `backup.yml` covers the database and the
+  `kb-images` bucket, and nothing else.
 - **A verified backup is taken immediately before anything destructive or schema-changing**
   (`references/deploy.md` §6), and the free tier's lack of point-in-time recovery is a recorded
   acceptance with an expiry, not a fact of life (`references/assurance.md` §3).
@@ -144,9 +147,10 @@ gate #4.
   `TURNSTILE_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`) — keep them in a password manager, never in the
   repo or in `ad-home/`.
 - Cloudflare Worker configuration and environment, DNS records and domain registration, CI
-  variables and environment protection rules.
-- The git repository's own configuration (branch protection, environments); the code's backup is its
-  remote.
+  variables and environment protection rules — exported by hand with the configuration above, not by
+  `backup.yml`.
+- The git repository's own configuration (branch protection, environments) — exported by hand like
+  the rest of the configuration; the code's backup is its remote.
 - The free tier carries no automated backup or PITR to rely on. The dump is the backup.
 
 ## 4. Monitoring
@@ -162,13 +166,16 @@ own events, its own thresholds and its own destination:
 | Account created; `app_metadata.role` changed | the two events that turn a stranger into an administrator | `admin_audit` (§4.3 hooks) and Auth logs |
 | Grant, policy, view-option or storage-policy change | the RLS boundary is the security boundary; a change to it is a security event, not a migration detail | `supabase migration list` diff and the §12 audit run per release |
 | Large or unusual reads (row counts, off-hours patterns) | data exfiltration is quiet — volume is the signal | Postgres logs / `pg_stat_statements` |
-| Secrets: access anomalies, rotation failures, token use outside the approved workflows | a leaked service-role key is total access | Cloudflare/Supabase audit logs, GitHub Actions logs |
+| Secrets: access anomalies, rotation failures, token use outside the approved workflows, a service-role call from outside the approved functions | a leaked service-role key is total access | Cloudflare/Supabase audit logs, GitHub Actions logs |
 | RLS denial spikes | an application bug or an enumeration attempt — both are findings | Postgres logs (`policy` denials) |
 | Security-header regression on a live route | a deploy that silently dropped `frame-ancestors`, HSTS or the CSP nonce | the live header check in `references/secure.md` §5 |
+| Suspicious edge-function invocation — a function called from outside the approved workflows, or a call pattern no route produces | the ingress boundary is only proof against the paths we know about | edge-function logs, Cloudflare Worker logs |
+| Admin session takeover — an admin login from a new device or country, or two live admin sessions in impossible-travel order | a stolen session acts exactly like the administrator | Auth logs + `admin_audit` (§4.3 hooks) |
 
-Each event carries a severity, an owner and an escalation path, goes to an **off-platform**
-destination (not only the dashboard of the platform it watches), and is tested once with a
-controlled event — an alert nobody has ever seen fire is not an alert.
+Each event carries a base severity, an owner, an escalation path and a response time (the §4.2 clock
+for that severity), goes to an **off-platform** destination (not only the dashboard of the platform
+it watches), and is tested once with a controlled event — an alert nobody has ever seen fire is not
+an alert.
 
 **The audit export.** `admin_audit` (`DATABASE_SCHEMA.md` §2.3) is exported off-platform on the same
 schedule as the backups, and the `cleanup-admin-audit` prune refuses to run until that export
@@ -182,24 +189,33 @@ Severity decides who is woken and how fast:
 | Severity | Example | Response |
 |---|---|---|
 | **S1** | live site serving private data; admin account taken over; service-role key exposed | contain first (take the site down or rotate the key), then investigate; owner informed immediately |
-| **S2** | public write path abused; AI spend runaway; a policy or grant change nobody made | contained within the same day; evidence preserved before any change |
+| **S2** | public write path abused; AI spend runaway; a policy or grant change nobody made; two consecutive failures of the synthetic availability check (`references/secure.md` §2 item 22) | contained within the same day; evidence preserved before any change |
 | **S3** | single alert, no sign of impact; a failed gate that stopped a deploy | handled in the next run, recorded |
+
+**Who owns what:** the owner decides contain-vs-investigate at S1 and approves any notification; the
+agent owns containment, evidence capture and the incident record; the notification for S1/S2 goes to
+the owner first (the webhook channel, §4.4), and to affected parties or a regulator only after the
+owner's decision.
 
 Playbooks — short, written, rehearsed once — for the four that actually happen: **credential
 compromise** (rotate, re-deploy, re-read the logs for use, then decide on notification),
 **data exposure** (contain, preserve evidence, establish which rows and who saw them, assess
 notification duties), **AI abuse** (turn the breaker, then look at cache and cost), and
 **supply chain** (freeze deploys, pin back, rebuild from a known-good manifest). Evidence is
-preserved before remediation wherever the two conflict: fix the incident, but do not destroy the
-record of it. One tabletop exercise — walk an S1 scenario end to end on paper — is part of
-production readiness, and the record of it lives with the run reports.
+preserved before remediation wherever the two conflict — quarantined off-platform, never in
+`ad-home/`, and retained with the run record for at least 400 days (the `admin_audit` window,
+`DATABASE_SCHEMA.md` §2.3): fix the incident, but do not destroy the record of it. One tabletop
+exercise — walk an S1 scenario end to end on paper — is part of production readiness, and the record
+of it lives with the run reports.
 
 ### 4.3 Content takedown
 
 Published content and uploaded images are cacheable, so removal is two steps, not one: delete the
 row or the storage object, then purge the cache (CDN and the browser-facing route) — a deleted image
 that is still cached is still published. Record the removal: what, when, why, and by whom, in
-`admin_audit` where the change went through the admin surface. For a public bucket the removal is
+`admin_audit` where the change went through the admin surface, and in the upload path's own record
+(actor, object, timestamp, request id) where the removed thing was a storage object — storage-object
+changes are outside `audit_admin_change` (`DATABASE_SCHEMA.md` §8). For a public bucket the removal is
 time-sensitive (`DATABASE_SCHEMA.md` §8): an object URL that has already been fetched cannot be
 recalled.
 
@@ -217,7 +233,8 @@ surfaced in the admin panel's Monitoring view (admin `SELECT`/`UPDATE` acknowled
 **Counts only — never question text, user content or PII.** The watchdog is an abuse signal for the
 AI endpoints and the CV endpoint; it is not attack detection. Rate limits, input caps, response
 caching and Turnstile protect against abuse and excessive AI use, not against a determined attacker
-— the RLS model is the security boundary (`references/secure.md` §1).
+— the RLS model is the security boundary (`references/secure.md` §1). A budget trip or breaker trip
+alerts immediately, out of band from the 15-minute aggregate run.
 
 #### Webhook contract
 
@@ -305,12 +322,17 @@ fail-closed SSR smoke), then deploys to staging first (`references/deploy.md`).
 
 | Secret | Where it lives | Rotation trigger |
 |---|---|---|
-| `SUPABASE_ACCESS_TOKEN` | GitHub Actions secret | deploys failing with auth errors (PAT churn) |
+| `SUPABASE_ACCESS_TOKEN` | GitHub Actions secret | scheduled (twice a year) + deploys failing with auth errors (PAT churn) |
 | `CLOUDFLARE_API_TOKEN` | GitHub Actions secret | token expiry or scope change |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase secret | exposure suspicion; treat a leak as total access |
 | `TURNSTILE_SECRET` | Supabase secret | Cloudflare Turnstile key rotation |
 | `deepseek` | Supabase secret, read as `Deno.env.get("deepseek")` | provider key rotation |
 | `ABUSE_ALERT_WEBHOOK_URL` | Supabase secret (URL-embedded token) | channel change, responder loses access, or exposure suspicion |
+
+**One set per environment.** Because staging and production are two Supabase projects, each holds its
+own `SUPABASE_SERVICE_ROLE_KEY`, its own webhook credential, its own AI provider key (`deepseek`) and
+its own Turnstile site and secret keys — a staging credential reaches staging resources only
+(`references/deploy.md` §2).
 
 Secrets are server-side only — set with `supabase secrets set` / Wrangler secrets, never in
 `.env.local`, never committed, never in `ad-home/`. **Rotate on a schedule as well as on
@@ -361,7 +383,11 @@ an order of magnitude, not a quote.
 An acceptance is a decision with a shelf life, not a note. Every row carries an owner, the date it
 was approved, an **expiry**, a review cadence, the trigger that invalidates it and the remediation it
 waits for; `references/assurance.md` §3 holds the register and the rule that an expired critical
-acceptance blocks promotion.
+acceptance blocks promotion. Approval dates are real dates: every live row below was approved on
+**2026-09-25** and expires **2026-12-31**, one review cycle past the expected next release — a
+renewal writes a new date and says what changed. The rows below are the record: the site files each
+acceptance as its own ADR in the run that adopts it, and the register row and that ADR must agree on
+every field.
 
 **Plan facts are checked, not assumed.** Every plan claim in these rows was verified against the
 providers' own documentation on **2026-09-25** — Supabase's pricing table, Cloudflare's WAF managed
@@ -369,16 +395,16 @@ rules and R2 pricing pages, GitHub's code-scanning availability, and DeepSeek's 
 plans change, so re-check them at each release. A control that turns out to be free is required, not
 accepted: that is how ADR-0009 fell.
 
-| ADR | Acceptance | Owner | Expires / review | What invalidates it |
-|---|---|---|---|---|
-| ADR-0008 | Free tier only; no paid Supabase features (`sessions_timebox` is Pro-gated and stays unset). This is the constraint that shapes every other row — anything the free plans already give us is required, never accepted | owner | reviewed each release; expires when a ceiling is hit | Any ceiling above is crossed, a required capability is Pro-gated, or the owner asks for a paid feature or plan — then owner gate #2 (spend) applies and a new ADR supersedes ADR-0008 |
-| ADR-0009 | ~~No MFA on the Supabase-hosted admin login.~~ **Withdrawn — MFA is free, and the check proved it.** Supabase's plan table lists *Basic Multi-Factor Auth* as **included on Free**; only *Advanced MFA (Phone)* is the paid add-on. TOTP (an app authenticator) is therefore required on the admin login, and `aal2` is enforced server-side: privileged policies add a restrictive check on the `aal` claim. The compensating controls stay, because they cost nothing: signup disabled with a user-id allowlist, a long unique password in the password manager, the reset mailbox behind MFA, short token lifetimes with revalidation, the audit trail and auth-failure telemetry | owner | withdrawn; superseded by the MFA requirement in `references/secure.md` §2 item 13 | — |
-| ADR-0011 (to record) | `generate-cv`'s only non-browser gate is Turnstile plus the per-IP limit; CORS is browser-only, so the rate limit is the abuse backstop, not attack protection. Both controls are free | owner | reviewed each release | Targeted abuse of the CV endpoint at volume, confidential material in the CV, or a second control becoming available — then add it and supersede the ADR |
-| ADR-0012 (to record) | **Narrowed by the verified plan:** production plus a **staging project** with its own database, functions and keys is affordable on the free plan — Supabase documents *"Limit of 2 active projects"* and answers the development/production question with exactly that pair, and running Supabase locally (CLI or Docker) is free and unlimited for development. The residual is the free tier's own behaviour, not the count: a free project **pauses after 1 week of inactivity** (unpause before a release), database branching is a paid add-on (so environments are separate projects, not branches), and a third *hosted* environment is not affordable | owner | reviewed each release | A release that needs a third hosted environment, a second operator, or a plan change — then add it and supersede the ADR (`DATABASE_SCHEMA.md` §11, `references/deploy.md` §6) |
-| ADR-0013 (to record) | **No managed database backup and no point-in-time recovery:** Supabase lists *Automatic backups — not included* on Free and prices PITR as a paid add-on, so our own dumps are the recovery point and up to one backup interval of data can be lost. Compensating controls are free: tiers (daily/weekly/monthly), a verified backup immediately before anything destructive or schema-changing, and an off-platform destination inside a free object-storage tier (Cloudflare R2 documents 10 GB-month free, with free egress) | owner | reviewed each release | A recovery-point objective shorter than the dump interval, any destructive operation without a fresh verified backup, or a plan that includes managed backups or PITR — then enable it and supersede the ADR (`references/operate.md` §3) |
-| ADR-0014 (to record) | **AI spend is bounded by a prepaid balance, not by a provider cap.** DeepSeek deducts per token from a topped-up balance and documents no console-level spend limit, so the ceiling is however much is topped up. Controls, both free: keep the topped-up balance at the size of one month's budget (the balance itself is the hard stop) and keep our own global token/cost budget with a circuit breaker in front of the endpoints (`references/secure.md` §7, AI cost) | owner | reviewed each release | The provider shipping spend caps, a gateway with limits becoming affordable, a month where the breaker trips, or a balance large enough to matter — then re-size the budget or move the gate |
-| ADR-0015 (to record) | **Platform logs cannot be the security record.** Supabase's free plan keeps API and database logs for **1 day** and Auth audit logs for **1 hour**, and log drains are a paid add-on; the platform audit log and metrics endpoint are paid too. Compensating control is free: security telemetry is written to our own tables and mirrored off-platform, and the administrative audit trail is ours, kept 400 days (`references/operate.md` §4.1, `DATABASE_SCHEMA.md` §2.3) | owner | reviewed each release | An incident whose evidence window predates our retention, or a plan with drains and longer retention — then add drains and extend retention |
-| ADR-0016 (to record) | **Edge WAF coverage on the free plan is the Free Managed Ruleset only** — Cloudflare's availability table shows *Free Managed Ruleset: Yes* on Free, while the Cloudflare Managed Ruleset and the OWASP Core Ruleset are paid. So the ingress is the Worker plus a shared secret plus our own rate limits, with the **Free Managed Ruleset enabled** (it is free — enable it rather than accept anything) | owner | reviewed each release | Sustained L3/L7 abuse that the free ruleset and the rate limits cannot hold, or a plan that affords the fuller rulesets — then enable them and supersede the ADR |
+| ADR | Acceptance | Owner | Approved | Expires | Review | Remediation | What invalidates it |
+|---|---|---|---|---|---|---|---|
+| ADR-0008 | Free tier only; no paid Supabase features (`sessions_timebox` is Pro-gated and stays unset — compensated by the `jwt_expiry` lifetime plus per-request revalidation, `references/secure.md` §2 item 13). This is the constraint that shapes every other row — anything the free plans already give us is required, never accepted | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Owner gate #2 (spend) applies and a new ADR supersedes ADR-0008 | Any ceiling above is crossed, a required capability is Pro-gated, or the owner asks for a paid feature or plan |
+| ADR-0009 | ~~No MFA on the Supabase-hosted admin login.~~ **Withdrawn — MFA is free, and the check proved it.** Supabase's plan table lists *Basic Multi-Factor Auth* as **included on Free**; only *Advanced MFA (Phone)* is the paid add-on. TOTP (an app authenticator) is therefore required on the admin login, and `aal2` is enforced server-side: privileged policies add a restrictive check on the `aal` claim. The compensating controls stay, because they cost nothing: signup disabled with a user-id allowlist, a long unique password in the password manager, the reset mailbox behind MFA, short token lifetimes with revalidation, the audit trail and auth-failure telemetry | owner | 2026-09-25 | 2026-09-25 (supersession date) | not applicable — withdrawn | None: TOTP MFA with `aal2` is required and enforced (`references/secure.md` §2 item 13) | Already fired — the plan table proved Basic (TOTP) MFA is included on Free, so the acceptance was withdrawn |
+| ADR-0011 | `generate-cv`'s only non-browser gate is Turnstile plus the per-IP limit; CORS is browser-only, so the rate limit is the abuse backstop, not attack protection. Both controls are free | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Require a server-side, non-challenge gate on `generate-cv` — an authenticated token bound to a server-side decision — and supersede the ADR | Targeted abuse of the CV endpoint at volume, confidential material in the CV, or a second control becoming available |
+| ADR-0012 | **Narrowed by the verified plan:** production plus a **staging project** with its own database, functions and keys is affordable on the free plan — Supabase documents *"Limit of 2 active projects"* and answers the development/production question with exactly that pair, and running Supabase locally (CLI or Docker) is free and unlimited for development. The residual is the free tier's own behaviour, not the count: a free project **pauses after 1 week of inactivity** (unpause before a release), database branching is a paid add-on (so environments are separate projects, not branches), and a third *hosted* environment is not affordable | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Add the third hosted environment (owner gate #2, spend) and supersede the ADR (`DATABASE_SCHEMA.md` §11, `references/deploy.md` §6) | A release that needs a third hosted environment, a second operator, or a plan change |
+| ADR-0013 | **No managed database backup and no point-in-time recovery:** Supabase lists *Automatic backups — not included* on Free and prices PITR as a paid add-on, so our own dumps are the recovery point and up to one backup interval of data can be lost. Compensating controls are free: tiers (daily/weekly/monthly), a verified backup immediately before anything destructive or schema-changing, and an off-platform destination inside a free object-storage tier (Cloudflare R2 documents 10 GB-month free, with free egress) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Enable managed backups and supersede the ADR (`references/operate.md` §3) | A recovery-point objective shorter than the dump interval, any destructive operation without a fresh verified backup, or a plan that includes managed backups or PITR |
+| ADR-0014 | **AI spend is bounded by a prepaid balance, not by a provider cap.** DeepSeek deducts per token from a topped-up balance and documents no console-level spend limit, so the ceiling is however much is topped up. Controls, both free: keep the topped-up balance at the size of one month's budget (the balance itself is the hard stop) and keep our own global token/cost budget with a circuit breaker in front of the endpoints (`references/secure.md` §7, AI cost) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Re-size the budget or move the gate | The provider shipping spend caps, a gateway with limits becoming affordable, a month where the breaker trips, or a balance large enough to matter |
+| ADR-0015 | **Platform logs cannot be the security record.** Supabase's free plan keeps API and database logs for **1 day** and Auth audit logs for **1 hour**, and log drains are a paid add-on; the platform audit log and metrics endpoint are paid too. Compensating control is free: security telemetry is written to an off-platform destination we control (the platform's own logs are not the record), and the administrative audit trail is ours, kept 400 days (`references/operate.md` §4.1, `DATABASE_SCHEMA.md` §2.3) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Add drains and extend retention | An incident whose evidence window predates our retention, or a plan with drains and longer retention |
+| ADR-0016 | **Edge WAF coverage on the free plan is the Free Managed Ruleset only** — Cloudflare's availability table shows *Free Managed Ruleset: Yes* on Free, while the Cloudflare Managed Ruleset and the OWASP Core Ruleset are paid. So the ingress is the Worker plus a shared secret plus our own rate limits, with the **Free Managed Ruleset enabled** (it is free — enable it rather than accept anything) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Enable the fuller rulesets and supersede the ADR | Sustained L3/L7 abuse that the free ruleset and the rate limits cannot hold, or a plan that affords the fuller rulesets |
 
 Never upgrade a plan to clear a limit without asking: spend is owner gate #2. A compensating control
 and a superseding ADR are written in the same run as the change.
@@ -400,14 +426,18 @@ working as designed. Do not "fix" it by serving cached content. Check, in order:
 in the Supabase dashboard (a free-tier project can be paused for inactivity), the project's database
 and API health, then the deployed `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` values.
 Nothing at the Worker is rolled back for a pure Supabase outage — restore service at Supabase, then
-re-run the live smoke.
+re-run the live smoke. **The degraded read-only mode is the authorised exception, not a bug.**
+`references/secure.md` §2 item 10 requires a signed, sanitized, published-rows-only snapshot for the
+public read paths, served with `noindex` once its ADR is recorded: if that snapshot is live, the site
+is in the degraded mode by decision — `/admin`, the AI, personalized and dynamic routes stay
+fail-closed regardless, and the snapshot never serves unpublished rows.
 
 **Bad deploy.** The rollback path is owned by `references/deploy.md`: `rollback.yml` restores the
-**Worker** to the recorded previous version. Know what it does not undo: **database migrations** are
-not reversed (recover data from the `supabase db dump` backup), and **edge functions are not
-versioned** — one Supabase project serves both targets, a function deploy changes production
-immediately, so recover by re-deploying the previous function code. A rollback is itself a deploy:
-after it, run the live smoke on the affected target and record the run.
+**Worker** to the recorded previous version and re-deploys that release's function set from the
+manifest, so the whole release rolls back together. Know what it does not undo: **database
+migrations** are not reversed (recover data from the `supabase db dump` backup), and the DNS/domain
+configuration — the previous Worker and its functions are the undo for everything else. A rollback
+is itself a deploy: after it, run the live smoke on the affected target and record the run.
 
 **Lost or damaged data.** Restore from the database dump plus the `kb-images` storage export (§3),
 re-run `supabase db push` to confirm the schema is current, and re-run the final RLS audit in
@@ -425,12 +455,12 @@ these is optional, and each result is recorded as an `audit` run.
 | A new or changed view | `references/secure.md` §4.1 view options — `security_invoker = on` and `security_barrier = true` on every `public.*_public` view; `security_barrier = true` only on `private.api_*` views (adding `security_invoker` there breaks anonymous reads) |
 | A new or changed `SECURITY DEFINER` function | `references/secure.md` §4.2 `EXECUTE` grant sweep |
 | A new bucket, a storage policy change, or a MIME/size change | `references/secure.md` §4.3 `storage.objects` policy audit |
-| A new or changed edge function | Admin-function auth test (`references/secure.md` §3) for any of the four admin functions; the `405`/`415` guards; the service-role grant matrix; the live CORS check |
+| A new or changed edge function | Admin-function auth test (`references/secure.md` §3) for any of the four admin functions, and the adapted case matrix for the other service-role endpoints; the `405`/`415` guards; the service-role grant matrix; the live CORS check |
 | A dependency major, or a lockfile regeneration | `ci.yml` in full; `cloudflare-migration.yml` (dry-run + built-Worker fail-closed SSR smoke); the bundle secret scan for `sk-`, `sb_secret_`, `0x3…` in `dist/` |
 | A platform change — runtime, region, plan, domain | The deploy gates in `references/deploy.md` §8 and the verification checklist in `references/secure.md` §5 |
-| A change to a `*_public` view's projected columns (adding or removing a column) | `references/secure.md` §4.1 view options, then the anon probe (`DATABASE_SCHEMA.md` §12 G1) — confirm the new column is either intentionally public or pruned |
+| A change to a `*_public` view's projected columns (adding or removing a column) | `references/secure.md` §4.1 view options, then the allowlist, projection test and negative tests, then the anon probe (`DATABASE_SCHEMA.md` §12 G1) — confirm the new column is either intentionally public or pruned |
 | A change to a retention/TTL or cleanup job (`rag_metrics`, `cv_documents`, caches, `admin_audit`) | Re-check the scheduled jobs in `DATABASE_SCHEMA.md` §7 and the minimization note in §2.3 |
-| A change to the upload pipeline, the image bucket or the sanitizer allowlist | `references/secure.md` §7 (uploads, content) — re-run the ingest corpus and the sanitizer suite |
+| A change to the upload pipeline, the image bucket or the sanitizer allowlist | `references/secure.md` §7 (uploads, content) — re-run the ingest corpus, the sanitizer suite and the fuzz run |
 | A change to a cache key or cache rules | `references/secure.md` §7 (AI caches) — confirm the version binding and the invalidation path |
 | A change to the ingress, the trusted IP source or the rate-limit key | `references/secure.md` §7 (ingress) — re-run the spoofed-header tests and the direct-invocation test |
 | A change to telemetry, alerts, the audit trail or the backup destination | `references/secure.md` §7 (monitoring, audit, backups) — fire one controlled event, and restore once |
