@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://demo.invalid/</loc><changefreq>monthly</changefreq></url>
+  <url><loc>https://demo.invalid/services</loc></url>
+  <url><loc>https://demo.invalid/services/ai-chatbot-embedding</loc></url>
+  <url><loc>https://demo.invalid/services/react-typescript</loc></url>
+  <url><loc>https://demo.invalid/services/fullstack-consulting</loc></url>
+  <url><loc>https://demo.invalid/technologies</loc></url>
+  <url><loc>https://demo.invalid/technologies/typescript</loc></url>
+  <url><loc>https://demo.invalid/technologies/react</loc></url>
+  <url><loc>https://demo.invalid/technologies/postgresql</loc></url>
+  <url><loc>https://demo.invalid/technologies/supabase</loc></url>
+  <url><loc>https://demo.invalid/contact</loc></url>
+  <url><loc>https://demo.invalid/cv</loc></url>
+</urlset>
