@@ -891,6 +891,15 @@ pausing after a week of inactivity — because they shape how staging is done (A
 | Governance | Every acceptance of residual risk carries an owner, an approval date, an **expiry**, a review cadence, the trigger that invalidates it and the remediation plan; an expired critical acceptance blocks promotion | the acceptance register (`references/assurance.md` §3) |
 | Governance | The independent review is a preserved artifact against the production commit, not a procedure: findings register, evidence, responses and retest results, by a reviewer who does not rely only on this documentation | the review artifact in the site repository |
 
+**Optional hardening — pre-provider input screening.** A hosted *typed classifier* in front of the
+provider, vetoing the request when the probability it returns for the visitor's text is above a
+threshold, is additional hardening and deliberately **not** a required row above: it is a paid API,
+so the free-tier posture this section opens with does not cover it, and the owner gate for accounts
+and money applies (`AGENTS.md` §4). The design rules, the two question sets that survived measurement,
+how to validate a set against each surface's own legitimate traffic, and the measured trade-offs are
+in `references/prompt-guard.md`. Adopt it on top of the AI data row, never instead of it, and record
+it with the other cost-shaped decisions in the register (`references/operate.md` §7).
+
 ## Source map
 
 | Section here | Old-kit source |

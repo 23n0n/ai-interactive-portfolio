@@ -71,7 +71,7 @@ frozen (below).
 | Path | What it is |
 |---|---|
 | `AGENTS.md` | **The contract.** The agent's instructions: the six stages, the four owner gates and the non-negotiables. The place to start. |
-| `references/` | The knowledge package, loaded by the agent one stage at a time: intake, design, build, deploy, security, assurance, distribution, operations, pitfalls, state layout, harness notes, and the frozen schema split by domain. |
+| `references/` | The knowledge package, loaded by the agent one stage at a time: intake, design, build, deploy, security, assurance, distribution, operations, pitfalls, state layout, harness notes, optional classifier screening of visitor text (`references/prompt-guard.md`), and the frozen schema split by domain. |
 | `scripts/` | The distribution's own tools: five shell helpers for workspace state (workspace home and lock handling — `ad-home.sh` plus the sourced `ad-lock.sh` — a new site `ad-new-site.sh`, updates `ad-update.sh`, status `ad-status.sh`) and `check-docs.py`, which checks this repository's internal consistency (see **Checks** below). |
 | `examples/` | A worked run. `examples/ad-home/` shows the on-disk state a registered site produces — registry, manifest, decisions log and run reports — and `examples/local-sandbox/` is the throwaway no-account prototype the intake stage can offer: a runnable Vite + React app with its own tests, docs and ADR, wired to flat dummy files instead of a database. |
 | `skills/` | The **convention for optional per-harness wrappers**: if a harness discovers skills only in a fixed directory, its adapter is one file, `skills/<harness>/SKILL.md`, that does nothing but point at `AGENTS.md`. No wrapper ships here — the tree holds only `skills/README.md` — and `references/harness.md` §5 carries the template. |
@@ -132,7 +132,9 @@ panel and the gated CV download — for you:
 - **Protection:** Cloudflare Turnstile.
 - **Toolchain:** Bun and Wrangler 4.
 - **The site's own AI features:** DeepSeek, called from server-side functions with the key held
-  server-side.
+  server-side. Optional hardening on top of the structural controls, adopted only with the owner's
+  approval and its own account: a hosted typed classifier that vetoes hostile visitor text before the
+  model is asked anything (`references/prompt-guard.md`).
 - **Database:** `DATABASE_SCHEMA.md` is the source of truth and is not edited to fit a shortcut.
 
 If something genuinely cannot be done on this stack, the agent stops and asks you rather than

@@ -149,7 +149,10 @@ Build in this order, verifying each part before moving on.
    415; bad tokens are rejected; happy paths work end to end; **every** service-role endpoint
    passes the eight-case matrix (no token, forged, expired, non-admin, revoked-admin, valid admin,
    unsupported method, malformed body), with the non-admin adaptation in `references/secure.md` §3
-   item 7.
+   item 7. If the owner approves it (an account and a spend — §4), additional hardening is available:
+   the pre-provider classifier screen in `references/prompt-guard.md`, which vetoes hostile visitor
+   text before the model is asked anything. It sits on top of the controls in this item and never
+   replaces one, and it is validated against each surface's own legitimate traffic before it ships.
 6. **Security defaults are not optional** (§5.4). Wire the full header suite, the CORS allowlist,
    the secrets policy, and CI secret and dependency scanning as part of the build, not after it.
    The supply chain carries its evidence: SBOM (CycloneDX or SPDX) per release; dependency-review on
@@ -355,7 +358,10 @@ Load only what the current stage needs. Never dump a reference the stage does no
 | Operate | `operate.md`, `secure.md`, `pitfalls.md`, `assurance.md` | — |
 
 **Status of this table:** every reference in the Load column exists (§9). Load them by stage; do
-not load a reference the current stage does not need.
+not load a reference the current stage does not need. One reference is conditional rather than
+staged: `references/prompt-guard.md` loads at Build — features, and again at the go-live gate and in
+Operate, only once the owner has approved the classifier screen (§4), because it is optional
+hardening and the stages do not otherwise need it.
 
 Two rules keep the loading honest:
 
@@ -379,6 +385,7 @@ source for their subjects, but these references are the primary path.
 | `references/build.md` | Scaffold, sections, content model, features | **exists** |
 | `references/deploy.md` | Domain, hosting, CI, staging-first, rollback | **exists** |
 | `references/secure.md` | Security defaults, RLS audit, verification checklist | **exists** |
+| `references/prompt-guard.md` | Optional pre-provider classifier screening of visitor text: design rules, the question sets, how to validate one against your own traffic, and what it costs | **exists** |
 | `references/assurance.md` | Specification vs evidence, the artifact set a release must show, the rules for accepted risk, the independent-review artifact, and the order to close gaps in | **exists** |
 | `references/distribute.md` | `llms.txt`, JSON-LD, markdown surfaces, schema.org | **exists** |
 | `references/operate.md` | Edits by conversation, backups, monitoring | **exists** |
