@@ -27,7 +27,7 @@ export function Footer() {
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link className="text-ink-soft hover:text-primary-700" to="/">Home</Link></li>
             <li><Link className="text-ink-soft hover:text-primary-700" to="/cv">CV</Link></li>
-            <li><Link className="text-ink-soft hover:text-primary-700" to="/contact">Ask AI about me</Link></li>
+            <li><Link className="text-ink-soft hover:text-primary-700" to="/contact">Ask SI</Link></li>
             {collections.map((c) => (
               <li key={c.slug}>
                 <Link className="text-ink-soft hover:text-primary-700" to={`/${c.slug}`}>

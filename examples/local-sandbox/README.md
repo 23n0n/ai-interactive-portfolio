@@ -35,11 +35,11 @@ npm run build
 ## Routes
 | Path | Page |
 |---|---|
-| `/` | Home (typewriter hero, about, skills, experience, collections, testimonials) |
+| `/` | Home (Main Character, about, skills, experience, collections, testimonials) |
 | `/services`, `/services/:slug` | Services hub + docs |
 | `/technologies`, `/technologies/:slug` | Technologies hub + docs |
 | `/cv` | CV (English, Print/Save-as-PDF) |
-| `/contact` | Contact + dummy AI chat |
+| `/contact` | Contact + dummy SI chat |
 | `*` | 404 |
 
 ## Docs

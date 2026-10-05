@@ -9,18 +9,19 @@ function renderAt(path: string) {
 }
 
 describe('demo-portfolio routes render', () => {
-  it('renders the home hero headline', () => {
+  it('renders the home Main Character headline', () => {
     renderAt('/')
     expect(screen.getByRole('heading', { name: /Hi, I'?m Zygfryd/i })).toBeInTheDocument()
   })
 
-  it('home links to Services, Technologies, CV and Ask AI', () => {
+  it('home links to Services, Technologies, CV and the assistant', () => {
     renderAt('/')
     // Services/Technologies appear in both nav and the collections preview
     expect(screen.getAllByRole('link', { name: /Services/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /Technologies/i }).length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: /View CV/i })).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /Ask AI about me/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Ask about my work/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Ask SI/i }).length).toBeGreaterThan(0)
   })
 
   it('renders the Services hub', () => {
@@ -44,7 +45,7 @@ describe('demo-portfolio routes render', () => {
     expect(screen.getByRole('heading', { name: /Supabase/i })).toBeInTheDocument()
   })
 
-  it('renders the contact page with the AI chat', () => {
+  it('renders the contact page with the SI chat', () => {
     renderAt('/contact')
     expect(screen.getByText(/Talk to me/i)).toBeInTheDocument()
     expect(screen.getByText(/friendly demo assistant/i)).toBeInTheDocument()
@@ -62,7 +63,7 @@ describe('demo-portfolio routes render', () => {
     expect(screen.getByText(/404/)).toBeInTheDocument()
   })
 
-  it('allows asking the dummy AI about skills', async () => {
+  it('allows asking the dummy SI about skills', async () => {
     const user = (await import('@testing-library/user-event')).default
     renderAt('/contact')
     const input = screen.getByLabelText(/Chat message/i)

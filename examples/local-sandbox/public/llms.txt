@@ -10,7 +10,7 @@ real launch.
 - Service docs: /services/ai-chatbot-embedding, /services/react-typescript, /services/fullstack-consulting
 - Technologies: /technologies
 - Technology docs: /technologies/typescript, /technologies/react, /technologies/postgresql, /technologies/supabase
-- Contact / Ask AI: /contact
+- Contact / Ask SI: /contact
 - CV (English): /cv
 
 ## Key facts (placeholder)

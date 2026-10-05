@@ -9,7 +9,7 @@ const links = [
   { to: '/services', label: 'Services' },
   { to: '/technologies', label: 'Technologies' },
   { to: '/cv', label: 'CV' },
-  { to: '/contact', label: 'Ask AI' },
+  { to: '/contact', label: 'Ask SI' },
 ]
 
 export function Nav() {

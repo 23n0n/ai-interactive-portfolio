@@ -26,6 +26,6 @@ demo build.
 |---|---|---|
 | TanStack Start (SSR) + Cloudflare Vite plugin | Vite client SPA | No Cloudflare deploy; SSR unnecessary locally |
 | Supabase (Postgres/RLS/Auth) | Local typed TS data modules | No Supabase account in demo |
-| Edge functions + DeepSeek | Client-side canned "dummy AI" chat | No API key / backend in demo |
+| Edge functions + DeepSeek | Client-side canned "dummy SI" chat | No API key / backend in demo |
 | Turnstile on CV | Omitted | No real CV endpoint in demo |
 | GitHub Actions deploy | Omitted | No GitHub/Cloudflare deploy target yet |

@@ -89,7 +89,7 @@ the question list silently: the skipped questions are named in the record.
 
 10. Page organization: single scrolling home with sections, separate pages, or both (home + hub/doc
     pages)?
-11. Spotlight pattern: portrait/photo, big headline + subline, terminal/typewriter intro, split
+11. Main Character pattern: portrait/photo, big headline + subline, terminal/typewriter intro, split
     layout, badge + CTA buttons, or something else?
 12. Navigation: top bar, sidebar, or minimal (logo + 2–3 links)? Sticky or not?
 13. Section order on the home page (e.g. spotlight → about → skills → experience → testimonials →
@@ -123,7 +123,7 @@ the question list silently: the skipped questions are named in the record.
     certifications, technologies, speaking, glossary, resources) — which do you want, and roughly
     how many docs each?
 21. CV: languages needed, sections to include, one page or longer?
-22. Contact surface: email link, form, socials, "Ask AI about me" — which?
+22. Contact surface: email link, form, socials, "Ask about my work" — which?
 23. Site language(s): single, bilingual, which is primary?
 
     **Follow-up probe (required):** if anything other than "single" is answered — *"Should the

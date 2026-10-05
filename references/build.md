@@ -147,7 +147,7 @@ Build only from the approved design system. No new sections, no copied layout.
 Section list and order (home page):
 
 1. Navigation
-2. Spotlight — carries the "Ask AI about me" CTA
+2. Main Character — carries the "Ask about my work" CTA
 3. About
 4. Skills matrix
 5. Experience timeline

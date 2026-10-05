@@ -14,19 +14,19 @@ Local demo build of the `interactive-portfolio` skill. Approved design v2.
   `#2a2333`, primary purple ramp (`#c4b5fd`…`#6d28d9`), AI lime accent
   (`#84cc16`), warm amber callouts.
 - **Voice:** witty + warm. **Density:** rich.
-- **Motion:** typewriter hero + gentle scroll-reveal + parallax feel; all
+- **Motion:** typewriter effect in the Main Character section + gentle scroll-reveal + parallax feel; all
   disabled under `prefers-reduced-motion`.
 - **Fonts:** Fraunces (display), Inter (body), JetBrains Mono (accents).
 
 ## Routes
 | Path | Page |
 |---|---|
-| `/` | Home (hero/typewriter, about, skills, experience, collections preview, testimonials) |
+| `/` | Home (Main Character/typewriter, about, skills, experience, collections preview, testimonials) |
 | `/services` | Services hub |
 | `/services/:slug` | Service doc |
 | `/technologies` | Technologies hub |
 | `/technologies/:slug` | Technology doc |
-| `/contact` | Contact + dummy AI chat |
+| `/contact` | Contact + dummy SI chat |
 | `/cv` | CV (English) — printable via Print/Save-as-PDF |
 | `*` | 404 |
 
@@ -60,7 +60,7 @@ replaced before any real launch.
 ## Verification
 - `npm run typecheck` / `npm run lint` / `npm test` / `npm run build` all green.
 - Smoke tests (`src/pages/routes.test.tsx`, vitest + jsdom + testing-library): every
-  public route renders, nav/footer links present, dummy-AI chat answers a query,
+  public route renders, nav/footer links present, dummy-SI chat answers a query,
   404 shows for unknown routes. jsdom mocks for `IntersectionObserver`,
   `matchMedia`, `print` in `src/test/setup.ts`.
 - Data-layer tests (`src/data/content.test.ts`): collections resolve, doc slugs

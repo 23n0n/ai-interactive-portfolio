@@ -5,7 +5,7 @@ import { person } from '@/data/content'
 export function ContactPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-      <h1 className="font-display text-4xl font-semibold text-ink">Talk to me (or my demo AI)</h1>
+      <h1 className="font-display text-4xl font-semibold text-ink">Talk to me (or my demo SI)</h1>
       <p className="mt-4 max-w-2xl text-lg text-ink-soft">
         Prefer a robot? Ask the assistant below. Prefer a human? Email or find me on social —
         both point at placeholders in this demo.

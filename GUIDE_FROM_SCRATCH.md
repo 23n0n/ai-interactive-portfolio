@@ -11,8 +11,8 @@
 
 Complete, hand-holding guide to build a project like **zabrowski.pl** — an
 interactive portfolio/CV site — from zero. You will build: a homepage
-(spotlight, skills matrix, experience timeline, testimonials, just-for-fun
-links, disclaimer, footer), an **AI chat** ("Ask AI about me"), a **JD
+(Main Character, skills matrix, experience timeline, testimonials, just-for-fun
+links, disclaimer, footer), an **SI chat** ("Ask about my work"), a **JD
 analyzer** ("paste a job description, get an honest fit analysis"), a
 **knowledge base** (hub + detail pages you edit in a WYSIWYG admin panel),
 a **Turnstile-gated CV download**, recurring holiday banners, and
@@ -480,8 +480,8 @@ dashboard — the agent will reconcile.
 
 ## Step 9 — Phase D: core sections
 
-The agent builds the sections from your approved design: nav, spotlight
-("Ask AI about me" CTA), about, skills matrix, experience timeline,
+The agent builds the sections from your approved design: nav, Main Character
+("Ask about my work" CTA), about, skills matrix, experience timeline,
 testimonials, just-for-fun links, disclaimer, contact, footer — all
 responsive and accessible (contrast AA, focus states,
 `prefers-reduced-motion`).
@@ -493,7 +493,7 @@ bun run typecheck && bun run lint && bun run build
 ```
 
 Green, then **browser check**: open the site at desktop and mobile widths;
-walk every section; test keyboard navigation; verify the spotlight copy and
+walk every section; test keyboard navigation; verify the Main Character copy and
 sections come from the database (edit something in the admin panel and
 refresh).
 
@@ -1287,11 +1287,11 @@ questions you skipped and why; never trim the list silently.
 **3. Layout and structure**
 10. Page organization: single scrolling home with sections, separate pages,
     or both (home + hub/doc pages)?
-11. Spotlight pattern: portrait/photo, big headline + subline, terminal/typewriter
+11. Main Character pattern: portrait/photo, big headline + subline, terminal/typewriter
     intro, split layout, badge + CTA buttons, or something else?
 12. Navigation: top bar, sidebar, or minimal (logo + 2–3 links)? Sticky or
     not?
-13. Section order on the home page (e.g. spotlight → about → skills → experience →
+13. Section order on the home page (e.g. Main Character → about → skills → experience →
     testimonials → AI → footer). Anything to reorder, drop, or add?
 14. How to present data: experience as timeline or cards? Skills as
     strong/moderate/gap columns, tag cloud, or progress bars? Testimonials as
@@ -1317,7 +1317,7 @@ questions you skipped and why; never trim the list silently.
     experience, certifications, technologies, speaking, glossary, resources) —
     which do you want, and roughly how many docs each?
 21. CV: languages needed, sections to include, one page or longer?
-22. Contact surface: email link, form, socials, "Ask AI about me" — which?
+22. Contact surface: email link, form, socials, "Ask about my work" — which?
 23. Site language(s): single, bilingual, which is primary?
 
     **Follow-up probe (required)** if the answer is not "single": *"Should
@@ -1332,7 +1332,7 @@ questions you skipped and why; never trim the list silently.
     swaps.)
 
 Derive: design tokens (Tailwind v4 `@theme`: color ramps, fonts, radius,
-shadow, motion), type scale, spacing rhythm, layout concept (nav style, spotlight
+shadow, motion), type scale, spacing rhythm, layout concept (nav style, Main Character
 pattern, section rhythm, card style, footer), responsive + accessibility
 (contrast AA, keyboard nav, reduced motion). Carry the two scope decisions
 into the contract — the focus/comprehensive answer (section budget) and the
@@ -1356,7 +1356,7 @@ accounts? ~20–30 min, throwaway — nothing is created or charged."*
    (`profile.json`, `content.json`, `sections.json`) exposing the SAME shape
    the real build reads: name, title, elevator_pitch, status, target stages;
    site copy (headline, pitch, CTA…); section order.
-3. Render a single-page approximation (spotlight → about → skills →
+3. Render a single-page approximation (Main Character → about → skills →
    experience) fed by those files, so the design-questionnaire answers become
    a real page the user can click through.
 4. AI copy help is optional and also account-free — a local Ollama model, or
@@ -1507,7 +1507,7 @@ time.
   foreign-domain attempt is rejected as defence in depth).
 
 ### Phase 4 — Core sections
-- Build: nav, spotlight ("Ask AI about me" CTA), about, skills matrix, experience
+- Build: nav, Main Character ("Ask about my work" CTA), about, skills matrix, experience
   timeline, testimonials/recommendations, just-for-fun links, disclaimer,
   contact surface, footer — approved design system only.
 - Responsive (mobile-first) + accessible (contrast AA, focus states,

@@ -72,7 +72,7 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
   keyboard appears dead. This replaced A2's regression.
 - **Cause.** `overflow-x: clip` on `html` plus `body` triggers WebKit bug 150715 — excessive
   enforced zoom when the body has `overflow: hidden`. The clip was redundant: the real overflow
-  source had already been fixed with hero `text-balance` plus wrapping.
+  source had already been fixed with Main Character `text-balance` plus wrapping.
 - **Fix.** Remove `overflow-x: clip` from `html` and `body`. Fix the actual overflowing element and
   verify zero overflow without any root clip in **both** Chromium and WebKit.
 - **Check.** Serve the built CSS and assert no root `overflow-x: clip`; run the overflow audit at

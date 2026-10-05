@@ -117,12 +117,12 @@ Define all six parts before sketching:
 
 - **Navigation** (Q12): top bar, sidebar, or minimal (logo + 2–3 links); sticky or not. On mobile
   it collapses to a working menu, still keyboard operable.
-- **Spotlight** (Q11): what holds the first 5 seconds. It must carry the one primary audience (Q2)
+- **Main Character** (Q11): what holds the first 5 seconds. It must carry the one primary audience (Q2)
   and the one-line brand (Q1). Choose the pattern the owner named — portrait, headline + subline,
   terminal/typewriter intro, split layout, badge + CTA buttons, or an equivalent.
 - **Section rhythm** (Q10, Q13): name every section and its order. Vary the layout between
   contained and full-bleed sections so the page has rhythm, and give each section one job. Typical
-  sections available: navigation, spotlight (with the "Ask AI about me" CTA), about, skills matrix,
+  sections available: navigation, Main Character (with the "Ask about my work" CTA), about, skills matrix,
   experience timeline, testimonials/recommendations, just-for-fun links, disclaimer, contact,
   footer — plus the AI surfaces (Q17). Build only the ones the owner chose; drop the rest.
 - **Card style** (Q14): define one card primitive — padding, radius, border/shadow, hover — and use
@@ -197,10 +197,10 @@ Rules:
 ┌──────────────────────────────────────────────────┐
 │ nav: logo · links · CV/CTA             [theme]   │
 ├──────────────────────────────────────────────────┤
-│ SPOTLIGHT (#top)                                 │
+│ MAIN CHARACTER (#top)                                 │
 │   headline …                                     │
 │   subline …                     [portrait/visual]│
-│   [CTA: Ask AI about me]  [CV]                   │
+│   [CTA: Ask about my work]  [CV]                   │
 ├──────────────────────────────────────────────────┤
 │ ABOUT (#about)                                   │
 ├──────────────────────────────────────────────────┤

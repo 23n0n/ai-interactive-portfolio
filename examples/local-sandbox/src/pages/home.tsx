@@ -8,7 +8,7 @@ import { Reveal } from '@/components/reveal'
 export function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
-      {/* HERO */}
+      {/* MAIN CHARACTER */}
       <section className="grid items-center gap-10 py-20 md:grid-cols-[1.2fr_1fr]">
         <div>
           <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-800">
@@ -23,7 +23,7 @@ export function HomePage() {
           <p className="mt-4 max-w-xl text-lg text-ink-soft">{person.about}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <LinkButton to="/contact" variant="ai" size="lg">
-              Ask AI about me <ArrowRight className="h-4 w-4" />
+              Ask about my work <ArrowRight className="h-4 w-4" />
             </LinkButton>
             <LinkButton to="/services" variant="outline" size="lg">
               See what I do
@@ -44,7 +44,7 @@ export function HomePage() {
               </div>
             </div>
             <span className="absolute -right-3 -top-3 rounded-full bg-ai-400 px-3 py-1 text-xs font-bold text-white shadow">
-              AI-powered
+              SI-powered
             </span>
           </div>
         </div>

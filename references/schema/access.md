@@ -275,7 +275,7 @@ shipped to the browser. Set it with `supabase secrets set deepseek=<sk-...>`.
 
 | Function | Purpose | DB access (service role) |
 |---|---|---|
-| `chat` | "Ask AI about me" — RAG over the knowledge base, topic detection, DeepSeek, response cache, per-IP rate limit | `content_docs_public` read; `check_rate_limit`, `get/set_chat_cache`, `insert_rag_metric` |
+| `chat` | "Ask about my work" — RAG over the knowledge base, topic detection, DeepSeek, response cache, per-IP rate limit | `content_docs_public` read; `check_rate_limit`, `get/set_chat_cache`, `insert_rag_metric` |
 | `analyze-jd` | Paste a job description → honest fit analysis; JD cache; per-IP rate limit | `candidate_profile_public`, `experiences_public`, `skills_public`, `gaps_weaknesses_public`, `recommendations_public` reads; `check_rate_limit`, `get/set_jd_cache`, `insert_rag_metric` |
 | `generate-cv` | CV/PDF generation. The Turnstile response arrives **only in a `POST` body** (never a URL) and is verified server-side; a verified `POST` mints a short-lived single-use **signed download token**, and the `GET`/`HEAD` that fetch the PDF must present it — so no method is unverified and no challenge reaches a log, a referrer or browser history. Reads the full `cv_settings` row (including `creation_prompt`) with the **service-role** client; PDF cached in `cv_documents` keyed by the hash of the whole CV input | `cv_settings` read (**service role**), `cv_documents` write (service role), `check_rate_limit`, `insert_rag_metric` |
 | `generate-doc-content` | Admin: DeepSeek generates draft doc content (blocks) for the KB editor | reads/writes via authenticated admin JWT |

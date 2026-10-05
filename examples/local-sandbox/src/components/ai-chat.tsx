@@ -10,7 +10,7 @@ interface Msg {
 }
 
 const canned: Record<string, string> = {
-  hello: 'Hello! I am the demo AI. I only pretend to know Zygfryd — ask me his role, skills or services.',
+  hello: 'Hello! I am the demo SI. I only pretend to know Zygfryd — ask me his role, skills or services.',
   skills: 'His strongest skills are TypeScript, React, Node.js and PostgreSQL. Ask me to list his services!',
   services: 'He offers friendly AI chatbot embedding, React + TypeScript builds, and full-stack consulting.',
   default:
@@ -49,7 +49,7 @@ export function AiChat() {
     <div className="overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm">
       <div className="flex items-center gap-2 border-b border-primary-100 bg-gradient-to-r from-ai-400 to-ai-500 px-4 py-3 text-white">
         <MessageCircle className="h-5 w-5" />
-        <span className="font-semibold">Ask AI about Zygfryd</span>
+        <span className="font-semibold">Ask SI about Zygfryd</span>
         <span className="ml-auto text-xs text-white/90">demo — no real data</span>
       </div>
 
