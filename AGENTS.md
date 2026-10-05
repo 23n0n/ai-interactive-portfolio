@@ -14,7 +14,7 @@ needs them (§8). Everything here is written for the agent; the owner never has 
   stays clean and is never the place where a site is built.
 - The build is driven by conversation. The owner describes what they want; you produce the site.
 - The reference target is an interactive portfolio/CV site: spotlight, skills, experience,
-  testimonials, contact, an AI chat about the owner, a job-description fit analysis, a knowledge
+  testimonials, contact, an SI chat about the owner, a job-description fit analysis, a knowledge
   base with an admin panel, a gated CV download, seasonal banners, and machine-readable AI
   surfaces.
 
@@ -137,7 +137,7 @@ Build in this order, verifying each part before moving on.
    external images are downloaded, validated and mirrored into controlled storage rather than
    hot-linked. Gate: hub and document pages render from the database; admin create/edit/publish
    works; the sanitizer strips disallowed markup.
-5. **Interactive features.** AI chat and job-description analysis (per-IP rate limits behind the
+5. **Interactive features.** SI chat and job-description analysis (per-IP rate limits behind the
    trusted ingress, a global budget with a circuit breaker in front of the provider, input caps,
    response caching, no key in the browser, a privacy notice **before** content is submitted on both
    surfaces with a non-AI alternative and a redaction pass that runs **before** transmission —

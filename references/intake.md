@@ -92,7 +92,7 @@ the question list silently: the skipped questions are named in the record.
 11. Main Character pattern: portrait/photo, big headline + subline, terminal/typewriter intro, split
     layout, badge + CTA buttons, or something else?
 12. Navigation: top bar, sidebar, or minimal (logo + 2–3 links)? Sticky or not?
-13. Section order on the home page (e.g. spotlight → about → skills → experience → testimonials →
+13. Section order on the home page (e.g. Main Character → about → skills → experience → testimonials →
     AI → footer). Anything to reorder, drop, or add?
 14. How to present data: experience as timeline or cards? Skills as strong/moderate/gap columns,
     tag cloud, or progress bars? Testimonials as quote cards, carousel, or grid?
@@ -208,8 +208,8 @@ the hand-held path — not a tier, not a separate product.
    cloud).
 2. **Dummy DB = flat files.** A small `dummy/` directory of JSON/TS modules (`profile.json`,
    `content.json`, `sections.json`) exposing the **same shape** the real build reads: name, title,
-   `elevator_pitch`, status, target stages; site copy (headline, pitch, CTA…); section order.
-3. Render a single-page approximation (spotlight → about → skills → experience) fed by those files,
+   `elevator_pitch`, status, target stages; site content (headline, pitch, CTA…); section order.
+3. Render a single-page approximation (Main Character → about → skills → experience) fed by those files,
    so the design-questionnaire answers become a real page the owner can click through.
 4. AI copy help is optional and also account-free — a local Ollama model, or none at all.
 

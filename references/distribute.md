@@ -72,7 +72,7 @@ names are load-bearing.
 - `/llms-full.txt` is the **full text**: the knowledge base flattened, one document per published
   doc, each under its canonical URL and `h1`.
 - Both derive from the catalog and the document payloads — never a second, hand-maintained copy of
-  the site copy.
+  the site content.
 - Both return **200** with the correct text content type.
 
 ### `openapi.json`

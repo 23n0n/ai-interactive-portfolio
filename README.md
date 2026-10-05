@@ -3,7 +3,7 @@
 *Vibecoded for vibecoders by Piotr Żabrowski :-)*
 
 This repository is a **knowledge package plus a skill distribution** for building personal sites
-like [`zabrowski.pl`](https://zabrowski.pl) — an interactive portfolio/CV with an AI chat about you,
+like [`zabrowski.pl`](https://zabrowski.pl) — an interactive portfolio/CV with an SI chat about you,
 a knowledge base with an admin panel, a gated CV download and machine-readable surfaces for search
 and AI. You do not read a manual and you do not run the build yourself: you clone this repository,
 hand it to the AI agent you already use, and say **"I want my own site"**. The agent carries the

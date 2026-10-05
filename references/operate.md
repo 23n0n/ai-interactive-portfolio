@@ -54,7 +54,7 @@ RLS writes.
 | Private AI context | `values_culture`, `faq_responses`, `ai_instructions` | feeds `chat` / `analyze-jd`; never rendered as pages |
 | CV | `cv_settings` | headline, summary, achievements, keywords, certifications, education, notes, `creation_prompt`; the PDF is cached in `cv_documents` |
 | Home-page registries | `site_sections`, `fun_links`, `holiday_banners` | section order, fun links, seasonal banners with dismissal |
-| Site copy | `site_content` | short editable copy rendered as text or sanitized |
+| Site content | `site_content` | short editable copy rendered as text or sanitized |
 
 Rules:
 

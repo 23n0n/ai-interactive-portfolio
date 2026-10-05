@@ -1304,7 +1304,7 @@ questions you skipped and why; never trim the list silently.
     which do you actually want? (Aesthetics only; accessibility wins. Name
     the cost: reveal/tilt ≈ 10 KB of JavaScript; parallax/particles ≈ 60–120
     KB and must degrade under `prefers-reduced-motion`.)
-17. AI chat placement: floating widget (corner), dedicated section, or both?
+17. SI chat placement: floating widget (corner), dedicated section, or both?
     JD analyzer as dialog or full page?
 18. Anything you HATE in websites — colors, fonts, animations, popups,
     carousels. List it; it becomes a hard constraint. The same for copy:
@@ -1355,7 +1355,7 @@ accounts? ~20–30 min, throwaway — nothing is created or charged."*
 2. **Dummy DB = flat files.** A small `dummy/` directory of JSON/TS modules
    (`profile.json`, `content.json`, `sections.json`) exposing the SAME shape
    the real build reads: name, title, elevator_pitch, status, target stages;
-   site copy (headline, pitch, CTA…); section order.
+   site content (headline, pitch, CTA…); section order.
 3. Render a single-page approximation (Main Character → about → skills →
    experience) fed by those files, so the design-questionnaire answers become
    a real page the user can click through.
