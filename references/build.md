@@ -27,7 +27,7 @@ Frozen stack, verbatim — do not substitute a layer:
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | Protection | Cloudflare Turnstile |
 | Toolchain | Bun 1.4.x + Wrangler 4 |
-| AI features | DeepSeek, called server-side; key held server-side |
+| SI features | DeepSeek, called server-side; key held server-side |
 
 **Prerequisites** — install and verify these before the first `bun create vite`. The toolchain
 requires them, and none of the versions below are guesswork (CI pins the Supabase CLI):
@@ -75,7 +75,7 @@ Steps:
 **Rule: resolve every package from the public npm registry (`registry.npmjs.org`). Never ship a
 lockfile that resolves through a private package mirror or a sandbox cache.**
 
-Why: some AI/cloud scaffolds pin their lockfile to a private mirror that GitHub Actions runners
+Why: some SI/cloud scaffolds pin their lockfile to a private mirror that GitHub Actions runners
 cannot reach. The first fresh `bun install --frozen-lockfile` in CI returns 403, so CI breaks
 **silently**, and every dependency bump fails the same way (Dependabot included). The failure is
 invisible locally, where the mirror is reachable.
@@ -107,7 +107,7 @@ single source of truth.
 |---|---|
 | Profile domain tables | `references/schema/profile.md` |
 | Content / KB tables + `ContentDoc` shape | `references/schema/content.md` |
-| AI, cache, ops tables | `references/schema/ai-ops.md` |
+| SI, cache, ops tables | `references/schema/si-ops.md` |
 | Roles, views, RPCs, grants, storage, edge-function matrix | `references/schema/access.md` |
 | Seed rows and migration order | `references/schema/seeds.md` |
 | RLS audit A–G | `references/schema/audit.md` |
@@ -127,8 +127,8 @@ Steps:
    by hand and an immutable user-id allowlist checked beside `is_admin()` — domain restriction is
    defence in depth, not identity authorization (`DATABASE_SCHEMA.md` §1).
 5. Populate the profile and content domains **through the admin surface** — the profile singleton,
-   experiences, skills, gaps, recommendations, the private AI context (`values_culture`,
-   `faq_responses`, `ai_instructions`) and the `cv_settings` row. Nothing renders until this data
+   experiences, skills, gaps, recommendations, the private SI context (`values_culture`,
+   `faq_responses`, `si_instructions`) and the `cv_settings` row. Nothing renders until this data
    exists.
 6. Prove the access model with a raw anon client, not with eyeballs.
 
@@ -239,7 +239,7 @@ here. `slug` is a `content_docs` column, not a key in `doc`.
      not crawled; every upload, replacement and deletion is recorded with actor, object, timestamp
      and request id, because storage-object changes are outside `audit_admin_change`.
    - Related-pages picker fed by the live catalog.
-   - AI content helpers — tag generation, FAQ-label generation and content generation via the
+   - SI content helpers — tag generation, FAQ-label generation and content generation via the
      DeepSeek edge functions.
 5. **Sanitize server-side.** A server-side HTML sanitizer runs on all rich content, with an
    allow-list (`<img>` over **https** only, no `data:` URIs, hosts limited to the CSP `img-src`
@@ -259,7 +259,7 @@ and `data:` URIs.
 
 ## 5. Interactive features
 
-### 5.1 AI chat and JD analysis
+### 5.1 SI chat and JD analysis
 
 1. Edge functions call DeepSeek through the shared client `_shared/deepseek.ts`; the key comes from
    the **`deepseek`** secret via `Deno.env.get("deepseek")`. Never expose the key to the browser.
@@ -277,11 +277,11 @@ and `data:` URIs.
    limits, input caps and caching.
 6. Defend against prompt injection with **structure, not only instruction**: delimit user content,
    separate instructions and untrusted content structurally, forbid echoing the system prompt or the
-   private AI context, cap output length, place **no secret or credential material** in the model
+   private SI context, cap output length, place **no secret or credential material** in the model
    context, and validate outputs deterministically with canary strings that detect context leakage.
 7. **Provider privacy on the chat and JD surfaces.** Both surfaces show a notice **before** content
    is submitted, stating that the question (with its retrieved context) or the JD text goes to the
-   AI provider, and each offers a non-AI alternative to the provider path — the knowledge base and
+   SI provider, and each offers a non-SI alternative to the provider path — the knowledge base and
    the contact surface — so a visitor who does not want their text sent can still get an answer. The
    redaction pass (emails, phone numbers, addresses, identifiers, sensitive employment data) runs
    **before** transmission; `references/secure.md` §7 (Provider privacy) owns the full data-flow
@@ -312,7 +312,7 @@ and `data:` URIs.
 
 ### 5.3 Edge-function inventory
 
-All functions deploy `--no-verify-jwt` with the CORS allowlist and 405/415 guards. Public AI and CV
+All functions deploy `--no-verify-jwt` with the CORS allowlist and 405/415 guards. Public SI and CV
 traffic reaches them only through the trusted ingress: the Worker proxies the request and carries a
 shared secret (or a signed, short-lived assertion) that the function verifies before any handling — a
 request without it is rejected before rate-limit evaluation — so `--no-verify-jwt` does not leave the
@@ -321,7 +321,7 @@ function URL open (`references/secure.md` §7, Ingress). The DB access matrix is
 
 | Function | Role | Access control |
 |---|---|---|
-| `chat` | AI chat about the owner | per-IP rate limit (30/15 min) |
+| `chat` | SI chat about the owner | per-IP rate limit (30/15 min) |
 | `analyze-jd` | Job-description fit analysis | per-IP rate limit (10/15 min) |
 | `generate-cv` | Gated CV PDF | Turnstile `siteverify` |
 | `generate-doc-content` | Admin content generation | JWT verify, admin |
@@ -365,13 +365,13 @@ are in `references/schema/seeds.md`.
 
 ### 5.6 Threat model — read once
 
-Rate limits, input caps, response caching and Turnstile protect against **abuse and excessive AI
+Rate limits, input caps, response caching and Turnstile protect against **abuse and excessive SI
 use**, not against a determined attacker. The real security boundary is the **RLS model** (views,
 grants, policies), which is why the final RLS audit is mandatory. Do not present the abuse controls
 as attack protection.
 
 Gate: wrong method returns `405` with `Allow`; non-JSON body returns `415`; bad tokens are rejected;
-happy paths work end to end; admin functions reject missing, forged and non-admin tokens; AI
+happy paths work end to end; admin functions reject missing, forged and non-admin tokens; SI
 endpoints return `429` after a burst; no key material in the browser bundle (no `sk-`,
 `sb_secret_` or `0x3…` shapes in `dist/`).
 

@@ -49,9 +49,9 @@ RLS writes.
 
 | Surface | Data the owner edits | Notes |
 |---|---|---|
-| Knowledge base | `content_collections`, `content_docs` | TipTap WYSIWYG, typed blocks (`p`, `h2`, `h3`, `list`, `steps`, `table`, `checklist`, `callout`, `diagram`, sanitized `rich`), KB image library, related-pages picker, AI tag / FAQ-label / content helpers |
+| Knowledge base | `content_collections`, `content_docs` | TipTap WYSIWYG, typed blocks (`p`, `h2`, `h3`, `list`, `steps`, `table`, `checklist`, `callout`, `diagram`, sanitized `rich`), KB image library, related-pages picker, SI tag / FAQ-label / content helpers |
 | Profile | `candidate_profile`, `experiences`, `skills`, `gaps_weaknesses`, `recommendations` | nothing renders until this holds data; a translation written by `translate-recommendation` stays unserved until the admin confirms it (`translation_reviewed`) |
-| Private AI context | `values_culture`, `faq_responses`, `ai_instructions` | feeds `chat` / `analyze-jd`; never rendered as pages |
+| Private SI context | `values_culture`, `faq_responses`, `si_instructions` | feeds `chat` / `analyze-jd`; never rendered as pages |
 | CV | `cv_settings` | headline, summary, achievements, keywords, certifications, education, notes, `creation_prompt`; the PDF is cached in `cv_documents` |
 | Home-page registries | `site_sections`, `fun_links`, `holiday_banners` | section order, fun links, seasonal banners with dismissal |
 | Site content | `site_content` | short editable copy rendered as text or sanitized |
@@ -126,7 +126,7 @@ supabase storage cp -r ss:///kb-images ./backup/<date>-kb-images
   CI variables and environment protection rules, repository settings, and the **names** of every
   secret with its owner and rotation step (never the values — a password manager holds those). Plus
   a break-glass path that has been tested: the ability to regain access to GitHub, Cloudflare, the
-  Supabase project, the AI provider and the backup destination if a phone or a mailbox is lost. This
+  Supabase project, the SI provider and the backup destination if a phone or a mailbox is lost. This
   export is **manual** and kept beside the backups: `backup.yml` covers the database and the
   `kb-images` bucket, and nothing else.
 - **A verified backup is taken immediately before anything destructive or schema-changing**
@@ -189,7 +189,7 @@ Severity decides who is woken and how fast:
 | Severity | Example | Response |
 |---|---|---|
 | **S1** | live site serving private data; admin account taken over; service-role key exposed | contain first (take the site down or rotate the key), then investigate; owner informed immediately |
-| **S2** | public write path abused; AI spend runaway; a policy or grant change nobody made; two consecutive failures of the synthetic availability check (`references/secure.md` §2 item 22) | contained within the same day; evidence preserved before any change |
+| **S2** | public write path abused; SI spend runaway; a policy or grant change nobody made; two consecutive failures of the synthetic availability check (`references/secure.md` §2 item 22) | contained within the same day; evidence preserved before any change |
 | **S3** | single alert, no sign of impact; a failed gate that stopped a deploy | handled in the next run, recorded |
 
 **Who owns what:** the owner decides contain-vs-investigate at S1 and approves any notification; the
@@ -200,7 +200,7 @@ owner's decision.
 Playbooks — short, written, rehearsed once — for the four that actually happen: **credential
 compromise** (rotate, re-deploy, re-read the logs for use, then decide on notification),
 **data exposure** (contain, preserve evidence, establish which rows and who saw them, assess
-notification duties), **AI abuse** (turn the breaker, then look at cache and cost), and
+notification duties), **SI abuse** (turn the breaker, then look at cache and cost), and
 **supply chain** (freeze deploys, pin back, rebuild from a known-good manifest). Evidence is
 preserved before remediation wherever the two conflict — quarantined off-platform, never in
 `ad-home/`, and retained with the run record for at least 400 days (the `admin_audit` window,
@@ -231,8 +231,8 @@ surfaced in the admin panel's Monitoring view (admin `SELECT`/`UPDATE` acknowled
 `is_admin()`). An optional counts-only mirror posts to `ABUSE_ALERT_WEBHOOK_URL`.
 
 **Counts only — never question text, user content or PII.** The watchdog is an abuse signal for the
-AI endpoints and the CV endpoint; it is not attack detection. Rate limits, input caps, response
-caching and Turnstile protect against abuse and excessive AI use, not against a determined attacker
+SI endpoints and the CV endpoint; it is not attack detection. Rate limits, input caps, response
+caching and Turnstile protect against abuse and excessive SI use, not against a determined attacker
 — the RLS model is the security boundary (`references/secure.md` §1). A budget trip or breaker trip
 alerts immediately, out of band from the 15-minute aggregate run.
 
@@ -330,7 +330,7 @@ fail-closed SSR smoke), then deploys to staging first (`references/deploy.md`).
 | `ABUSE_ALERT_WEBHOOK_URL` | Supabase secret (URL-embedded token) | channel change, responder loses access, or exposure suspicion |
 
 **One set per environment.** Because staging and production are two Supabase projects, each holds its
-own `SUPABASE_SERVICE_ROLE_KEY`, its own webhook credential, its own AI provider key (`deepseek`) and
+own `SUPABASE_SERVICE_ROLE_KEY`, its own webhook credential, its own SI provider key (`deepseek`) and
 its own Turnstile site and secret keys — a staging credential reaches staging resources only
 (`references/deploy.md` §2).
 
@@ -360,7 +360,7 @@ domain or TLS change also re-verifies `www` → `301` → apex and the CORS allo
 | DeepSeek API | none (pay-per-token) | a $5 top-up lasts a long time |
 | Domain | — | ~$10/yr |
 
-**One-off build cost.** Building the whole site costs roughly **$1–3** of AI-provider tokens on top
+**One-off build cost.** Building the whole site costs roughly **$1–3** of SI-provider tokens on top
 of the running costs above. That is the old kit's field estimate for the reference build — treat it as
 an order of magnitude, not a quote.
 
@@ -402,7 +402,7 @@ accepted: that is how ADR-0009 fell.
 | ADR-0011 | `generate-cv`'s only non-browser gate is Turnstile plus the per-IP limit; CORS is browser-only, so the rate limit is the abuse backstop, not attack protection. Both controls are free | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Require a server-side, non-challenge gate on `generate-cv` — an authenticated token bound to a server-side decision — and supersede the ADR | Targeted abuse of the CV endpoint at volume, confidential material in the CV, or a second control becoming available |
 | ADR-0012 | **Narrowed by the verified plan:** production plus a **staging project** with its own database, functions and keys is affordable on the free plan — Supabase documents *"Limit of 2 active projects"* and answers the development/production question with exactly that pair, and running Supabase locally (CLI or Docker) is free and unlimited for development. The residual is the free tier's own behaviour, not the count: a free project **pauses after 1 week of inactivity** (unpause before a release), database branching is a paid add-on (so environments are separate projects, not branches), and a third *hosted* environment is not affordable | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Add the third hosted environment (owner gate #2, spend) and supersede the ADR (`DATABASE_SCHEMA.md` §11, `references/deploy.md` §6) | A release that needs a third hosted environment, a second operator, or a plan change |
 | ADR-0013 | **No managed database backup and no point-in-time recovery:** Supabase lists *Automatic backups — not included* on Free and prices PITR as a paid add-on, so our own dumps are the recovery point and up to one backup interval of data can be lost. Compensating controls are free: tiers (daily/weekly/monthly), a verified backup immediately before anything destructive or schema-changing, and an off-platform destination inside a free object-storage tier (Cloudflare R2 documents 10 GB-month free, with free egress) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Enable managed backups and supersede the ADR (`references/operate.md` §3) | A recovery-point objective shorter than the dump interval, any destructive operation without a fresh verified backup, or a plan that includes managed backups or PITR |
-| ADR-0014 | **AI spend is bounded by a prepaid balance, not by a provider cap.** DeepSeek deducts per token from a topped-up balance and documents no console-level spend limit, so the ceiling is however much is topped up. Controls, both free: keep the topped-up balance at the size of one month's budget (the balance itself is the hard stop) and keep our own global token/cost budget with a circuit breaker in front of the endpoints (`references/secure.md` §7, AI cost) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Re-size the budget or move the gate | The provider shipping spend caps, a gateway with limits becoming affordable, a month where the breaker trips, or a balance large enough to matter |
+| ADR-0014 | **SI spend is bounded by a prepaid balance, not by a provider cap.** DeepSeek deducts per token from a topped-up balance and documents no console-level spend limit, so the ceiling is however much is topped up. Controls, both free: keep the topped-up balance at the size of one month's budget (the balance itself is the hard stop) and keep our own global token/cost budget with a circuit breaker in front of the endpoints (`references/secure.md` §7, SI cost) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Re-size the budget or move the gate | The provider shipping spend caps, a gateway with limits becoming affordable, a month where the breaker trips, or a balance large enough to matter |
 | ADR-0015 | **Platform logs cannot be the security record.** Supabase's free plan keeps API and database logs for **1 day** and Auth audit logs for **1 hour**, and log drains are a paid add-on; the platform audit log and metrics endpoint are paid too. Compensating control is free: security telemetry is written to an off-platform destination we control (the platform's own logs are not the record), and the administrative audit trail is ours, kept 400 days (`references/operate.md` §4.1, `DATABASE_SCHEMA.md` §2.3) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Add drains and extend retention | An incident whose evidence window predates our retention, or a plan with drains and longer retention |
 | ADR-0016 | **Edge WAF coverage on the free plan is the Free Managed Ruleset only** — Cloudflare's availability table shows *Free Managed Ruleset: Yes* on Free, while the Cloudflare Managed Ruleset and the OWASP Core Ruleset are paid. So the ingress is the Worker plus a shared secret plus our own rate limits, with the **Free Managed Ruleset enabled** (it is free — enable it rather than accept anything) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Enable the fuller rulesets and supersede the ADR | Sustained L3/L7 abuse that the free ruleset and the rate limits cannot hold, or a plan that affords the fuller rulesets |
 
@@ -429,7 +429,7 @@ Nothing at the Worker is rolled back for a pure Supabase outage — restore serv
 re-run the live smoke. **The degraded read-only mode is the authorised exception, not a bug.**
 `references/secure.md` §2 item 10 requires a signed, sanitized, published-rows-only snapshot for the
 public read paths, served with `noindex` once its ADR is recorded: if that snapshot is live, the site
-is in the degraded mode by decision — `/admin`, the AI, personalized and dynamic routes stay
+is in the degraded mode by decision — `/admin`, the SI, personalized and dynamic routes stay
 fail-closed regardless, and the snapshot never serves unpublished rows.
 
 **Bad deploy.** The rollback path is owned by `references/deploy.md`: `rollback.yml` restores the
@@ -461,7 +461,7 @@ these is optional, and each result is recorded as an `audit` run.
 | A change to a `*_public` view's projected columns (adding or removing a column) | `references/secure.md` §4.1 view options, then the allowlist, projection test and negative tests, then the anon probe (`DATABASE_SCHEMA.md` §12 G1) — confirm the new column is either intentionally public or pruned |
 | A change to a retention/TTL or cleanup job (`rag_metrics`, `cv_documents`, caches, `admin_audit`) | Re-check the scheduled jobs in `DATABASE_SCHEMA.md` §7 and the minimization note in §2.3 |
 | A change to the upload pipeline, the image bucket or the sanitizer allowlist | `references/secure.md` §7 (uploads, content) — re-run the ingest corpus, the sanitizer suite and the fuzz run |
-| A change to a cache key or cache rules | `references/secure.md` §7 (AI caches) — confirm the version binding and the invalidation path |
+| A change to a cache key or cache rules | `references/secure.md` §7 (SI caches) — confirm the version binding and the invalidation path |
 | A change to the ingress, the trusted IP source or the rate-limit key | `references/secure.md` §7 (ingress) — re-run the spoofed-header tests and the direct-invocation test |
 | A change to telemetry, alerts, the audit trail or the backup destination | `references/secure.md` §7 (monitoring, audit, backups) — fire one controlled event, and restore once |
 

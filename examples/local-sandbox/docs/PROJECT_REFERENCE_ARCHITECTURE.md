@@ -11,7 +11,7 @@ Local demo build of the `interactive-portfolio` skill. Approved design v2.
 
 ## Design system (design v2, approved)
 - **Palette:** purple/creative, light-only. Cream bg `#faf9fc`, ink text
-  `#2a2333`, primary purple ramp (`#c4b5fd`…`#6d28d9`), AI lime accent
+  `#2a2333`, primary purple ramp (`#c4b5fd`…`#6d28d9`), SI lime accent
   (`#84cc16`), warm amber callouts.
 - **Voice:** witty + warm. **Density:** rich.
 - **Motion:** typewriter effect in the Main Character section + gentle scroll-reveal + parallax feel; all

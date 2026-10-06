@@ -9,7 +9,7 @@
 > [`audit.md`](audit.md).
 > **Cross-references:** the profile domain is deliberately not seeded — see the §2.1 population note
 > in `profile.md`; **§12 final RLS audit → `audit.md`**; table definitions → `profile.md`,
-> `content.md`, `ai-ops.md`. The source's own seed pointer lines stay in `content.md` and point here.
+> `content.md`, `si-ops.md`. The source's own seed pointer lines stay in `content.md` and point here.
 
 ---
 
@@ -37,7 +37,7 @@ Day, ...) — adapt dates to your persona.
 
 The §2.1 population note (kept verbatim in `profile.md`) is explicit: the profile tables are NOT
 seeded by migrations in the reference. There are no seed rows for `candidate_profile`,
-`experiences`, `skills`, `gaps_weaknesses`, `values_culture`, `faq_responses`, `ai_instructions` or
+`experiences`, `skills`, `gaps_weaknesses`, `values_culture`, `faq_responses`, `si_instructions` or
 `recommendations`; `cv_settings` is the only singleton mentioned by that note.
 
 ---

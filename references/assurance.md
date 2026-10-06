@@ -59,11 +59,11 @@ where the artifact contains operational data, never a token, a key or a row of p
 | 9 | A restore record: when the last restore was tested, and the measured recovery point and time | the backup actually restores, and against an objective rather than an assumption | `references/operate.md` §3 |
 | 10 | A controlled-event test per alert, and the audit export receipt | the telemetry fires, and the audit trail survives off-platform | `references/operate.md` §4.1 |
 | 11 | SBOM, dependency-review result, provenance, and the artifact/bundle secret scan | the shipped artifacts, not only the source tree, were checked | `references/secure.md` §2 item 12 |
-| 12 | The prompt-injection red-team result, and the AI data-flow note (what is sent to the provider, the provider's retention and model-training terms with the date they were checked, the transfer and subprocessor position, the redaction pass before transmission, the pre-submission notice, the non-AI alternative, and the deletion limits) | the model context holds the minimum data, leakage is detected rather than assumed impossible, and the provider's terms are recorded rather than assumed | `references/secure.md` §7 (AI data); where the optional classifier screen is adopted, its validation table and the shipped question wording (`references/prompt-guard.md` §5) |
+| 12 | The prompt-injection red-team result, and the SI data-flow note (what is sent to the provider, the provider's retention and model-training terms with the date they were checked, the transfer and subprocessor position, the redaction pass before transmission, the pre-submission notice, the non-SI alternative, and the deletion limits) | the model context holds the minimum data, leakage is detected rather than assumed impossible, and the provider's terms are recorded rather than assumed | `references/secure.md` §7 (SI data); where the optional classifier screen is adopted, its validation table and the shipped question wording (`references/prompt-guard.md` §5) |
 | 13 | The independent review artifact (§4) | somebody who did not build it tried to break it | `references/secure.md` §6 |
 | 14 | The successful CI run for the reviewed commit (workflow run id / artifact URLs) | the gates that run were executed against the code being released, not asserted | `references/deploy.md` §3, §4, §8 |
 | 15 | The migration inventory — `supabase migration list` against the linked project, with no pending migration | the schema history is complete and the release's migration versions are a real set, not a list | `references/deploy.md` §6, `DATABASE_SCHEMA.md` §11 |
-| 16 | The cache-key schema and the cache-invalidation test | a cached response cannot outlive the model, prompt, context, policy or content version that produced it | `references/secure.md` §7 (AI caches), `DATABASE_SCHEMA.md` §2.3 |
+| 16 | The cache-key schema and the cache-invalidation test | a cached response cannot outlive the model, prompt, context, policy or content version that produced it | `references/secure.md` §7 (SI caches), `DATABASE_SCHEMA.md` §2.3 |
 | 17 | The service-role key rotation record | the rotation procedure works, and the affected functions were re-deployed and re-checked after it | `references/operate.md` §6 |
 
 A release that omits a row is a release with an open finding. Record the omission, and the run report
@@ -99,7 +99,7 @@ that the review is *kept*:
    result. A finding is closed by a retest, not by a reply.
 3. The reviewer must not rely only on this documentation — that is the point of independence. Give
    them the commit and the environment, not the narrative.
-4. Repeat after any material change: authentication, the data flow, the AI surface, the RLS model,
+4. Repeat after any material change: authentication, the data flow, the SI surface, the RLS model,
    the ingress, or the deployment topology.
 
 ## 5. The order to close things in
@@ -115,7 +115,7 @@ When several of these are open at once, this is the order that risks the least:
    Worker and functions, rolls back in one dispatch.
 6. Require MFA, and disable public signup.
 7. Close the ingress boundary; prove the rate-limit key cannot be spoofed.
-8. Add the AI data controls, the cost limits and the wider injection testing.
+8. Add the SI data controls, the cost limits and the wider injection testing.
 9. Turn on security telemetry and the administrative audit trail.
 10. Harden the supply chain: SBOM, pinning, SAST, provenance.
 11. Improve backups: immutability, tiers, configuration recovery, point-in-time recovery.

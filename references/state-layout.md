@@ -1,6 +1,6 @@
 # references/state-layout.md — durable state formats
 
-Everything below lives on disk under the owner's ai-distribution home (`ad-home/`). Restart = read
+Everything below lives on disk under the owner's si-distribution home (`ad-home/`). Restart = read
 these files; chat is never authoritative for site state. Reconciliation happens by reading disk,
 not by trusting the previous conversation.
 
@@ -109,7 +109,7 @@ Identity and settled facts. Rewritten in place as facts change; always current, 
 | source | GitHub | connected |
 | hosting | Cloudflare | connected |
 | data | Supabase | connected |
-| AI features | DeepSeek | key stored server-side |
+| SI features | DeepSeek | key stored server-side |
 
 ## URLs
 - staging: https://…-preview.workers.dev

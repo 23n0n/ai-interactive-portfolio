@@ -36,7 +36,7 @@ describe('data layer — collections', () => {
 
 describe('data layer — related links', () => {
   it('resolves explicit related refs', () => {
-    const doc = getDoc('services', 'ai-chatbot-embedding')!
+    const doc = getDoc('services', 'si-chatbot-embedding')!
     const related = resolveRelated(doc)
     const slugs = related.map((d) => d.slug)
     expect(slugs).toContain('fullstack-consulting')

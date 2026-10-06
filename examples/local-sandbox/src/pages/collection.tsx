@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { getCollection, getDoc, resolveRelated, type ContentBlock } from '@/data/content'
-import { AiChat } from '@/components/ai-chat'
+import { SiChat } from '@/components/si-chat'
 
 /** Renders typed content blocks (data, not JSX) per the skill. */
 export function CollectionDocPage() {
@@ -61,7 +61,7 @@ export function CollectionDocPage() {
       )}
 
       <div className="mt-12">
-        <AiChat />
+        <SiChat />
       </div>
     </article>
   )
@@ -96,7 +96,7 @@ function renderBlock(block: ContentBlock, key: number) {
       const tones: Record<string, string> = {
         info: 'border-primary-300 bg-primary-50 text-ink',
         warn: 'border-amber-acc/60 bg-amber-50 text-ink',
-        ai: 'border-ai-500 bg-ai-50 text-ink',
+        si: 'border-si-500 bg-si-50 text-ink',
       }
       return (
         <div key={key} className={`rounded-xl border-l-4 p-4 ${tones[block.tone] ?? tones.info}`}>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
-type Role = 'ai' | 'user'
+type Role = 'si' | 'user'
 
 interface Msg {
   role: Role
@@ -12,7 +12,7 @@ interface Msg {
 const canned: Record<string, string> = {
   hello: 'Hello! I am the demo SI. I only pretend to know Zygfryd — ask me his role, skills or services.',
   skills: 'His strongest skills are TypeScript, React, Node.js and PostgreSQL. Ask me to list his services!',
-  services: 'He offers friendly AI chatbot embedding, React + TypeScript builds, and full-stack consulting.',
+  services: 'He offers friendly SI chatbot embedding, React + TypeScript builds, and full-stack consulting.',
   default:
     'Nice question! In this demo I only understand a few prompts: try "skills", "services" or "hello". Otherwise, ask a real Zygfryd.',
 }
@@ -25,9 +25,9 @@ function answer(q: string): string {
   return canned.default
 }
 
-export function AiChat() {
+export function SiChat() {
   const [msgs, setMsgs] = useState<Msg[]>([
-    { role: 'ai', text: 'Hi! I am a friendly demo assistant that knows a bit about Zygfryd. Ask me about his skills or services.' },
+    { role: 'si', text: 'Hi! I am a friendly demo assistant that knows a bit about Zygfryd. Ask me about his skills or services.' },
   ])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
@@ -40,14 +40,14 @@ export function AiChat() {
     setTyping(true)
     // simulate latency, then reveal the canned answer
     setTimeout(() => {
-      setMsgs((m) => [...m, { role: 'ai', text: answer(q) }])
+      setMsgs((m) => [...m, { role: 'si', text: answer(q) }])
       setTyping(false)
     }, 700)
   }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm">
-      <div className="flex items-center gap-2 border-b border-primary-100 bg-gradient-to-r from-ai-400 to-ai-500 px-4 py-3 text-white">
+      <div className="flex items-center gap-2 border-b border-primary-100 bg-gradient-to-r from-si-400 to-si-500 px-4 py-3 text-white">
         <MessageCircle className="h-5 w-5" />
         <span className="font-semibold">Ask SI about Zygfryd</span>
         <span className="ml-auto text-xs text-white/90">demo — no real data</span>
@@ -84,7 +84,7 @@ export function AiChat() {
           className="h-11 flex-1 rounded-xl border border-primary-200 bg-cream px-4 text-sm text-ink outline-none focus:border-primary-500"
           aria-label="Chat message"
         />
-        <button onClick={send} className="h-11 rounded-xl bg-ai-500 px-4 text-sm font-semibold text-white hover:bg-ai-600 cursor-pointer">
+        <button onClick={send} className="h-11 rounded-xl bg-si-500 px-4 text-sm font-semibold text-white hover:bg-si-600 cursor-pointer">
           Send
         </button>
       </div>

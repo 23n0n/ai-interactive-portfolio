@@ -42,9 +42,9 @@ project.
 
 | Domain | File | Holds | Lifecycle stage that loads it |
 |---|---|---|---|
-| Profile | [`profile.md`](profile.md) | the `## 2. Tables` heading and `candidate_profile`, `experiences`, `skills`, `gaps_weaknesses`, `values_culture`, `faq_responses`, `ai_instructions`, `recommendations` (source §2, §2.1) | Build — data layer; these tables are read at runtime by the homepage, AI chat, JD analysis and CV generation |
+| Profile | [`profile.md`](profile.md) | the `## 2. Tables` heading and `candidate_profile`, `experiences`, `skills`, `gaps_weaknesses`, `values_culture`, `faq_responses`, `si_instructions`, `recommendations` (source §2, §2.1) | Build — data layer; these tables are read at runtime by the homepage, SI chat, JD analysis and CV generation |
 | Content / knowledge base | [`content.md`](content.md) | `content_collections`, `content_docs`, `site_content`, `site_sections`, `fun_links`, `holiday_banners` (source §2.2) and the ContentDoc JSONB shape (source §6) | Build — data layer (content model); content authoring / Distribute for the shape in §6 |
-| AI / cache / operations | [`ai-ops.md`](ai-ops.md) | `rate_limits`, `chat_response_cache`, `jd_analysis_cache`, `rag_metrics`, `cv_settings`, `cv_documents`, `abuse_alerts` (source §2.3) | Build — data layer (AI + ops); Publish/Operate for the abuse watchdog and CV cache |
+| SI / cache / operations | [`si-ops.md`](si-ops.md) | `rate_limits`, `chat_response_cache`, `jd_analysis_cache`, `rag_metrics`, `cv_settings`, `cv_documents`, `abuse_alerts` (source §2.3) | Build — data layer (SI + ops); Publish/Operate for the abuse watchdog and CV cache |
 | Access layer | [`access.md`](access.md) | roles and conventions (§1), public views (§3), read RPCs (§4), `private` schema (§5), functions/triggers/hooks/cron (§7), storage bucket (§8), edge functions + service-role access matrix (§9), RLS/grants matrix (§10) | Build — data layer, security half; re-loaded at Publish for the security audit |
 | Audit | [`audit.md`](audit.md) | the §12 final RLS audit, checks A–G, including the §12 closing reference-files paragraph | Build — data layer (part of `schema/*`); run before launch and after every schema change |
 | Seeds / migrations | [`seeds.md`](seeds.md) | the `site_sections` and `holiday_banners` seed **values** (declared relocations R1/R2 from §2.2); migration ordering and verification (§11) | Build — migrations stage, before `supabase db push` |
@@ -52,7 +52,7 @@ project.
 ## Load order
 
 1. `README.md` (this file) — orientation and domain map.
-2. The domain file(s) for the current step: `profile.md`, `content.md`, `ai-ops.md` — table
+2. The domain file(s) for the current step: `profile.md`, `content.md`, `si-ops.md` — table
    definitions only.
 3. `access.md` — roles, views, RPCs, functions, triggers, storage, grants; load it before touching
    any table's security.
@@ -72,10 +72,10 @@ marked "+ sub-headings" mean the named file also holds every child heading verba
 | --- | --- |
 | `# Database Schema Reference` | `README.md` (preamble) |
 | `## 1. Roles and the access model` | `access.md` |
-| `## 2. Tables` | `profile.md` (heading reproduced there; it is the parent of §2.1/§2.2/§2.3, whose domains live in `profile.md`, `content.md`, `ai-ops.md`) |
+| `## 2. Tables` | `profile.md` (heading reproduced there; it is the parent of §2.1/§2.2/§2.3, whose domains live in `profile.md`, `content.md`, `si-ops.md`) |
 | `### 2.1 Profile domain` + its `####` table headings | `profile.md` |
 | `### 2.2 Content / knowledge-base domain` + its `####` table headings | `content.md` |
-| `### 2.3 AI / cache / operations domain` + its `####` table headings | `ai-ops.md` |
+| `### 2.3 SI / cache / operations domain` + its `####` table headings | `si-ops.md` |
 | `## 3. Public views (public.*_public)` | `access.md` |
 | `## 4. Read RPCs (called by the site with the anon/publishable key)` | `access.md` |
 | `## 5. Private schema (private)` | `access.md` |
@@ -117,7 +117,7 @@ have 17 (five added to frame the seven split files). No schema line drifts.
 | §2.1 | `profile.md` |
 | §2.2, §6 | `content.md` |
 | §2.2 seed values (declared relocations R1/R2) | `seeds.md` |
-| §2.3 | `ai-ops.md` |
+| §2.3 | `si-ops.md` |
 | §11 | `seeds.md` |
 | §12 (audit A–G, including the closing reference-files paragraph; `references/secure.md` points here) | `audit.md` |
 

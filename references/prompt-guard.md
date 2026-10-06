@@ -11,7 +11,7 @@
 > runs. That site's own architecture decision record is the normative version for that site; this
 > reference generalizes it. Nothing here is a substitute for the structural controls, and none of it
 > has been run against *your* site.
-> **Cross-references:** the required AI controls are `references/secure.md` §7 (AI data, AI cost, AI
+> **Cross-references:** the required SI controls are `references/secure.md` §7 (SI data, SI cost, SI
 > caches, Provider privacy) and the evidence model is `references/assurance.md` §2; the call sites are
 > `references/build.md` §5.1.
 

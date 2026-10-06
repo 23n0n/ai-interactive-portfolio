@@ -1,12 +1,12 @@
-# Make your own site with an AI agent
+# Make your own site with an SI agent
 
 *Vibecoded for vibecoders by Piotr Żabrowski :-)*
 
 This repository is a **knowledge package plus a skill distribution** for building personal sites
 like [`zabrowski.si`](https://zabrowski.si) — an interactive portfolio/CV with an SI chat about you,
 a knowledge base with an admin panel, a gated CV download and machine-readable surfaces for search
-and AI. You do not read a manual and you do not run the build yourself: you clone this repository,
-hand it to the AI agent you already use, and say **"I want my own site"**. The agent carries the
+and SI. You do not read a manual and you do not run the build yourself: you clone this repository,
+hand it to the SI agent you already use, and say **"I want my own site"**. The agent carries the
 procedure — accounts, scaffold, data layer, security, design, content, deploys — and leads you by
 the hand from nothing to a live site on your own domain. You are the owner: you set the intent,
 the taste and the money, and you make the decisions.
@@ -40,7 +40,7 @@ The agent runs six stages, in order:
 | **2. Design** | The agent derives a design from your answers and shows you a sketch before building. |
 | **3. Build** | The site is built and put on a private preview link you can click. |
 | **4. Publish** | It goes live on your own domain, with a recorded way back if something breaks. |
-| **5. Distribute** | The machine-readable layer that lets search engines and AI describe your site correctly. |
+| **5. Distribute** | The machine-readable layer that lets search engines and SI describe your site correctly. |
 | **6. Operate** | Changes by conversation, backups and monitoring — the site's ordinary life after day one. |
 
 You are asked to decide at four points, and nowhere else:
@@ -63,7 +63,7 @@ point a session at this repository, what to check before starting, which model f
 what to do when a runner lacks a capability are all in
 [`references/harness.md`](references/harness.md).
 
-Neutrality is about the AI that runs this distribution — not about the site's technology, which is
+Neutrality is about the SI that runs this distribution — not about the site's technology, which is
 frozen (below).
 
 ## What is in the repository
@@ -122,7 +122,7 @@ notice.
 
 The reference target technology and the database schema are fixed, and neither is swapped quietly.
 In plain terms, this is the machinery that makes the site open quickly, keeps your content and your
-AI key out of a visitor's reach, and runs the few interactive pieces — the chat about you, the admin
+SI key out of a visitor's reach, and runs the few interactive pieces — the chat about you, the admin
 panel and the gated CV download — for you:
 
 - **Hosting:** Cloudflare Workers + Static Assets, deployed with Wrangler.
@@ -131,7 +131,7 @@ panel and the gated CV download — for you:
 - **Styling:** Tailwind CSS v4 + shadcn/ui.
 - **Protection:** Cloudflare Turnstile.
 - **Toolchain:** Bun and Wrangler 4.
-- **The site's own AI features:** DeepSeek, called from server-side functions with the key held
+- **The site's own SI features:** DeepSeek, called from server-side functions with the key held
   server-side. Optional hardening on top of the structural controls, adopted only with the owner's
   approval and its own account: a hosted typed classifier that vetoes hostile visitor text before the
   model is asked anything (`references/prompt-guard.md`).

@@ -4,7 +4,7 @@ Stage 5 of the lifecycle. The visible page is **data plus a distribution layer**
 source that renders the spotlight, the hubs and the docs also feeds `sitemap.xml`, `llms.txt`,
 `openapi.json`, the `.well-known/` surfaces, the JSON-LD graph and the SERP description. The page is
 not only for humans; it is a machine-readable surface that distributes the person to search engines
-and AI agents.
+and SI agents.
 
 Load this reference only when the visible site, the content model and the interactive features are
 already working. Distribution derives from content that exists; it never invents content.
@@ -127,7 +127,7 @@ file is served from the same content source and returns 200.
 
 | Path | What it is for |
 |---|---|
-| `/.well-known/ai.txt` | Plain-text AI usage statement for the site: what may be crawled, quoted and used, and what is reserved. One place for the owner's AI-permission stance. |
+| `/.well-known/si.txt` | Plain-text SI usage statement for the site: what may be crawled, quoted and used, and what is reserved. One place for the owner's SI-permission stance. |
 | `/.well-known/llms.txt` | The same index as `/llms.txt`, placed at the well-known location so discovery does not depend on guessing the root path. |
 | `/.well-known/agent-card.json` | Machine-readable identity of the site's agent surface: name, owner, canonical origin, contact endpoint, and the URLs of the other discovery files. |
 | `/.well-known/agent-skills` | The list of things an agent can do here — for this site, the public operations an agent may invoke (ask the chat, run a fit analysis, fetch contact, download the CV). Names and links match `openapi.json`; never advertise an admin operation. |
@@ -206,7 +206,7 @@ layer is built, and again after content changes. Every item is a check with evid
       (`robots.txt` and `X-Robots-Tag`).
 - [ ] `/llms.txt` returns 200, and `/llms-full.txt` returns 200.
 - [ ] `openapi.json` returns 200 and parses.
-- [ ] Every `.well-known/` surface returns 200 (`ai.txt`, `llms.txt`, `agent-card.json`,
+- [ ] Every `.well-known/` surface returns 200 (`si.txt`, `llms.txt`, `agent-card.json`,
       `agent-skills`, `api-catalog`).
 - [ ] `Accept: text/markdown` returns a Markdown body naming the canonical HTML URL; the HTML page
       names the same canonical URL.
@@ -241,7 +241,7 @@ surface 500s, any description is empty or over-long, or the sitemap and the cata
 | 2. Text surfaces — `openapi.json` | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 6 ("Machine-readable routes"); `GUIDE_FROM_SCRATCH.md` Step 11 |
 | 2. Text surfaces — `Accept: text/markdown` + canonical URL | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 6 (SSR returns Markdown, canonical URL logic); `GUIDE_FROM_SCRATCH.md` Step 11 |
 | 2. Text surfaces — lowercase route files | `GUIDE_FROM_SCRATCH.md` Step 14 (Known pitfalls: uppercase `LLMS[.]txt.tsx` drops `/llms.txt`) |
-| 3. Discovery surfaces — `.well-known/` | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 6 (`.well-known/` AI-discovery surfaces: `ai.txt`, `llms.txt`, `agent-card.json`, `agent-skills`, `api-catalog`); `GUIDE_FROM_SCRATCH.md` Step 11 |
+| 3. Discovery surfaces — `.well-known/` | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 6 (`.well-known/` SI-discovery surfaces: `si.txt`, `llms.txt`, `agent-card.json`, `agent-skills`, `api-catalog`); `GUIDE_FROM_SCRATCH.md` Step 11 |
 | 4. JSON-LD | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 6 ("JSON-LD (schema.org) derived from the same data": root `Person` + `WebSite`, `ProfilePage`, `BreadcrumbList`, `FAQPage`, `CollectionPage`, `Article`, collection-typed docs); `GUIDE_FROM_SCRATCH.md` Step 11; `DATABASE_SCHEMA.md` §6 (`ContentDoc` shape, `faqs`) |
 | 5. SERP meta description | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 6 ("SERP meta description"); `GUIDE_FROM_SCRATCH.md` Step 11 |
 | 6. Distribution audit | `SKILL_INTERACTIVE_PORTFOLIO.md` Phase 6 gate and Verification checklist (`llms.txt` / `llms-full.txt` / `sitemap.xml` / `robots.txt` / `openapi.json` 200; staging `noindex`); `GUIDE_FROM_SCRATCH.md` Step 11 `[Check]`, Step 12–13, Security checklist |

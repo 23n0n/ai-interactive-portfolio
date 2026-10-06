@@ -133,14 +133,14 @@ from pg_policies
 where schemaname = 'public'
   and tablename in ('candidate_profile','experiences','skills',
                     'gaps_weaknesses','values_culture','faq_responses',
-                    'ai_instructions','recommendations','content_collections',
+                    'si_instructions','recommendations','content_collections',
                     'content_docs','site_content','site_sections','fun_links',
                     'holiday_banners','cv_settings','abuse_alerts')
 order by tablename, policyname;
 ```
 
 Specific things to verify by eye: `values_culture`/`faq_responses`/
-`ai_instructions` have NO policy allowing `anon` or unrestricted
+`si_instructions` have NO policy allowing `anon` or unrestricted
 `authenticated` reads; `candidate_profile`/`experiences`/`skills`/
 `gaps_weaknesses`/`recommendations`/content tables have no `FOR SELECT TO
 anon USING (true)`; the registry tables (`site_sections`, `fun_links`,
@@ -158,13 +158,13 @@ views behind the public view wrappers.
    RPC. A base-table `SELECT` that succeeds is a launch blocker.
 2. **authenticated non-admin** (any non-admin user's JWT — create a throwaway
    account): reads on the private tables (`values_culture`,
-   `faq_responses`, `ai_instructions`) must FAIL; writes on admin tables
+   `faq_responses`, `si_instructions`) must FAIL; writes on admin tables
    must FAIL; reads on public views must SUCCEED. A permissive
    `is_admin()` typo or a missing `is_admin()` check is exactly what this
    probe catches — do not skip it.
 3. **admin** (the admin user's JWT): reads on the admin tables and `abuse_alerts` must SUCCEED;
    `admin_audit` remains read-only (no write grant for any API role); `values_culture` /
-   `faq_responses` / `ai_instructions` reads must SUCCEED.
+   `faq_responses` / `si_instructions` reads must SUCCEED.
 
 Automate B–G in a script (`scripts/audit-rls.mjs`) so the Phase 8 RLS audit
 in the skill is one command; the script's expected output is the §10 matrix

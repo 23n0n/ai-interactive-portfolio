@@ -149,7 +149,7 @@ Read A1 first, then the wrong-fix ladder A2–A4 so you do not walk it again.
 
 - **Symptom.** CI (and Dependabot) fails on a fresh `bun install` with `403` against a host the
   runner cannot reach. It also silently blocks every dependency bump.
-- **Cause.** An AI/cloud scaffold wrote the lockfile against a private package mirror or a sandbox
+- **Cause.** An SI/cloud scaffold wrote the lockfile against a private package mirror or a sandbox
   cache. All runtime dependencies are public; there was never a reason for the mirror.
 - **Fix.** Add `.npmrc` with `registry=https://registry.npmjs.org/`, regenerate the lockfile, and
   confirm `bun install --frozen-lockfile` is green in CI. On the reference the fix rewrote

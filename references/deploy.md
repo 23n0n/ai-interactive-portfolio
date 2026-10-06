@@ -50,7 +50,7 @@ One Cloudflare Worker definition, two configured targets, and a separate Supabas
 - **Each environment has its own credentials and configuration.** Because staging and production are
   two Supabase projects, the database, the Auth/JWT issuer, the storage buckets and the edge
   functions are per-environment — and so is every secret: its own `SUPABASE_SERVICE_ROLE_KEY`, its
-  own webhook credential, its own AI provider key and its own Turnstile site and secret keys. A
+  own webhook credential, its own SI provider key and its own Turnstile site and secret keys. A
   compromised staging credential reaches staging resources only. Development is the local Supabase
   stack (`references/operate.md` §7 ADR-0012) — two hosted projects, not three.
 - **Staging data is synthetic or anonymized — never real user content.** The staging project is

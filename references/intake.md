@@ -59,7 +59,7 @@ the question list silently: the skipped questions are named in the record.
    If the owner does not provide a full name (first **and** last), use the placeholder name
    `Zygfryd Niewiadomski-Nieśmiałek` everywhere the name is needed and tell the owner plainly that
    it is a placeholder to be replaced before launch (see §5).
-2. Primary audience: recruiters, clients, conference organizers, the AI crawlers, or all of them?
+2. Primary audience: recruiters, clients, conference organizers, the SI crawlers, or all of them?
    Pick **ONE** primary — it drives copy and layout.
 3. Voice: professional, warm, witty, direct, humble-expert? Give one example sentence you like the
    sound of.
@@ -93,7 +93,7 @@ the question list silently: the skipped questions are named in the record.
     layout, badge + CTA buttons, or something else?
 12. Navigation: top bar, sidebar, or minimal (logo + 2–3 links)? Sticky or not?
 13. Section order on the home page (e.g. Main Character → about → skills → experience → testimonials →
-    AI → footer). Anything to reorder, drop, or add?
+    SI → footer). Anything to reorder, drop, or add?
 14. How to present data: experience as timeline or cards? Skills as strong/moderate/gap columns,
     tag cloud, or progress bars? Testimonials as quote cards, carousel, or grid?
 15. Footer: what lives there (contact, links, disclaimer, CV button, knowledge-base nav)? *(Ask
@@ -108,7 +108,7 @@ the question list silently: the skipped questions are named in the record.
     hover tilt add roughly 10 KB of JavaScript and a few motion tokens; parallax and particles add
     roughly 60–120 KB and must degrade under `prefers-reduced-motion`. If the owner also listed a
     motion effect in Q18 as hated, that list wins.)*
-17. AI chat placement: floating widget (corner), dedicated section, or both? JD analyzer as dialog
+17. SI chat placement: floating widget (corner), dedicated section, or both? JD analyzer as dialog
     or full page?
 18. Anything you **HATE** in websites — colours, fonts, animations, popups, carousels. List it; it
     becomes a hard constraint. And the same for **copy**: any phrases, buzzwords, or writing styles
@@ -156,7 +156,7 @@ The answers are input, not a design. Derive, in this order:
 | Q12 (navigation) | nav style and stickiness |
 | Q14 (data presentation), Q15 (footer) | card style, list/table presentation, footer contents |
 | Q16 (effects) | motion tokens — minus anything Q18 forbids |
-| Q17 (AI surfaces) | where chat and JD analysis live |
+| Q17 (SI surfaces) | where chat and JD analysis live |
 | Q18 (hates) | hard constraints — never designed against |
 | Q18 (copy hates), Q23 follow-up (language mode) | the voice exclusions, and the language mode (`full UI` or `primary + metadata`) recorded in the contract |
 | Q19 (admired sites) | inspiration only — extract the quality, never the layout |
@@ -211,7 +211,7 @@ the hand-held path — not a tier, not a separate product.
    `elevator_pitch`, status, target stages; site content (headline, pitch, CTA…); section order.
 3. Render a single-page approximation (Main Character → about → skills → experience) fed by those files,
    so the design-questionnaire answers become a real page the owner can click through.
-4. AI copy help is optional and also account-free — a local Ollama model, or none at all.
+4. SI copy help is optional and also account-free — a local Ollama model, or none at all.
 
 **Boundaries — keep these intact:**
 
@@ -326,17 +326,17 @@ Facts:
   **PUBLIC build-time variables only** and is gitignored; no secret may appear in the browser
   bundle. The security rules are in `references/secure.md`.
 
-### 7.4 The AI provider key — server-side only
+### 7.4 The SI provider key — server-side only
 
-> "The AI that answers visitors about you needs a key. It stays on the server, so nobody can read it
+> "The SI that answers visitors about you needs a key. It stays on the server, so nobody can read it
 > from the page."
 
 Facts:
 
-- Create the AI provider account and API key (the old kit's provider is **DeepSeek**,
+- Create the SI provider account and API key (the old kit's provider is **DeepSeek**,
   `platform.deepseek.com`). The key is shown **only once**, starts with `sk-...`, and must be saved
   somewhere safe. Treat it as a secret: never commit it, never paste it into public chats.
-- The site's AI features (chat, JD analysis) run from **Supabase edge functions** and consume the key
+- The site's SI features (chat, JD analysis) run from **Supabase edge functions** and consume the key
   as a **server-side secret** named `deepseek`. Set the server secrets once with:
 
 ```sh
@@ -380,5 +380,5 @@ Facts:
 | §7.1 GitHub | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.1 GitHub" (signup, 2FA, repo public/private, `.gitignore: Node`, license; Step 12 CI secrets + Environments) |
 | §7.2 Cloudflare | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.2 Cloudflare (account + Turnstile + Workers + DNS)" (Free plan; Turnstile widget name / hostname / mode **Managed** / site key vs secret; Worker name reservation; custom domain; API token scopes and GitHub secret/variable names); "Step 4.2" (`VITE_TURNSTILE_SITE_KEY`); "Step 11" (Turnstile secret as a Supabase secret) |
 | §7.3 Supabase | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.3 Supabase" (organization, New project, database password, Project URL, 22-char project-ref, `sb_publishable_...` / `sb_secret_...`, free tier); "Step 8" (`supabase link --project-ref`); "Step 4.2" (`.env.local` PUBLIC only; secrets never there); "Step 11" (Supabase secrets); `SKILL_INTERACTIVE_PORTFOLIO.md` — "Phase 0 — Prerequisites" (`SUPABASE_DB_PASSWORD`) |
-| §7.4 The AI provider key | `GUIDE_FROM_SCRATCH.md` — "Step 1.1 Create the DeepSeek account and API key" (`sk-...`, shown once, treat as a secret); "Step 11" (server secret named `deepseek`; no `sk-` / `sb_secret_` / `0x3…` in the browser bundle) |
+| §7.4 The SI provider key | `GUIDE_FROM_SCRATCH.md` — "Step 1.1 Create the DeepSeek account and API key" (`sk-...`, shown once, treat as a secret); "Step 11" (server secret named `deepseek`; no `sk-` / `sb_secret_` / `0x3…` in the browser bundle) |
 | §7.5 Domain | `GUIDE_FROM_SCRATCH.md` — "Step 2 → 2.4 Domain (optional but recommended)" (Cloudflare registration, or registrar + Cloudflare `Add a site` + nameservers + propagation); Step 2 cost table (~$10/yr) |

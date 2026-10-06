@@ -7,7 +7,7 @@
 > **Loaded at:** Build — data layer, security half; re-loaded at Publish for the security audit.
 > **Source:** `DATABASE_SCHEMA.md` §§1, 3, 4, 5, 7, 8, 9, 10, verbatim, including the 2026-09-25
 > hardening revision.
-> **Cross-references:** §2.1/§2.2/§2.3 table definitions → `profile.md`, `content.md`, `ai-ops.md`;
+> **Cross-references:** §2.1/§2.2/§2.3 table definitions → `profile.md`, `content.md`, `si-ops.md`;
 > §6 ContentDoc
 > shape → `content.md`; §11 migrations → `seeds.md`; **§12 final RLS audit (A–G) → `audit.md`**.
 > The source's citations of §5 and §9 in this file point at sections that also live here.
@@ -179,9 +179,9 @@ changes the CV, so every cached PDF is stale the moment it lands — the same
 statement that invalidates `source_hash` clears the cache rather than leaving
 orphan rows behind.
 
-`purge_ai_caches` after insert, update or delete on `values_culture`,
-`faq_responses` or `ai_instructions` (`FOR EACH STATEMENT`):
-`DELETE FROM public.chat_response_cache`. Those three tables are the private AI
+`purge_si_caches` after insert, update or delete on `values_culture`,
+`faq_responses` or `si_instructions` (`FOR EACH STATEMENT`):
+`DELETE FROM public.chat_response_cache`. Those three tables are the private SI
 context, and `cache_version` includes their hash — purging makes the invalidation
 immediate rather than depending on every caller recomputing the version.
 
@@ -198,7 +198,7 @@ tries to modify or delete an existing audit row.
   cleans on each call).
 - `cleanup-rag-metrics` — daily `DELETE FROM public.rag_metrics WHERE
   created_at < now() - interval '7 days'` (mirrors the in-function TTL; the
-  AI endpoints are quiet weeks, so the insert-time sweep alone is not a
+  SI endpoints are quiet weeks, so the insert-time sweep alone is not a
   guarantee).
 - `cleanup-cv-documents` — daily `DELETE FROM public.cv_documents WHERE
   generated_at < now() - interval '30 days'` (regenerable cache hygiene; the
@@ -264,7 +264,7 @@ upload path.
 All edge functions deploy with `--no-verify-jwt` (auth by the ingress shared secret / Turnstile /
 admin check / origin gate) and enforce CORS allowlists (prod domains + staging
 only) plus 405/415 guards (`_shared/http.ts`). **The function URL is not a public entry point:**
-the Worker proxies public AI/CV requests to the functions and carries a shared secret (or a signed,
+the Worker proxies public SI/CV requests to the functions and carries a shared secret (or a signed,
 short-lived assertion) that the function verifies before any handling; the client address is taken
 only from the header the Worker sets; a request without the secret is rejected before rate-limit
 evaluation. `--no-verify-jwt` switches off the platform's JWT check only — it does not make the
@@ -284,7 +284,7 @@ shipped to the browser. Set it with `supabase secrets set deepseek=<sk-...>`.
 | `translate-recommendation` | Admin: DeepSeek translates a recommendation to English → writes `recommendations.recommendation_text_en` and forces `translation_reviewed = false`; the view serves the translation only after an admin confirms it (`is_translated` then true) | authenticated admin JWT |
 | `get-contact` | Public contact endpoint: `GET /functions/v1/get-contact` → `candidate_profile_public` fields (`name, title, elevator_pitch, availability_status, linkedin_url, target_company_stages`); 404 when no profile row; contact info never includes email/phone | `candidate_profile_public` read |
 | `sitemap` | Dynamic `sitemap.xml` from the catalog (published docs only) — crawlers see publish/unpublish without redeploy | `get_public_sitemap_data()` |
-| `abuse-alert` | Scheduled watchdog (every 15 min via `supabase/config.toml` `schedule = "*/15 * * * *"`): aggregates `rag_metrics` over the window, compares against env thresholds (`ABUSE_WINDOW_MINUTES`, `ABUSE_MAX_CALLS_CHAT/JD/CV`, `ABUSE_MAX_TOKENS`), writes breaches to `abuse_alerts`; `detail` is built from aggregates only — counts, thresholds, window sizes, timestamps, function names, never question text, user content, IPs or PII; optional counts-only webhook mirror (`ABUSE_ALERT_WEBHOOK_URL` — counts only, same rule). The 15-minute run is the aggregate watchdog, not the whole cost control: the AI endpoints enforce a global token/cost budget, a per-endpoint concurrency cap and a maximum output size ahead of the provider, the prepaid provider balance is the hard stop (ADR-0014 — the provider documents no console-level cap), and a budget or breaker trip alerts immediately rather than waiting for this window | `rag_metrics` read, `abuse_alerts` write |
+| `abuse-alert` | Scheduled watchdog (every 15 min via `supabase/config.toml` `schedule = "*/15 * * * *"`): aggregates `rag_metrics` over the window, compares against env thresholds (`ABUSE_WINDOW_MINUTES`, `ABUSE_MAX_CALLS_CHAT/JD/CV`, `ABUSE_MAX_TOKENS`), writes breaches to `abuse_alerts`; `detail` is built from aggregates only — counts, thresholds, window sizes, timestamps, function names, never question text, user content, IPs or PII; optional counts-only webhook mirror (`ABUSE_ALERT_WEBHOOK_URL` — counts only, same rule). The 15-minute run is the aggregate watchdog, not the whole cost control: the SI endpoints enforce a global token/cost budget, a per-endpoint concurrency cap and a maximum output size ahead of the provider, the prepaid provider balance is the hard stop (ADR-0014 — the provider documents no console-level cap), and a budget or breaker trip alerts immediately rather than waiting for this window | `rag_metrics` read, `abuse_alerts` write |
 
 **Admin-function authentication (non-negotiable):** because the four admin
 functions deploy `--no-verify-jwt`, they must verify the caller's JWT
@@ -358,7 +358,7 @@ mandatory gate, not a smoke test.
 
 Edge functions with `verify_jwt = false` must not be reachable without a
 credential or origin check: the ingress shared secret + CORS allowlist + Turnstile (CV) + per-IP rate
-limits (AI) + admin JWT checks cover this. Remember: CORS is browser-only —
+limits (SI) + admin JWT checks cover this. Remember: CORS is browser-only —
 the function URLs stay internet-reachable and a direct call without the ingress secret is answered
 `401`/`403`; the rate limits / Turnstile / JWT checks are the actual access control.
 
@@ -368,7 +368,7 @@ the function URLs stay internet-reachable and a direct call without the ingress 
 
 **Threat model — read once.** The RLS model below is the actual security
 boundary of the site. The other controls in the kit (rate limits, input
-caps, response caching, Turnstile) limit **abuse and excessive AI use** —
+caps, response caching, Turnstile) limit **abuse and excessive SI use** —
 they are not designed to stop a determined attacker. Never treat them as
 attack protection; verify the RLS model instead (see §12).
 
@@ -376,7 +376,7 @@ Base tables: RLS **enabled everywhere**. Pattern per table family:
 
 | Family | Tables | anon | authenticated | service_role |
 |---|---|---|---|---|
-| Profile (private context) | `values_culture`, `faq_responses`, `ai_instructions` | denied (deny policy, no grants) | `SELECT`/writes only via `is_admin()` policies | bypasses RLS |
+| Profile (private context) | `values_culture`, `faq_responses`, `si_instructions` | denied (deny policy, no grants) | `SELECT`/writes only via `is_admin()` policies | bypasses RLS |
 | Profile (public surface) | `candidate_profile`, `experiences`, `skills`, `gaps_weaknesses`, `recommendations` | deny policy on base table (column-level grants only for view columns in older migrations; final state: **no anon base-table access**), reads via `*_public` views | `is_admin()`-gated CRUD | bypasses RLS |
 | Content | `content_collections`, `content_docs`, `site_content` | denied directly; reads via `*_public` views | `is_admin()`-gated CRUD | bypasses RLS |
 | Site chrome | `site_sections`, `fun_links`, `holiday_banners` | denied directly (deny policy, no grants); reads via `site_sections_public` / `fun_links_public` / `holiday_banners_public` — the visible/active/window filters live in the private `api_*` view | `is_admin()`-gated CRUD | bypasses RLS |

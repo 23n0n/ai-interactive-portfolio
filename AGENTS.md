@@ -1,4 +1,4 @@
-# AGENTS.md — Build a Personal Site With an AI Agent
+# AGENTS.md — Build a Personal Site With an SI Agent
 
 This file is the contract. An owner hands you this repository and says **"I want my own site"**.
 You lead that owner by the hand from zero to a live personal site like `zabrowski.pl`.
@@ -8,14 +8,14 @@ needs them (§8). Everything here is written for the agent; the owner never has 
 
 ## 1. What this repository is
 
-- A **knowledge package plus a skill distribution** for building personal sites with an AI agent.
+- A **knowledge package plus a skill distribution** for building personal sites with an SI agent.
 - **Cloning it is the install.** There is no package step, no hosted service, no account with us.
 - The site is built in the **owner's own repository**. This repository is knowledge and tooling; it
   stays clean and is never the place where a site is built.
 - The build is driven by conversation. The owner describes what they want; you produce the site.
 - The reference target is an interactive portfolio/CV site: spotlight, skills, experience,
   testimonials, contact, an SI chat about the owner, a job-description fit analysis, a knowledge
-  base with an admin panel, a gated CV download, seasonal banners, and machine-readable AI
+  base with an admin panel, a gated CV download, seasonal banners, and machine-readable SI
   surfaces.
 
 This repository also holds the older linear kit — `GUIDE_FROM_SCRATCH.md`,
@@ -56,7 +56,7 @@ Run the stages in order. Keep the technical content of the old kit's Phase 0–8
 | 2 | Design | An approved design contract |
 | 3 | Build | A working site on a private preview link |
 | 4 | Publish | A live site on its own domain, with rollback |
-| 5 | Distribute | The machine-readable layer for search and AI |
+| 5 | Distribute | The machine-readable layer for search and SI |
 | 6 | Operate | Changes, backups, monitoring, content |
 
 ### Stage 1 — Intake
@@ -125,7 +125,7 @@ Build in this order, verifying each part before moving on.
    anchor ids, force the owning section to mount, then scroll once the element exists). Gate:
    typecheck, lint and build green; browser check on desktop and mobile.
 4. **Content collections and knowledge base.** The typed block model, hub and document routes with
-   server-side related-link resolution, the WYSIWYG admin, the image library, AI content helpers,
+   server-side related-link resolution, the WYSIWYG admin, the image library, SI content helpers,
    and a server-side HTML sanitizer on all rich content. The library is a **public bucket for
    publishable material only** and says so in the admin UI; the upload flow classifies before it
    stores, accepts an image only after decoding and re-encoding it server-side, checks the detected
@@ -140,7 +140,7 @@ Build in this order, verifying each part before moving on.
 5. **Interactive features.** SI chat and job-description analysis (per-IP rate limits behind the
    trusted ingress, a global budget with a circuit breaker in front of the provider, input caps,
    response caching, no key in the browser, a privacy notice **before** content is submitted on both
-   surfaces with a non-AI alternative and a redaction pass that runs **before** transmission —
+   surfaces with a non-SI alternative and a redaction pass that runs **before** transmission —
    `references/secure.md` §7, Provider privacy), the Turnstile-gated CV download with server-side
    verification on the `POST` plus the signed single-use token on `GET`/`HEAD`, the edge-function
    inventory behind the **trusted ingress** (the function URL is not a public entry point),
@@ -193,11 +193,11 @@ Build in this order, verifying each part before moving on.
 - Derive the machine-readable layer from the **same content source as the visible pages**:
   `llms.txt` and `llms-full.txt`, `sitemap.xml`, `robots.txt` (`noindex` on admin, auth and
   staging), `openapi.json`, `Accept: text/markdown` negotiation with canonical URL logic, and the
-  `.well-known/` AI-discovery surfaces.
+  `.well-known/` SI-discovery surfaces.
 - Derive JSON-LD (schema.org) from the same data: `Person` and `WebSite` with stable `@id` anchors,
   `ProfilePage`, `BreadcrumbList`, `FAQPage`, `CollectionPage`, `Article`, and the collection-typed
   docs.
-- Audit the live pages: AI surfaces return 200, no page ships an empty, over-long or out-of-sync
+- Audit the live pages: SI surfaces return 200, no page ships an empty, over-long or out-of-sync
   search description, route filenames are lowercase on disk.
 - Reference: `distribute.md`.
 
@@ -257,7 +257,7 @@ it does. Wait for a clear yes. A silence, a maybe, or an unanswered question is 
    §4.
 4. **Security defaults always — industry level.** Row-level security everywhere; anonymous access
    is public **read-only views**; admin gated by `is_admin()` **and** the immutable user-id
-   allowlist; writes are service-role only; the public AI/CV functions sit behind the **trusted
+   allowlist; writes are service-role only; the public SI/CV functions sit behind the **trusted
    ingress** (the Worker proxies them and carries a shared secret the function verifies before any
    handling — the function URL is not a public entry point); Turnstile is verified server-side on
    the CV endpoint only, on the `POST` that mints the short-lived single-use signed download token
@@ -293,7 +293,7 @@ it does. Wait for a clear yes. A silence, a maybe, or an unanswered question is 
    fails. A
    partial control needs a compensating control; a risk acceptance needs an ADR.
    **Threat model — read once:** rate limits, input caps, response caching and Turnstile protect
-   against **abuse and excessive AI use**, not against a determined attacker. The real security
+   against **abuse and excessive SI use**, not against a determined attacker. The real security
    boundary is the **RLS model** (views, grants, policies), which is why the final RLS audit is
    mandatory, not optional.
 5. **Content is data, not JSX.** Collections, hubs and documents are typed data behind public
@@ -318,10 +318,10 @@ This distribution must run on **any agent, any model, any vendor — or by hand*
    None is required. A wrapper does one thing: point back at this file.
 3. A human following the same six stages by hand is a supported path, not a degraded one. Never
    assume a tool call is available; state the outcome and let the runner choose the mechanism.
-4. Neutrality is about the AI, not about the stack. The target stack and the database schema are
+4. Neutrality is about the SI, not about the stack. The target stack and the database schema are
    frozen (§5.2, §7); this distribution does not offer alternative stacks or a lean mode. "Any
    model, any vendor" describes the agent that runs this distribution — it is not a licence to
-   swap the site's own AI provider, which is frozen stack (§7).
+   swap the site's own SI provider, which is frozen stack (§7).
 
 ## 7. Frozen technology
 
@@ -333,7 +333,7 @@ Already documented and **must not change** as part of routine work:
 - **Styling:** Tailwind CSS v4 + shadcn/ui.
 - **Protection:** Cloudflare Turnstile.
 - **Toolchain:** Bun and Wrangler 4.
-- **AI features:** DeepSeek — the reference LLM provider, called from server-side edge functions
+- **SI features:** DeepSeek — the reference LLM provider, called from server-side edge functions
   with the key held server-side. It is frozen like the rest of the stack; swapping it needs the
   no-silent-swaps procedure below.
 - **Database:** `DATABASE_SCHEMA.md` — every table, view, RPC, policy, grant, storage rule and

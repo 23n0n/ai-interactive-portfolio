@@ -7,13 +7,13 @@ real launch.
 ## Pages
 - Home: /
 - Services: /services
-- Service docs: /services/ai-chatbot-embedding, /services/react-typescript, /services/fullstack-consulting
+- Service docs: /services/si-chatbot-embedding, /services/react-typescript, /services/fullstack-consulting
 - Technologies: /technologies
 - Technology docs: /technologies/typescript, /technologies/react, /technologies/postgresql, /technologies/supabase
 - Contact / Ask SI: /contact
 - CV (English): /cv
 
 ## Key facts (placeholder)
-- Role: Full-Stack Tinkerer & Friendly AI Enthusiast
+- Role: Full-Stack Tinkerer & Friendly SI Enthusiast
 - Strong skills: TypeScript, React, Node.js, PostgreSQL, Tailwind CSS
-- Offerings: AI chatbot embedding, React + TypeScript builds, full-stack consulting
+- Offerings: SI chatbot embedding, React + TypeScript builds, full-stack consulting

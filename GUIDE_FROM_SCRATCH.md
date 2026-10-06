@@ -1,4 +1,4 @@
-# Build an Interactive Portfolio with AI — Step-by-Step Walkthrough
+# Build an Interactive Portfolio with SI — Step-by-Step Walkthrough
 
 > **Status — deep reference, not the primary path.** `AGENTS.md` is the
 > current contract: six stages and four owner gates. This walkthrough is the
@@ -16,14 +16,14 @@ links, disclaimer, footer), an **SI chat** ("Ask about my work"), a **JD
 analyzer** ("paste a job description, get an honest fit analysis"), a
 **knowledge base** (hub + detail pages you edit in a WYSIWYG admin panel),
 a **Turnstile-gated CV download**, recurring holiday banners, and
-machine-readable AI surfaces (`llms.txt`, `sitemap.xml`, `robots.txt`,
+machine-readable SI surfaces (`llms.txt`, `sitemap.xml`, `robots.txt`,
 `openapi.json`, `Accept: text/markdown`, `.well-known/`).
 
-**The AI supports you at every step.** Step 1 connects your agent to a model
+**The SI supports you at every step.** Step 1 connects your agent to a model
 provider — before anything else. Every later step tells you exactly what to
 copy into your terminal and what to paste into your agent's chat.
 
-> **⚠ Read this first — verified evidence, never a claim.** The AI generates
+> **⚠ Read this first — verified evidence, never a claim.** The SI generates
 > the code and reports success, but **its claims are unverified**. The agent
 > runs every `[Check]` gate in this guide and shows the command and its
 > output; you are the owner and approve at the four gates in `AGENTS.md` §4.
@@ -42,10 +42,10 @@ copy into your terminal and what to paste into your agent's chat.
 - Two companion files sit next to this guide:
   - **`DATABASE_SCHEMA.md`** — the complete database reference (every
     table, column, view, RPC, policy, grant, storage rule, seed) **plus the
-    final RLS audit SQL (§12)**. The AI applies it for you in Step 8; you
+    final RLS audit SQL (§12)**. The SI applies it for you in Step 8; you
     do not need to read it, but it is the source of truth.
   - **`SKILL_INTERACTIVE_PORTFOLIO.md`** — the build skill (also embedded
-    as Appendix A here). The AI executes it phase by phase.
+    as Appendix A here). The SI executes it phase by phase.
 - Time: one focused day (casual: a weekend). Cost: **~$1–3** of model
   tokens for the whole build + **~$10/yr** if you buy a domain.
 
@@ -61,7 +61,7 @@ copy into your terminal and what to paste into your agent's chat.
 
 ## Step 1 — Connect your agent to a model (DO THIS FIRST)
 
-You want AI support before you do anything else. Do this step before
+You want SI support before you do anything else. Do this step before
 creating accounts or installing tools.
 
 This kit is harness-neutral (`AGENTS.md` §6): any agent that can read and
@@ -137,20 +137,20 @@ the model that runs it. The default chat model works, but the high-effort
 configuration is the recommended one. Set it in your agent's model settings
 (select the model and its effort level) before starting Step 5.
 
-### 1.6 Verify the AI works
+### 1.6 Verify the SI works
 
 Start a session with your agent and paste:
 
 `[Prompt]`:
 
 ```
-Reply with exactly: AI READY. Then explain in three short bullets what
+Reply with exactly: SI READY. Then explain in three short bullets what
 Postgres Row Level Security (RLS) is.
 ```
 
-Expect: `AI READY` plus three correct bullets. If you get an error, check
+Expect: `SI READY` plus three correct bullets. If you get an error, check
 the key in your agent's model settings and try again. **Require the reply
-as evidence — do not accept the AI's own "I am working" claim without
+as evidence — do not accept the SI's own "I am working" claim without
 seeing it.** (Verification is the agent's job and it shows the evidence;
 approval is the owner's — `AGENTS.md` §5.3.)
 
@@ -311,7 +311,7 @@ VITE_TURNSTILE_SITE_KEY=0x4AAAA...
 
 ---
 
-## Step 5 — Give yourself AI support on the project (load the skill)
+## Step 5 — Give yourself SI support on the project (load the skill)
 
 You now hand the build over to your agent. It executes a written **skill**
 phase by phase; you answer questions and approve the gates.
@@ -344,7 +344,7 @@ run the design questionnaire when the skill reaches Phase 2 — ask me all
 the questions and wait for my answers before writing any layout code.
 ```
 
-**Also give the AI the database reference** (it applies it in Step 8):
+**Also give the SI the database reference** (it applies it in Step 8):
 
 `[Copy]`:
 
@@ -353,7 +353,7 @@ mkdir -p docs
 cp <path-to>/DATABASE_SCHEMA.md docs/DATABASE_SCHEMA.md
 ```
 
-Now the AI has everything: the skill (what to build), the schema (how the
+Now the SI has everything: the skill (what to build), the schema (how the
 database looks) and your project directory (where to build).
 
 ---
@@ -363,7 +363,7 @@ database looks) and your project directory (where to build).
 The agent asks you **25 questions in 6 groups** (identity, vision, layout,
 interaction, content scope, constraints). Answer honestly — these answers
 are the design contract. Give your **full name** (first AND last) in
-question 1; if you skip it, the AI will use the placeholder name
+question 1; if you skip it, the SI will use the placeholder name
 **Zygfryd Niewiadomski-Nieśmiałek** — remember to replace it before launch.
 Until it is replaced the manifest records `placeholder name in use: yes`, and
 a live site must never ship the placeholder (`references/intake.md` §5,
@@ -380,7 +380,7 @@ The most important one: **"walk through your ideal page top to bottom, as
 if describing it to a designer"** — what does the visitor see first (first
 5 seconds)? What do they scroll past? What should they remember after
 closing the tab? If you do not know, answer the other questions and let
-the AI propose a page; you still approve it.
+the SI propose a page; you still approve it.
 
 `[Check]` — you have seen and approved:
 - the **design token set** (colors, fonts, radius, shadows, motion),
@@ -469,7 +469,7 @@ Then, in the dashboard:
 
 Then populate your data (the agent does this with you, or you use the
 admin panel later): the profile row, experiences, skills, gaps,
-recommendations, private AI-context (values, FAQs, AI instructions) and
+recommendations, private SI-context (values, FAQs, SI instructions) and
 the CV settings row. **Nothing renders until this data exists.**
 
 `[Fix]` on `supabase db push` errors: paste the error into your agent's
@@ -507,7 +507,7 @@ The agent creates your chosen collections (the reference has nine:
 the questionnaire), seeds the first documents, builds hub/doc routes with
 server-side related-link resolution (direct + backlinks + tag matches,
 ~6 limit), and the admin panel: TipTap WYSIWYG editor, KB image library,
-related-pages picker, AI tag/FAQ-label/content generation, server-side
+related-pages picker, SI tag/FAQ-label/content generation, server-side
 HTML sanitizer.
 
 You try the admin panel yourself:
@@ -515,7 +515,7 @@ You try the admin panel yourself:
 1. `/admin` → sign in with your admin account.
 2. Open a doc → edit text → save → check the public page reflects it.
 3. Upload an image in the KB image library → insert it into a doc.
-4. Generate tags / FAQ labels with the AI buttons.
+4. Generate tags / FAQ labels with the SI buttons.
 5. Set `related` refs with the picker → verify the public doc page shows
    the related links.
 
@@ -537,7 +537,7 @@ re-runs after any editor, parser, renderer or allowlist change. Raw
 
 ## Step 11 — Phase F: interactive features
 
-The agent builds: AI chat + JD analysis (DeepSeek from Supabase edge
+The agent builds: SI chat + JD analysis (DeepSeek from Supabase edge
 functions, reached through the trusted ingress — the Worker proxies them and
 carries a shared secret the function verifies before any handling, so the
 function URL is not a public entry point; per-IP rate limits, a global
@@ -548,7 +548,7 @@ dynamic sitemap, the abuse watchdog (a cost signal — never attack detection),
 holiday banners, and the
 machine-readable routes (`llms.txt`, `llms-full.txt`, `sitemap.xml`,
 `robots.txt`, `openapi.json`, `Accept: text/markdown`, `.well-known/`
-AI-discovery surfaces, JSON-LD).
+SI-discovery surfaces, JSON-LD).
 
 You set the server secrets once:
 
@@ -568,12 +568,12 @@ supabase secrets set TURNSTILE_SECRET=<cloudflare-turnstile-secret> \
   verified on the **`POST` only** and never travels in a URL; the verified
   `POST` mints a short-lived single-use signed token that `GET`/`HEAD` must
   present, so no accepted method is unverified.
-- AI chat: burst past the limit → **429**; answers come back cached for
+- SI chat: burst past the limit → **429**; answers come back cached for
   repeat questions. A direct call to the function URL without the ingress
   secret is rejected (`401`/`403`) rather than served.
-- **AI provider privacy**: both chat and JD surfaces show a notice **before**
+- **SI provider privacy**: both chat and JD surfaces show a notice **before**
   content is submitted, stating that the question (with its retrieved context)
-  or the JD text goes to the AI provider, and each offers a non-AI alternative
+  or the JD text goes to the SI provider, and each offers a non-SI alternative
   (the knowledge base and the contact surface) — the redaction pass (emails,
   phone numbers, addresses, identifiers, sensitive employment data) runs
   **before** transmission, and `references/secure.md` §7 (Provider privacy)
@@ -610,7 +610,7 @@ supabase secrets set TURNSTILE_SECRET=<cloudflare-turnstile-secret> \
 
 > **What these controls actually protect (read once):** rate limits, input
 > caps, response caching and Turnstile protect against **abuse and
-> excessive AI use** — a bot hammering your AI endpoints, a scraper draining
+> excessive SI use** — a bot hammering your SI endpoints, a scraper draining
 > your token budget. They are NOT designed to stop a determined attacker.
 > The real security boundary is the RLS model from Step 8. Do not present
 > the abuse controls as attack protection.
@@ -657,7 +657,7 @@ too):**
    injection with structure, not only instruction: delimit user content in
    the prompt, separate instructions and untrusted content structurally,
    instruct the model to ignore embedded instructions, forbid echoing the
-   system prompt or the private AI context (values_culture, ai_instructions,
+   system prompt or the private SI context (values_culture, si_instructions,
    faq_responses), cap output length, place NO secret or credential material
    in the model context, and validate outputs deterministically with canary
    strings that detect context leakage. Then test with this payload in a JD:
@@ -784,7 +784,7 @@ abuse) are recorded in
 `docs/PROJECT_REFERENCE_ARCHITECTURE.md`, `docs/CI-CD-RULES.md` and
 `adr/ADR-000N.md`.
 
-**Remember:** the checklist items protect against abuse and excessive AI
+**Remember:** the checklist items protect against abuse and excessive SI
 use, not against a determined attacker — the RLS audit is the real gate.
 
 Your job: answer the agent's questions, approve the ADRs, run the two
@@ -876,7 +876,7 @@ unverified.
 
 > **Threat model — read once.** Several items below (rate limits, input
 > caps, response caching, Turnstile) protect against **abuse and excessive
-> AI use**, not against a determined attacker. The **RLS model** (items in
+> SI use**, not against a determined attacker. The **RLS model** (items in
 > "Access control") is the actual security boundary — which is why the
 > final RLS audit is the first mandatory gate.
 
@@ -969,7 +969,7 @@ unverified.
 
 **Input validation, sanitization & API:**
 
-- [ ] **Strict input validation**: length/role caps on every AI endpoint,
+- [ ] **Strict input validation**: length/role caps on every SI endpoint,
   NFKC normalization, JSON-only bodies.
 - [ ] **Server-side HTML sanitizer** (parse5 allow-list) applied at read
   time before any `dangerouslySetInnerHTML`; WYSIWYG rich blocks sanitized
@@ -1005,7 +1005,7 @@ unverified.
   short-lived, single-use signed download token on `GET`/`HEAD`, so every
   method is gated server-side with no `GET` bypass; hyphenated error-code
   diagnostics; 403 on
-  missing/dummy token). **AI chat + JD analysis deliberately have no
+  missing/dummy token). **SI chat + JD analysis deliberately have no
   Turnstile** — compensating controls: per-IP rate limits (`chat` 30/15
   min, `analyze-jd` 10/15 min) behind the trusted ingress, strict input caps,
   response caching.
@@ -1023,15 +1023,15 @@ unverified.
   only instruction: user content delimited in the
   prompt, instructions and untrusted content structurally separated, no
   secret or credential material in the model context, no echoing of
-  the system prompt or private AI context, and deterministic output
+  the system prompt or private SI context, and deterministic output
   validation with canary strings. Test the payloads from Step 11 —
   multilingual, encoded, fragmented,
   indirect, tool-oriented and multi-turn — and replay each through the cache;
   a cached response is retested, never assumed clean.
-- [ ] **AI provider privacy** — the chat and JD surfaces show a notice
+- [ ] **SI provider privacy** — the chat and JD surfaces show a notice
   **before** content is submitted, stating that the question (with its
-  retrieved context) or the JD text goes to the AI provider, and each offers a
-  non-AI alternative (the knowledge base and the contact surface); the redaction
+  retrieved context) or the JD text goes to the SI provider, and each offers a
+  non-SI alternative (the knowledge base and the contact surface); the redaction
   pass (emails, phone numbers, addresses, identifiers, sensitive employment
   data) runs **before** transmission; the data-flow note in
   `references/secure.md` §7 (Provider privacy) records what is sent, the
@@ -1199,11 +1199,11 @@ signup.
    phase gate in this skill is the USER's check: run the commands, look at
    the output, approve deliberately. Never accept "it works" without seeing
    the gate pass. Do the same at the very start of the build: verify the
-   accounts, the keys, the tools and the AI connection yourself before
+   accounts, the keys, the tools and the SI connection yourself before
    trusting anything the agent reports.
 4. **Security defaults always — industry level.** RLS everything; anon =
    public read-only views; admin gated by `is_admin()` **and** the immutable
-   user-id allowlist; writes service-role-only; the public AI/CV functions sit
+   user-id allowlist; writes service-role-only; the public SI/CV functions sit
    behind a **trusted ingress** (the Worker proxies them and carries a shared
    secret the function verifies before any handling — the function URL is not a
    public entry point); Turnstile server-side verify on the CV endpoint only, on
@@ -1221,7 +1221,7 @@ signup.
    server-side**. PARTIAL needs compensating control; risk acceptance needs ADR.
    **Threat model — read this once:** most of the above controls (rate
    limits, input caps, response caching, Turnstile) protect against **abuse
-   and excessive AI use**, not against a determined attacker. The real
+   and excessive SI use**, not against a determined attacker. The real
    security boundary is the **RLS model** (views + grants + policies) — which
    is why the final RLS audit (Phase 8) is mandatory, not optional.
 5. **Content = data, not JSX.** Collections/hubs/docs = typed data in
@@ -1258,7 +1258,7 @@ questions you skipped and why; never trim the list silently.
    placeholder name **Zygfryd Niewiadomski-Nieśmiałek** everywhere the name
    is needed and tell the user it is a placeholder to be replaced before
    launch.
-2. Primary audience: recruiters, clients, conference organizers, the AI
+2. Primary audience: recruiters, clients, conference organizers, the SI
    crawlers, or all of them? Pick ONE primary — it drives copy and layout.
 3. Voice: professional, warm, witty, direct, humble-expert? Give one example
    sentence you like the sound of.
@@ -1292,7 +1292,7 @@ questions you skipped and why; never trim the list silently.
 12. Navigation: top bar, sidebar, or minimal (logo + 2–3 links)? Sticky or
     not?
 13. Section order on the home page (e.g. Main Character → about → skills → experience →
-    testimonials → AI → footer). Anything to reorder, drop, or add?
+    testimonials → SI → footer). Anything to reorder, drop, or add?
 14. How to present data: experience as timeline or cards? Skills as
     strong/moderate/gap columns, tag cloud, or progress bars? Testimonials as
     quote cards, carousel, or grid?
@@ -1359,7 +1359,7 @@ accounts? ~20–30 min, throwaway — nothing is created or charged."*
 3. Render a single-page approximation (Main Character → about → skills →
    experience) fed by those files, so the design-questionnaire answers become
    a real page the user can click through.
-4. AI copy help is optional and also account-free — a local Ollama model, or
+4. SI copy help is optional and also account-free — a local Ollama model, or
    none at all.
 
 **Boundaries (why it does not break the Non-negotiables):**
@@ -1404,7 +1404,7 @@ time.
   with SSR environment; `wrangler.jsonc`: worker name, `nodejs_compat`,
   `preview` env (persistent workers.dev, noindex).
 - **Dependency source hygiene.** Resolve packages from the **public npm
-  registry** (`registry.npmjs.org`) only. Some AI/cloud scaffolds pin their
+  registry** (`registry.npmjs.org`) only. Some SI/cloud scaffolds pin their
   lockfile to a private package mirror or sandbox cache that GitHub Actions
   runners cannot reach (403 on fresh `bun install`), which silently breaks CI
   and any dependency bump (Dependabot fails). If you inherit such a lockfile,
@@ -1428,10 +1428,10 @@ time.
   RPCs, functions, triggers, policies, grants, storage rules, seeds.
 - Tables (reference naming, adapt content to persona): profile domain
   `candidate_profile`, `experiences`, `skills`, `gaps_weaknesses`,
-  `values_culture`, `faq_responses`, `ai_instructions`, `recommendations`;
+  `values_culture`, `faq_responses`, `si_instructions`, `recommendations`;
   content/KB `content_collections`, `content_docs` (typed blocks, tags,
   related refs), `site_content`, `site_sections`, `fun_links`,
-  `holiday_banners`; AI/ops `rate_limits`, `chat_response_cache`,
+  `holiday_banners`; SI/ops `rate_limits`, `chat_response_cache`,
   `jd_analysis_cache`, `rag_metrics`, `cv_settings`, `cv_documents`,
   `abuse_alerts` (watchdog output).
 - Public read-only views for everything site renders (`*_public`,
@@ -1490,7 +1490,7 @@ time.
 - Populate the profile domain via the admin panel (reference: entered
   manually, not seeded by migrations): `candidate_profile` singleton,
   `experiences`, `skills`, `gaps_weaknesses`, `recommendations`, private
-  AI-context (`values_culture`, `faq_responses`, `ai_instructions`) and the
+  SI-context (`values_culture`, `faq_responses`, `si_instructions`) and the
   `cv_settings` row — nothing renders until it holds data.
 - pg_cron: hourly `rate_limits` cleanup (GDPR data minimization); daily
   `rag_metrics` sweep (7-day TTL — `question_preview` is PII-scrubbed and
@@ -1540,13 +1540,13 @@ time.
 - Hub/doc routes with server-side related-link resolution (direct + backlinks
   + tag matches, ~6 limit); nav uses lightweight summaries.
 - Admin: WYSIWYG editor (TipTap), KB image library, related-pages picker
-  (live catalog), AI tag / FAQ-label / content generation via DeepSeek edge
+  (live catalog), SI tag / FAQ-label / content generation via DeepSeek edge
   functions; server-side HTML sanitizer on all rich content.
 - Gate: hub + doc pages render from DB; admin create/edit/publish works;
   related links resolve; sanitizer strips disallowed markup.
 
 ### Phase 6 — Interactive features
-- **AI chat + JD analysis**: edge functions call DeepSeek API via shared
+- **SI chat + JD analysis**: edge functions call DeepSeek API via shared
   client (`_shared/deepseek.ts`, key from the **`deepseek`** secret —
   `Deno.env.get("deepseek")`, the exact name set in Step 11 of the guide).
   Their public entry point is the **trusted ingress**: the Worker proxies the
@@ -1570,7 +1570,7 @@ time.
   NO Turnstile here (ADR-0007). Never expose API key to browser.
   **Provider privacy**: both chat and JD surfaces show a notice **before**
   content is submitted, stating that the question (with its retrieved context)
-  or the JD text goes to the AI provider, and each offers a non-AI alternative
+  or the JD text goes to the SI provider, and each offers a non-SI alternative
   (the knowledge base and the contact surface) — the redaction pass (emails,
   phone numbers, addresses, identifiers, sensitive employment data) runs
   **before** transmission, and `references/secure.md` §7 (Provider privacy)
@@ -1635,8 +1635,8 @@ time.
 - **Machine-readable routes**: `/llms.txt` + `/llms-full.txt`, `sitemap.xml`
   (dynamic from catalog), `robots.txt` (noindex admin/auth/staging),
   `openapi.json`, `Accept: text/markdown` negotiation (SSR returns Markdown
-  for AI crawlers, canonical URL logic), `.well-known/` AI-discovery
-  surfaces (`ai.txt`, `llms.txt`, `agent-card.json`, `agent-skills`,
+  for SI crawlers, canonical URL logic), `.well-known/` SI-discovery
+  surfaces (`si.txt`, `llms.txt`, `agent-card.json`, `agent-skills`,
   `api-catalog`). **JSON-LD (schema.org) derived from the same data**: root
   graph `Person` + `WebSite` (stable `@id` anchors + social image),
   `ProfilePage` on home, `BreadcrumbList` on content pages, `FAQPage`
@@ -1736,7 +1736,7 @@ time.
   RLS + anon-grant audit (never revoke "dead" anon grant without verifying
   every reader); Turnstile gate on the CV endpoint only (challenge verified on
   the `POST`, signed single-use token on `GET`/`HEAD`); per-IP rate limits on
-  the AI endpoints behind the trusted ingress, plus the global budget,
+  the SI endpoints behind the trusted ingress, plus the global budget,
   per-endpoint concurrency cap, maximum output size and circuit breaker in
   front of the provider; CORS allowlist (prod domains + staging only); full
   header suite (HSTS 180d, `preload` only with a ≥1-year `max-age`; CSP no
@@ -1826,11 +1826,11 @@ time.
   the ADR numbers cited in this kit are the reference build's labels, not
   documents that ship with it.
 - **Abuse vs attack — state it plainly.** Rate limits, input caps, response
-  caching and Turnstile limit abuse and excessive AI use; they are not
+  caching and Turnstile limit abuse and excessive SI use; they are not
   designed to stop a determined attacker. The RLS model is the security
   boundary. Do not present the abuse controls as attack protection.
 - **Accepted CV-gate risk (ADR-0011).** Turnstile plus the per-IP limit stop
-  abuse and excessive AI use; they do not stop a determined attacker who solves
+  abuse and excessive SI use; they do not stop a determined attacker who solves
   the challenge programmatically, and CORS is browser-only, so it is not a gate.
   Revisit if the threat model expands (targeted abuse of the CV endpoint at
   volume, confidential material in the CV, or a plan that affords a second
@@ -1866,12 +1866,12 @@ time.
 - [ ] **Final RLS audit passed (DATABASE_SCHEMA.md §12 A–G)** — RLS enabled on all 22 tables; policy inventory (F) has no permissive non-admin policy on admin/private tables; authenticated non-admin probe (G2) fails on private reads and admin writes; the admin probe (G3) reads the admin tables and `abuse_alerts` successfully, with `admin_audit` read-only; anon base-table `SELECT` denied on every table (registries and `cv_settings` included — public reads go through the views); anon write denied on ALL tables; views read-only for API roles; RPC EXECUTE grants clean
 - [ ] **Service-role auth test passed** — for every service-role endpoint (the four admin functions plus `chat`, `analyze-jd`, `generate-cv`, `get-contact`, `sitemap`, `abuse-alert`) the eight-case matrix (no token, forged, expired, non-admin, revoked-admin, valid admin, unsupported method, malformed body) is recorded per release; the four admin functions reject no/forged/non-admin tokens (401/401/403) and accept the admin token (signature-verified); plus the ordering cases — `OPTIONS` returns the preflight without a token, and a tokenless non-`OPTIONS` request returns 401 even for an unsupported method (no handler path precedes the auth check)
 - [ ] **IP-header trust test**: the spoofed `cf-connecting-ip`/`x-forwarded-for` burst is sent **through the trusted ingress** and does NOT bypass the rate limit on chat/analyze-jd (loop past the cap with rotating fake headers); a direct call to the function URL without the ingress secret is rejected (`401`/`403`) and never reaches the rate-limit key; a distributed-source variant from several source networks with the headers rotated still keys on the real address; no code path reads `x-forwarded-for` at all (grep the functions), and a request without the header the Worker sets fails closed instead of sharing an attacker-chosen bucket
-- [ ] **Prompt-injection test**: injected instructions in a JD / chat question do not leak the system prompt or private AI context; tool-oriented, fragmented, encoded, indirect and multi-turn payloads are tested too, and a replay of each **through the cache** is retested rather than assumed clean
+- [ ] **Prompt-injection test**: injected instructions in a JD / chat question do not leak the system prompt or private SI context; tool-oriented, fragmented, encoded, indirect and multi-turn payloads are tested too, and a replay of each **through the cache** is retested rather than assumed clean
 - [ ] **Sanitizer test**: `<script>`, `<img onerror=…>`, `javascript:` hrefs, `<iframe>` and `data:` URIs all stripped; the adversarial corpus (mutation-XSS, encoding, namespace transitions) is fuzzed with malformed and namespace-transitioning markup, not only the named payloads, and re-runs after any editor, parser, renderer or allowlist change
 - [ ] **No secret shapes in the bundle**: `sk-`, `sb_secret_`, Turnstile `0x3…` all absent from `dist/`
 - [ ] Anon client: reads public views/RPCs, writes nothing
 - [ ] Turnstile: missing token = 403; dummy token = `invalid-input-response`; happy path OK; `siteverify` on the `POST` only, with the short-lived single-use signed download token on `GET`/`HEAD` — every method gated server-side, no `GET` bypass and no challenge in a URL
-- [ ] AI endpoints: rate limit 429 after burst; input caps enforced; no key in browser bundle; the global token/cost budget, per-endpoint concurrency cap, maximum output size and circuit breaker sit in front of the provider, and a budget or breaker trip alerts immediately rather than waiting for the 15-minute run
+- [ ] SI endpoints: rate limit 429 after burst; input caps enforced; no key in browser bundle; the global token/cost budget, per-endpoint concurrency cap, maximum output size and circuit breaker sit in front of the provider, and a budget or breaker trip alerts immediately rather than waiting for the 15-minute run
 - [ ] Content: hub + doc pages render from DB; admin WYSIWYG + images + related pages work; sanitizer strips disallowed markup; images at or below the tracking-pixel dimensions (≤2×2) are rejected at sanitize time, a failed upload is quarantined rather than stored, and every upload, replacement and deletion is recorded with actor, object, timestamp and request id
 - [ ] Staging + prod both 200; staging noindex; www = 301 apex
 - [ ] llms.txt / llms-full.txt / sitemap.xml / robots.txt / openapi.json 200

@@ -138,11 +138,11 @@ the sequence, not the exact commands.
    model, the key, the runner and the reply path end to end. The old kit's prompt was:
 
    ```text
-   Reply with exactly: AI READY. Then explain in three short bullets what
+   Reply with exactly: SI READY. Then explain in three short bullets what
    Postgres Row Level Security (RLS) is.
    ```
 
-   Expect `AI READY` plus three correct bullets. If it errors, fix the key in the runner's model
+   Expect `SI READY` plus three correct bullets. If it errors, fix the key in the runner's model
    settings and repeat. Never rest on the model's own claim that it is working — read the reply
    (`AGENTS.md` §5.3).
 
@@ -153,7 +153,7 @@ Two different keys are easy to conflate:
 | Key | What it is for | Where it goes |
 |---|---|---|
 | **The agent's provider key** | The runner authenticating to a model so it can read files and run commands (this section) | The runner's own model/provider settings or key store. Never in a repository, never in `ad-home/`, never in `AGENTS.md`. |
-| **The site's AI key** | The deployed site's AI features (chat, job analysis), read by the edge functions at runtime | A **server-side secret**, never shipped to the browser. The account procedure is in `references/intake.md`; the security rules are in `references/secure.md`. |
+| **The site's SI key** | The deployed site's SI features (chat, job analysis), read by the edge functions at runtime | A **server-side secret**, never shipped to the browser. The account procedure is in `references/intake.md`; the security rules are in `references/secure.md`. |
 
 - **They are separate.** The agent's key runs the build; the site's key runs the owner's product.
   A harness whose model is cheap does not license swapping the site's provider (`AGENTS.md` §6.4).
@@ -205,7 +205,7 @@ Template (replace `<harness>` with the directory name):
 ```md
 # skills/<harness>/SKILL.md
 
-This repository is a contract for building personal sites with an AI agent.
+This repository is a contract for building personal sites with an SI agent.
 Read `AGENTS.md` in full and follow it.
 
 This file is only a pointer. It is not the source of truth: if it disagrees
@@ -256,8 +256,8 @@ model and works on any of them; this is a recommendation about quality, not a co
 - **Verify the model connection yourself before starting.** Send a known-answer question (for
   example: explain in three bullets what Postgres Row Level Security is) and read the reply. Never
   rest on a model's own claim that it is working (`AGENTS.md` §5.3).
-- **Do not confuse this dial with the site's AI.** Neutrality is about the agent that runs this
-  distribution. The site's own AI features stay on the frozen stack's provider, held server-side
+- **Do not confuse this dial with the site's SI.** Neutrality is about the agent that runs this
+  distribution. The site's own SI features stay on the frozen stack's provider, held server-side
   (`AGENTS.md` §6.4, §7). A harness whose model is cheap does not license swapping the site's.
 
 ## 8. Working directory and state
@@ -308,7 +308,7 @@ old kit's install step and Non-negotiable 8; both are restated neutrally below.
 | §1 What this file is for | derived from `AGENTS.md` §6 (neutrality rule) |
 | §2 The universal path | new — derived from `AGENTS.md` §6.1, §6.3, §8, §10, §11 |
 | §3 By hand | new — derived from `AGENTS.md` §6.3; `GUIDE_FROM_SCRATCH.md` as the human-followed fallback, `SKILL_INTERACTIVE_PORTFOLIO.md` and `DATABASE_SCHEMA.md` as the deep technical source |
-| §4 Connect a runner and a model | `GUIDE_FROM_SCRATCH.md` Step 1 (1.1–1.7: create the provider key, install the runtime, install the harness, add the key, choose the model/effort, verify, optional local models) and the Step 3 tool table (Node.js 22 LTS+); `AGENTS.md` §5.3, §5.8, §11; `references/intake.md` (the site's AI key) and `references/secure.md` (secrets server-side) |
+| §4 Connect a runner and a model | `GUIDE_FROM_SCRATCH.md` Step 1 (1.1–1.7: create the provider key, install the runtime, install the harness, add the key, choose the model/effort, verify, optional local models) and the Step 3 tool table (Node.js 22 LTS+); `AGENTS.md` §5.3, §5.8, §11; `references/intake.md` (the site's SI key) and `references/secure.md` (secrets server-side) |
 | §5 The per-harness adapter | new — derived from `AGENTS.md` §6.2; container for `GUIDE_FROM_SCRATCH.md` Step 5 (placing the skill file into the harness), reduced to a pointer |
 | §6 Capabilities | new — derived from `AGENTS.md` §6.1, §6.3 and the Stage 6 fresh-session review; container for `GUIDE_FROM_SCRATCH.md` Step 1.3 ("delegates work") |
 | §7 Model choice | `SKILL_INTERACTIVE_PORTFOLIO.md` Non-negotiable 8; `GUIDE_FROM_SCRATCH.md` Steps 1.5–1.6; `AGENTS.md` §5.8, §6.4 |

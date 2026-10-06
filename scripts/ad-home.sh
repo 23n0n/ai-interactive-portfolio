@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ad-home.sh — init the ai-distribution home layout and manage the session dir-lock.
+# ad-home.sh — init the si-distribution home layout and manage the session dir-lock.
 # Contract: references/state-layout.md (§ ad-home/ layout, § Lock: state/.lock).
 #
 # Usage:

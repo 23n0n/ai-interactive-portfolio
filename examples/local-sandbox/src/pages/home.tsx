@@ -15,14 +15,14 @@ export function HomePage() {
             <Sparkles className="h-3.5 w-3.5" /> Available for freelance &amp; consulting (placeholder)
           </p>
           <h1 className="font-display text-4xl font-semibold leading-tight text-ink sm:text-5xl lg:text-6xl">
-            Hi, I&apos;m {person.firstName}. I build warm software and chatty little AIs.
+            Hi, I&apos;m {person.firstName}. I build warm software and chatty little SIs.
           </h1>
           <p className="mt-6 min-h-[2.5rem] font-mono text-lg text-primary-700 sm:text-xl">
             <Typewriter text={person.role} />
           </p>
           <p className="mt-4 max-w-xl text-lg text-ink-soft">{person.about}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <LinkButton to="/contact" variant="ai" size="lg">
+            <LinkButton to="/contact" variant="si" size="lg">
               Ask about my work <ArrowRight className="h-4 w-4" />
             </LinkButton>
             <LinkButton to="/services" variant="outline" size="lg">
@@ -43,7 +43,7 @@ export function HomePage() {
                 <span className="font-display text-6xl text-primary-700">{person.initials}</span>
               </div>
             </div>
-            <span className="absolute -right-3 -top-3 rounded-full bg-ai-400 px-3 py-1 text-xs font-bold text-white shadow">
+            <span className="absolute -right-3 -top-3 rounded-full bg-si-400 px-3 py-1 text-xs font-bold text-white shadow">
               SI-powered
             </span>
           </div>

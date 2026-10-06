@@ -1,13 +1,13 @@
 # Schema — Profile domain
 
 > **Holds:** the profile-domain base tables defined in the source §2.1 — `candidate_profile`,
-> `experiences`, `skills`, `gaps_weaknesses`, `values_culture`, `faq_responses`, `ai_instructions`,
+> `experiences`, `skills`, `gaps_weaknesses`, `values_culture`, `faq_responses`, `si_instructions`,
 > `recommendations` — plus the §2.1 population note.
-> **Loaded at:** Build — data layer (profile tables). The homepage, AI chat, JD analysis and CV
+> **Loaded at:** Build — data layer (profile tables). The homepage, SI chat, JD analysis and CV
 > generation read these tables at runtime.
 > **Source:** `DATABASE_SCHEMA.md` §2 (its `## 2. Tables` heading is reproduced here) and §2.1,
 > verbatim, including the 2026-09-25 hardening revision.
-> **Cross-references:** §2.2/§2.3 table definitions → `content.md`, `ai-ops.md`; §6 ContentDoc shape
+> **Cross-references:** §2.2/§2.3 table definitions → `content.md`, `si-ops.md`; §6 ContentDoc shape
 > → `content.md`; views/RPCs/policies for these tables → `access.md`; the §2.1 note says these
 > tables are not seeded — seed/migration notes → `seeds.md`; §12 audit → `audit.md`.
 
@@ -20,9 +20,9 @@
 > **Population:** the profile tables are NOT seeded by migrations in the
 > reference — enter them through the admin panel (or a one-off seed
 > migration): the singleton `candidate_profile` row, `experiences`,
-> `skills`, `gaps_weaknesses`, `recommendations`, the private AI-context
-> tables (`values_culture`, `faq_responses`, `ai_instructions`) and the
-> `cv_settings` singleton. The homepage, AI chat/JD analysis and CV
+> `skills`, `gaps_weaknesses`, `recommendations`, the private SI-context
+> tables (`values_culture`, `faq_responses`, `si_instructions`) and the
+> `cv_settings` singleton. The homepage, SI chat/JD analysis and CV
 > generation all read from these — nothing renders until they hold data.
 
 #### `public.candidate_profile` — single-row persona profile
@@ -113,27 +113,27 @@ Indexes: `skills_candidate_id_idx (candidate_id)`;
 
 Index: `gaps_weaknesses_candidate_id_idx (candidate_id)`.
 
-#### `public.values_culture` — what matters at work (AI context, private)
+#### `public.values_culture` — what matters at work (SI context, private)
 
 `id`, `candidate_id` (FK, cascade), `created_at`, `must_haves`,
 `dealbreakers`, `management_style_preferences`, `team_size_preferences`,
 `how_handle_conflict`, `how_handle_ambiguity`, `how_handle_failure` — all
 text. Index: `values_culture_candidate_id_idx (candidate_id)`.
-**Never exposed publicly** (no `*_public` view; feeds the AI chat context).
+**Never exposed publicly** (no `*_public` view; feeds the SI chat context).
 
-#### `public.faq_responses` — FAQ for the AI chat (private)
+#### `public.faq_responses` — FAQ for the SI chat (private)
 
 `id`, `candidate_id` (FK, cascade), `created_at`, `question` (text NOT NULL),
 `answer` (text NOT NULL), `is_common_question` (boolean default `false`),
 `labels` (text[] default `'{}'`). Index: `faq_responses_candidate_id_idx
 (candidate_id)`. Not exposed publicly.
 
-#### `public.ai_instructions` — honesty/tone/boundaries rules for the AI (private)
+#### `public.si_instructions` — honesty/tone/boundaries rules for the SI (private)
 
 `id`, `candidate_id` (FK, cascade), `created_at`, `instruction_type` (text
 NOT NULL, CHECK `in ('honesty','tone','boundaries')`), `instruction` (text
 NOT NULL), `priority` (integer default `0`). Index:
-`ai_instructions_candidate_id_idx (candidate_id)`. Not exposed publicly.
+`si_instructions_candidate_id_idx (candidate_id)`. Not exposed publicly.
 
 #### `public.recommendations` — testimonials
 

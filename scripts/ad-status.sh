@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ad-status.sh — read-only summary of the ai-distribution home: layout, lock holder, sites.
+# ad-status.sh — read-only summary of the si-distribution home: layout, lock holder, sites.
 # Contract: references/state-layout.md (§ ad-home/ layout, § state/sites.json, § Lock).
 #
 # Usage: ad-status.sh [HOME]

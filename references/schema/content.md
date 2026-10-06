@@ -10,7 +10,7 @@
 > (declared relocations R1/R2 — see `README.md`). The source's own seed pointer lines
 > (`… Seed rows (adapt wording):` / `… Seed rows`) are reproduced here byte-for-byte; only the
 > value lines that followed them moved. No SQL is changed.
-> **Cross-references:** §2.1 → `profile.md`; §2.3 → `ai-ops.md`; §6 → §6 below; views/RPCs/policies
+> **Cross-references:** §2.1 → `profile.md`; §2.3 → `si-ops.md`; §6 → §6 below; views/RPCs/policies
 > for these tables → `access.md`; seed values → `seeds.md`; §12 audit → `audit.md`.
 
 ---
@@ -152,4 +152,4 @@ default, third-party origins are the exception) at read time. An approved extern
 downloaded, validated and stored in `kb-images` before it is referenced; the site serves images
 from controlled storage, so an approved third-party host is an exception that is mirrored, not
 hot-linked. The admin TipTap editor produces
-`blocks`; the AI generation functions produce the same shape.
+`blocks`; the SI generation functions produce the same shape.

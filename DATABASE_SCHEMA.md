@@ -83,9 +83,9 @@ Conventions:
 > **Population:** the profile tables are NOT seeded by migrations in the
 > reference — enter them through the admin panel (or a one-off seed
 > migration): the singleton `candidate_profile` row, `experiences`,
-> `skills`, `gaps_weaknesses`, `recommendations`, the private AI-context
-> tables (`values_culture`, `faq_responses`, `ai_instructions`) and the
-> `cv_settings` singleton. The homepage, AI chat/JD analysis and CV
+> `skills`, `gaps_weaknesses`, `recommendations`, the private SI-context
+> tables (`values_culture`, `faq_responses`, `si_instructions`) and the
+> `cv_settings` singleton. The homepage, SI chat/JD analysis and CV
 > generation all read from these — nothing renders until they hold data.
 
 #### `public.candidate_profile` — single-row persona profile
@@ -176,27 +176,27 @@ Indexes: `skills_candidate_id_idx (candidate_id)`;
 
 Index: `gaps_weaknesses_candidate_id_idx (candidate_id)`.
 
-#### `public.values_culture` — what matters at work (AI context, private)
+#### `public.values_culture` — what matters at work (SI context, private)
 
 `id`, `candidate_id` (FK, cascade), `created_at`, `must_haves`,
 `dealbreakers`, `management_style_preferences`, `team_size_preferences`,
 `how_handle_conflict`, `how_handle_ambiguity`, `how_handle_failure` — all
 text. Index: `values_culture_candidate_id_idx (candidate_id)`.
-**Never exposed publicly** (no `*_public` view; feeds the AI chat context).
+**Never exposed publicly** (no `*_public` view; feeds the SI chat context).
 
-#### `public.faq_responses` — FAQ for the AI chat (private)
+#### `public.faq_responses` — FAQ for the SI chat (private)
 
 `id`, `candidate_id` (FK, cascade), `created_at`, `question` (text NOT NULL),
 `answer` (text NOT NULL), `is_common_question` (boolean default `false`),
 `labels` (text[] default `'{}'`). Index: `faq_responses_candidate_id_idx
 (candidate_id)`. Not exposed publicly.
 
-#### `public.ai_instructions` — honesty/tone/boundaries rules for the AI (private)
+#### `public.si_instructions` — honesty/tone/boundaries rules for the SI (private)
 
 `id`, `candidate_id` (FK, cascade), `created_at`, `instruction_type` (text
 NOT NULL, CHECK `in ('honesty','tone','boundaries')`), `instruction` (text
 NOT NULL), `priority` (integer default `0`). Index:
-`ai_instructions_candidate_id_idx (candidate_id)`. Not exposed publicly.
+`si_instructions_candidate_id_idx (candidate_id)`. Not exposed publicly.
 
 #### `public.recommendations` — testimonials
 
@@ -319,7 +319,7 @@ live in the migrations (New Year, HR Day, Christmas, System Administrator
 Day, Programmer Day, Computer Security Day, Password Day, Safer Internet
 Day, ...) — adapt dates to your persona.
 
-### 2.3 AI / cache / operations domain
+### 2.3 SI / cache / operations domain
 
 #### `public.rate_limits` — per-IP per-function sliding windows
 
@@ -330,10 +330,10 @@ function_name, window_start)`. RLS: deny-all, service role only (written by
 the SECURITY DEFINER function). Rows older than **1 hour** are deleted inside
 `check_rate_limit` and by an hourly `pg_cron` job (GDPR data minimization).
 
-#### `public.chat_response_cache` — AI chat response cache
+#### `public.chat_response_cache` — SI chat response cache
 
 `id` (uuid PK), `question_hash` (text NOT NULL UNIQUE), `question` (text NOT
-NULL), `ai_response` (text NOT NULL), `cache_version` (text NOT NULL — model id,
+NULL), `si_response` (text NOT NULL), `cache_version` (text NOT NULL — model id,
 system-prompt hash, context hash, content version and policy version concatenated),
 `created_at` (timestamptz NOT NULL default `now()`). RLS: deny-all; accessed only
 via `get_chat_cache` / `set_chat_cache` (service role). TTL 48h.
@@ -342,8 +342,8 @@ Cache rules, all enforced in the functions: the lookup key includes
 `cache_version`, so a model, prompt, context, content or policy change is a cache miss
 rather than a stale answer; a response that trips a safety or leakage check is
 **never written** to the cache; `values_culture`, `faq_responses` and
-`ai_instructions` changes purge the cache (`cache_version` changes with the
-context hash, and the `purge_ai_caches` trigger below deletes the rows); and a
+`si_instructions` changes purge the cache (`cache_version` changes with the
+context hash, and the `purge_si_caches` trigger below deletes the rows); and a
 cache hit is validated exactly like a fresh response, never trusted because it was
 cached. The hash is the lookup key, not the raw text: a raw `question` or
 `job_description` row is retained only as the cache entry's own content under its stated TTL
@@ -362,7 +362,7 @@ version-miss rule is the same: the lookup key includes the version, so a model, 
 context, content or policy change is a cache miss rather than a stale analysis, and a
 response that trips a safety or leakage check is never written.
 
-#### `public.rag_metrics` — AI usage + abuse-watchdog metrics
+#### `public.rag_metrics` — SI usage + abuse-watchdog metrics
 
 | Column | Type | Notes |
 |---|---|---|
@@ -446,7 +446,7 @@ exported off-platform by `references/operate.md` §4.1 before pruning.
 `audit_admin_change()` is attached (`AFTER INSERT OR UPDATE OR DELETE ... FOR
 EACH ROW`) to every table an administrator can edit: `candidate_profile`,
 `experiences`, `skills`, `gaps_weaknesses`, `recommendations`,
-`values_culture`, `faq_responses`, `ai_instructions`, `content_collections`,
+`values_culture`, `faq_responses`, `si_instructions`, `content_collections`,
 `content_docs`, `site_content`, `site_sections`, `fun_links`,
 `holiday_banners`, `cv_settings`. Content hashes only — never a copy of the row,
 so the trail is not a second place private data can leak from.
@@ -587,7 +587,7 @@ default, third-party origins are the exception) at read time. An approved extern
 downloaded, validated and stored in `kb-images` before it is referenced; the site serves images
 from controlled storage, so an approved third-party host is an exception that is mirrored, not
 hot-linked. The admin TipTap editor produces
-`blocks`; the AI generation functions produce the same shape.
+`blocks`; the SI generation functions produce the same shape.
 
 ---
 
@@ -627,9 +627,9 @@ changes the CV, so every cached PDF is stale the moment it lands — the same
 statement that invalidates `source_hash` clears the cache rather than leaving
 orphan rows behind.
 
-`purge_ai_caches` after insert, update or delete on `values_culture`,
-`faq_responses` or `ai_instructions` (`FOR EACH STATEMENT`):
-`DELETE FROM public.chat_response_cache`. Those three tables are the private AI
+`purge_si_caches` after insert, update or delete on `values_culture`,
+`faq_responses` or `si_instructions` (`FOR EACH STATEMENT`):
+`DELETE FROM public.chat_response_cache`. Those three tables are the private SI
 context, and `cache_version` includes their hash — purging makes the invalidation
 immediate rather than depending on every caller recomputing the version.
 
@@ -646,7 +646,7 @@ tries to modify or delete an existing audit row.
   cleans on each call).
 - `cleanup-rag-metrics` — daily `DELETE FROM public.rag_metrics WHERE
   created_at < now() - interval '7 days'` (mirrors the in-function TTL; the
-  AI endpoints are quiet weeks, so the insert-time sweep alone is not a
+  SI endpoints are quiet weeks, so the insert-time sweep alone is not a
   guarantee).
 - `cleanup-cv-documents` — daily `DELETE FROM public.cv_documents WHERE
   generated_at < now() - interval '30 days'` (regenerable cache hygiene; the
@@ -712,7 +712,7 @@ upload path.
 All edge functions deploy with `--no-verify-jwt` (auth by the ingress shared secret / Turnstile /
 admin check / origin gate) and enforce CORS allowlists (prod domains + staging
 only) plus 405/415 guards (`_shared/http.ts`). **The function URL is not a public entry point:**
-the Worker proxies public AI/CV requests to the functions and carries a shared secret (or a signed,
+the Worker proxies public SI/CV requests to the functions and carries a shared secret (or a signed,
 short-lived assertion) that the function verifies before any handling; the client address is taken
 only from the header the Worker sets; a request without the secret is rejected before rate-limit
 evaluation. `--no-verify-jwt` switches off the platform's JWT check only — it does not make the
@@ -732,7 +732,7 @@ shipped to the browser. Set it with `supabase secrets set deepseek=<sk-...>`.
 | `translate-recommendation` | Admin: DeepSeek translates a recommendation to English → writes `recommendations.recommendation_text_en` and forces `translation_reviewed = false`; the view serves the translation only after an admin confirms it (`is_translated` then true) | authenticated admin JWT |
 | `get-contact` | Public contact endpoint: `GET /functions/v1/get-contact` → `candidate_profile_public` fields (`name, title, elevator_pitch, availability_status, linkedin_url, target_company_stages`); 404 when no profile row; contact info never includes email/phone | `candidate_profile_public` read |
 | `sitemap` | Dynamic `sitemap.xml` from the catalog (published docs only) — crawlers see publish/unpublish without redeploy | `get_public_sitemap_data()` |
-| `abuse-alert` | Scheduled watchdog (every 15 min via `supabase/config.toml` `schedule = "*/15 * * * *"`): aggregates `rag_metrics` over the window, compares against env thresholds (`ABUSE_WINDOW_MINUTES`, `ABUSE_MAX_CALLS_CHAT/JD/CV`, `ABUSE_MAX_TOKENS`), writes breaches to `abuse_alerts`; `detail` is built from aggregates only — counts, thresholds, window sizes, timestamps, function names, never question text, user content, IPs or PII; optional counts-only webhook mirror (`ABUSE_ALERT_WEBHOOK_URL` — counts only, same rule). The 15-minute run is the aggregate watchdog, not the whole cost control: the AI endpoints enforce a global token/cost budget, a per-endpoint concurrency cap and a maximum output size ahead of the provider, the prepaid provider balance is the hard stop (ADR-0014 — the provider documents no console-level cap), and a budget or breaker trip alerts immediately rather than waiting for this window | `rag_metrics` read, `abuse_alerts` write |
+| `abuse-alert` | Scheduled watchdog (every 15 min via `supabase/config.toml` `schedule = "*/15 * * * *"`): aggregates `rag_metrics` over the window, compares against env thresholds (`ABUSE_WINDOW_MINUTES`, `ABUSE_MAX_CALLS_CHAT/JD/CV`, `ABUSE_MAX_TOKENS`), writes breaches to `abuse_alerts`; `detail` is built from aggregates only — counts, thresholds, window sizes, timestamps, function names, never question text, user content, IPs or PII; optional counts-only webhook mirror (`ABUSE_ALERT_WEBHOOK_URL` — counts only, same rule). The 15-minute run is the aggregate watchdog, not the whole cost control: the SI endpoints enforce a global token/cost budget, a per-endpoint concurrency cap and a maximum output size ahead of the provider, the prepaid provider balance is the hard stop (ADR-0014 — the provider documents no console-level cap), and a budget or breaker trip alerts immediately rather than waiting for this window | `rag_metrics` read, `abuse_alerts` write |
 
 **Admin-function authentication (non-negotiable):** because the four admin
 functions deploy `--no-verify-jwt`, they must verify the caller's JWT
@@ -806,7 +806,7 @@ mandatory gate, not a smoke test.
 
 Edge functions with `verify_jwt = false` must not be reachable without a
 credential or origin check: the ingress shared secret + CORS allowlist + Turnstile (CV) + per-IP rate
-limits (AI) + admin JWT checks cover this. Remember: CORS is browser-only —
+limits (SI) + admin JWT checks cover this. Remember: CORS is browser-only —
 the function URLs stay internet-reachable and a direct call without the ingress secret is answered
 `401`/`403`; the rate limits / Turnstile / JWT checks are the actual access control.
 
@@ -816,7 +816,7 @@ the function URLs stay internet-reachable and a direct call without the ingress 
 
 **Threat model — read once.** The RLS model below is the actual security
 boundary of the site. The other controls in the kit (rate limits, input
-caps, response caching, Turnstile) limit **abuse and excessive AI use** —
+caps, response caching, Turnstile) limit **abuse and excessive SI use** —
 they are not designed to stop a determined attacker. Never treat them as
 attack protection; verify the RLS model instead (see §12).
 
@@ -824,7 +824,7 @@ Base tables: RLS **enabled everywhere**. Pattern per table family:
 
 | Family | Tables | anon | authenticated | service_role |
 |---|---|---|---|---|
-| Profile (private context) | `values_culture`, `faq_responses`, `ai_instructions` | denied (deny policy, no grants) | `SELECT`/writes only via `is_admin()` policies | bypasses RLS |
+| Profile (private context) | `values_culture`, `faq_responses`, `si_instructions` | denied (deny policy, no grants) | `SELECT`/writes only via `is_admin()` policies | bypasses RLS |
 | Profile (public surface) | `candidate_profile`, `experiences`, `skills`, `gaps_weaknesses`, `recommendations` | deny policy on base table (column-level grants only for view columns in older migrations; final state: **no anon base-table access**), reads via `*_public` views | `is_admin()`-gated CRUD | bypasses RLS |
 | Content | `content_collections`, `content_docs`, `site_content` | denied directly; reads via `*_public` views | `is_admin()`-gated CRUD | bypasses RLS |
 | Site chrome | `site_sections`, `fun_links`, `holiday_banners` | denied directly (deny policy, no grants); reads via `site_sections_public` / `fun_links_public` / `holiday_banners_public` — the visible/active/window filters live in the private `api_*` view | `is_admin()`-gated CRUD | bypasses RLS |
@@ -1009,14 +1009,14 @@ from pg_policies
 where schemaname = 'public'
   and tablename in ('candidate_profile','experiences','skills',
                     'gaps_weaknesses','values_culture','faq_responses',
-                    'ai_instructions','recommendations','content_collections',
+                    'si_instructions','recommendations','content_collections',
                     'content_docs','site_content','site_sections','fun_links',
                     'holiday_banners','cv_settings','abuse_alerts')
 order by tablename, policyname;
 ```
 
 Specific things to verify by eye: `values_culture`/`faq_responses`/
-`ai_instructions` have NO policy allowing `anon` or unrestricted
+`si_instructions` have NO policy allowing `anon` or unrestricted
 `authenticated` reads; `candidate_profile`/`experiences`/`skills`/
 `gaps_weaknesses`/`recommendations`/content tables have no `FOR SELECT TO
 anon USING (true)`; the registry tables (`site_sections`, `fun_links`,
@@ -1034,13 +1034,13 @@ views behind the public view wrappers.
    RPC. A base-table `SELECT` that succeeds is a launch blocker.
 2. **authenticated non-admin** (any non-admin user's JWT — create a throwaway
    account): reads on the private tables (`values_culture`,
-   `faq_responses`, `ai_instructions`) must FAIL; writes on admin tables
+   `faq_responses`, `si_instructions`) must FAIL; writes on admin tables
    must FAIL; reads on public views must SUCCEED. A permissive
    `is_admin()` typo or a missing `is_admin()` check is exactly what this
    probe catches — do not skip it.
 3. **admin** (the admin user's JWT): reads on the admin tables and `abuse_alerts` must SUCCEED;
    `admin_audit` remains read-only (no write grant for any API role); `values_culture` /
-   `faq_responses` / `ai_instructions` reads must SUCCEED.
+   `faq_responses` / `si_instructions` reads must SUCCEED.
 
 Automate B–G in a script (`scripts/audit-rls.mjs`) so the Phase 8 RLS audit
 in the skill is one command; the script's expected output is the §10 matrix

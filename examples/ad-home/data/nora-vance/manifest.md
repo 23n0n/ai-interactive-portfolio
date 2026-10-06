@@ -26,7 +26,7 @@
 | source | GitHub | connected |
 | hosting | Cloudflare | connected |
 | data | Supabase | connected |
-| AI features | DeepSeek | key stored server-side |
+| SI features | DeepSeek | key stored server-side |
 
 ## URLs
 - staging: https://nora-vance-preview.workers.dev

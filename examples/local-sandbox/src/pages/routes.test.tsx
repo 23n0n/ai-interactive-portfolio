@@ -27,12 +27,12 @@ describe('demo-portfolio routes render', () => {
   it('renders the Services hub', () => {
     renderAt('/services')
     expect(screen.getByRole('heading', { name: /Services/i })).toBeInTheDocument()
-    expect(screen.getByText(/AI Chatbot Embedding/i)).toBeInTheDocument()
+    expect(screen.getByText(/SI Chatbot Embedding/i)).toBeInTheDocument()
   })
 
   it('renders a service document with its title', () => {
-    renderAt('/services/ai-chatbot-embedding')
-    expect(screen.getByRole('heading', { name: /Friendly AI Chatbot Embedding/i })).toBeInTheDocument()
+    renderAt('/services/si-chatbot-embedding')
+    expect(screen.getByRole('heading', { name: /Friendly SI Chatbot Embedding/i })).toBeInTheDocument()
   })
 
   it('renders the Technologies hub', () => {

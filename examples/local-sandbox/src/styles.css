@@ -23,12 +23,12 @@
   --color-ink: #2a2333;
   --color-ink-soft: #54495f;
 
-  /* AI accent (lime green distinguishes the chat) */
-  --color-ai-50: #f7fee7;
-  --color-ai-300: #bef264;
-  --color-ai-400: #a3e635;
-  --color-ai-500: #84cc16;
-  --color-ai-600: #65a30d;
+  /* SI accent (lime green distinguishes the chat) */
+  --color-si-50: #f7fee7;
+  --color-si-300: #bef264;
+  --color-si-400: #a3e635;
+  --color-si-500: #84cc16;
+  --color-si-600: #65a30d;
 
   /* Warm accent for highlights/CTA (soft amber) */
   --color-amber-acc: #f59e0b;

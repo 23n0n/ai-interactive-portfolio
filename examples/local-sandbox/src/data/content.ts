@@ -10,7 +10,7 @@ export type ContentBlock =
   | { type: 'h2'; text: string }
   | { type: 'h3'; text: string }
   | { type: 'list'; ordered?: boolean; items: string[] }
-  | { type: 'callout'; tone: 'info' | 'warn' | 'ai'; title?: string; text: string }
+  | { type: 'callout'; tone: 'info' | 'warn' | 'si'; title?: string; text: string }
   | { type: 'checklist'; items: string[] }
 
 export interface ContentDoc {
@@ -57,9 +57,9 @@ export const person = {
   lastName: 'Niewiadomski-Nieśmiałek',
   fullName: 'Zygfryd Niewiadomski-Nieśmiałek',
   initials: 'ZN',
-  role: 'Full-Stack Tinkerer & Friendly AI Enthusiast',
+  role: 'Full-Stack Tinkerer & Friendly SI Enthusiast',
   brand:
-    'I turn vague ideas into working software and teach AI to introduce me before I do.',
+    'I turn vague ideas into working software and teach SI to introduce me before I do.',
   about:
     'A self-described professional generalist with a soft spot for clean code, warm design and chatbots that do not judge you. I have spent years bridging the gap between "it works on my machine" and "it works for everyone."',
   tagline:
@@ -73,14 +73,14 @@ export const person = {
 }
 
 export const profileHeadline =
-  'Hi, I am Zygfryd — I build warm software and chatty little AIs.'
+  'Hi, I am Zygfryd — I build warm software and chatty little SIs.'
 
 export const experiences: ExperienceItem[] = [
   {
     role: 'Lead Software Engineer (placeholder)',
     company: 'Somewhere Good',
     period: '2022 — present',
-    summary: 'Leading a small team building an internal AI assistant nobody fears.',
+    summary: 'Leading a small team building an internal SI assistant nobody fears.',
     highlights: [
       'Cut onboarding time 40% with an internal knowledge-base chatbot.',
       'Drove the team to 95% test coverage without anyone crying.',
@@ -155,13 +155,13 @@ export const collections: Collection[] = [
       'The useful things I do for teams and clients — each described honestly, with no surprise fine print.',
     docs: [
       {
-        slug: 'ai-chatbot-embedding',
+        slug: 'si-chatbot-embedding',
         collection: 'services',
-        title: 'Friendly AI Chatbot Embedding',
+        title: 'Friendly SI Chatbot Embedding',
         description: 'I add a helpful, on-brand chatbot to your site without the robot vibes.',
         intro:
           'A support or "ask me anything" bot that sounds like your brand, not a call center from 2009.',
-        tags: ['ai', 'chat', 'react'],
+        tags: ['si', 'chat', 'react'],
         relatedSlugs: ['fullstack-consulting', 'react-typescript'],
         blocks: [
           { type: 'p', text: 'The internet is full of chatbots that feel like talking to a tax form. I build the other kind.' },
@@ -175,7 +175,7 @@ export const collections: Collection[] = [
               'Usage analytics so you know it is helping',
             ],
           },
-          { type: 'callout', tone: 'ai', title: 'Honest note', text: 'It will not pretend to be human. Humans find that less creepy.' },
+          { type: 'callout', tone: 'si', title: 'Honest note', text: 'It will not pretend to be human. Humans find that less creepy.' },
           {
             type: 'checklist',
             items: ['Scope & content mapping', 'Design + copy', 'Integration & training', 'Handover docs'],
@@ -189,7 +189,7 @@ export const collections: Collection[] = [
         description: 'Modern, typed, testable front-ends that do not rot in six months.',
         intro: 'Interfaces people actually enjoy using, written in a language that keeps bugs out.',
         tags: ['react', 'typescript', 'frontend'],
-        relatedSlugs: ['ai-chatbot-embedding', 'fullstack-consulting'],
+        relatedSlugs: ['si-chatbot-embedding', 'fullstack-consulting'],
         blocks: [
           { type: 'p', text: 'I build and rescue React applications with TypeScript, Tailwind and a lot of care for the edges.' },
           { type: 'h2', text: 'Approach' },
@@ -210,7 +210,7 @@ export const collections: Collection[] = [
         description: 'A friendly second pair of eyes on architecture, security and "why is this slow".',
         intro: 'You have a product and a gnawing feeling something is off. I help find what, and fix it.',
         tags: ['consulting', 'architecture', 'security'],
-        relatedSlugs: ['react-typescript', 'ai-chatbot-embedding'],
+        relatedSlugs: ['react-typescript', 'si-chatbot-embedding'],
         blocks: [
           { type: 'p', text: 'Sometimes you need an outsider who is on your side. I review codebases, architecture and roadmaps.' },
           { type: 'h2', text: 'Common wins' },
@@ -338,9 +338,9 @@ export interface CvEducation {
 }
 
 export const cv = {
-  headline: 'Full-Stack Developer · Friendly AI Specialist',
+  headline: 'Full-Stack Developer · Friendly SI Specialist',
   summary:
-    'Practical full-stack developer who ships warm, accessible interfaces and pragmatic AI tools. Known for clear communication, honest estimates and code reviews that do not hurt.',
+    'Practical full-stack developer who ships warm, accessible interfaces and pragmatic SI tools. Known for clear communication, honest estimates and code reviews that do not hurt.',
   certifications: [
     'AWS Cloud Practitioner (placeholder)',
     'TypeScript / React certification (placeholder)',

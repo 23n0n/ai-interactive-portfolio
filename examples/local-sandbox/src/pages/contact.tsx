@@ -1,5 +1,5 @@
 import { Mail, Code, Globe } from 'lucide-react'
-import { AiChat } from '@/components/ai-chat'
+import { SiChat } from '@/components/si-chat'
 import { person } from '@/data/content'
 
 export function ContactPage() {
@@ -12,7 +12,7 @@ export function ContactPage() {
       </p>
 
       <div className="mt-10">
-        <AiChat />
+        <SiChat />
       </div>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-3">

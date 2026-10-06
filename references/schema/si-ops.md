@@ -1,9 +1,9 @@
-# Schema — AI / cache / operations domain
+# Schema — SI / cache / operations domain
 
-> **Holds:** the AI/cache/operations tables defined in the source §2.3 — `rate_limits`,
+> **Holds:** the SI/cache/operations tables defined in the source §2.3 — `rate_limits`,
 > `chat_response_cache`, `jd_analysis_cache`, `rag_metrics`, `cv_settings`, `cv_documents`,
 > `abuse_alerts`.
-> **Loaded at:** Build — data layer (AI + ops); Publish/Operate for the abuse watchdog and the CV
+> **Loaded at:** Build — data layer (SI + ops); Publish/Operate for the abuse watchdog and the CV
 > cache.
 > **Source:** `DATABASE_SCHEMA.md` §2.3, verbatim, including the 2026-09-25 hardening revision.
 > **Cross-references:** read RPCs (§4), functions/triggers (§7), storage (§8), edge functions +
@@ -12,7 +12,7 @@
 
 ---
 
-### 2.3 AI / cache / operations domain
+### 2.3 SI / cache / operations domain
 
 #### `public.rate_limits` — per-IP per-function sliding windows
 
@@ -23,10 +23,10 @@ function_name, window_start)`. RLS: deny-all, service role only (written by
 the SECURITY DEFINER function). Rows older than **1 hour** are deleted inside
 `check_rate_limit` and by an hourly `pg_cron` job (GDPR data minimization).
 
-#### `public.chat_response_cache` — AI chat response cache
+#### `public.chat_response_cache` — SI chat response cache
 
 `id` (uuid PK), `question_hash` (text NOT NULL UNIQUE), `question` (text NOT
-NULL), `ai_response` (text NOT NULL), `cache_version` (text NOT NULL — model id,
+NULL), `si_response` (text NOT NULL), `cache_version` (text NOT NULL — model id,
 system-prompt hash, context hash, content version and policy version concatenated),
 `created_at` (timestamptz NOT NULL default `now()`). RLS: deny-all; accessed only
 via `get_chat_cache` / `set_chat_cache` (service role). TTL 48h.
@@ -35,8 +35,8 @@ Cache rules, all enforced in the functions: the lookup key includes
 `cache_version`, so a model, prompt, context, content or policy change is a cache miss
 rather than a stale answer; a response that trips a safety or leakage check is
 **never written** to the cache; `values_culture`, `faq_responses` and
-`ai_instructions` changes purge the cache (`cache_version` changes with the
-context hash, and the `purge_ai_caches` trigger below deletes the rows); and a
+`si_instructions` changes purge the cache (`cache_version` changes with the
+context hash, and the `purge_si_caches` trigger below deletes the rows); and a
 cache hit is validated exactly like a fresh response, never trusted because it was
 cached. The hash is the lookup key, not the raw text: a raw `question` or
 `job_description` row is retained only as the cache entry's own content under its stated TTL
@@ -55,7 +55,7 @@ version-miss rule is the same: the lookup key includes the version, so a model, 
 context, content or policy change is a cache miss rather than a stale analysis, and a
 response that trips a safety or leakage check is never written.
 
-#### `public.rag_metrics` — AI usage + abuse-watchdog metrics
+#### `public.rag_metrics` — SI usage + abuse-watchdog metrics
 
 | Column | Type | Notes |
 |---|---|---|
@@ -130,7 +130,7 @@ existing row — a compromised admin session can act, but cannot quietly erase t
 record of acting. `audit_admin_change()` is attached
 (`AFTER INSERT OR UPDATE OR DELETE ... FOR EACH ROW`) to `candidate_profile`,
 `experiences`, `skills`, `gaps_weaknesses`, `recommendations`, `values_culture`,
-`faq_responses`, `ai_instructions`, `content_collections`, `content_docs`,
+`faq_responses`, `si_instructions`, `content_collections`, `content_docs`,
 `site_content`, `site_sections`, `fun_links`, `holiday_banners` and
 `cv_settings`. Content hashes only — never a copy of the row. Retention at least 400 days,
 exported off-platform before pruning (`references/operate.md` §4.1).

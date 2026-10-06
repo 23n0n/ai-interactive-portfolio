@@ -124,7 +124,7 @@ Define all six parts before sketching:
   contained and full-bleed sections so the page has rhythm, and give each section one job. Typical
   sections available: navigation, Main Character (with the "Ask about my work" CTA), about, skills matrix,
   experience timeline, testimonials/recommendations, just-for-fun links, disclaimer, contact,
-  footer — plus the AI surfaces (Q17). Build only the ones the owner chose; drop the rest.
+  footer — plus the SI surfaces (Q17). Build only the ones the owner chose; drop the rest.
 - **Card style** (Q14): define one card primitive — padding, radius, border/shadow, hover — and use
   it for experience, skills, testimonials and collection entries. Variation is by content, not by
   inventing new card styles.
@@ -138,7 +138,7 @@ Define all six parts before sketching:
   footer links, accessible and not hidden from search engines. If declined, record the choice in
   `decisions.log` and drop it.
 
-Also decide now where the AI chat lives (floating widget, dedicated section, or both) and whether
+Also decide now where the SI chat lives (floating widget, dedicated section, or both) and whether
 JD analysis is a dialog or a full page (Q17). These are section-level decisions, not build details.
 
 - **Language mode** (Q23 follow-up): single, primary + secondary metadata, or full UI. It changes
@@ -211,7 +211,7 @@ Rules:
 ├──────────────────────────────────────────────────┤
 │ TESTIMONIALS (#testimonials)                     │
 ├──────────────────────────────────────────────────┤
-│ AI (#ai) — chat widget/section · JD analysis     │
+│ SI (#si) — chat widget/section · JD analysis     │
 ├──────────────────────────────────────────────────┤
 │ FUN LINKS (#fun) · DISCLAIMER (#disclaimer)      │
 ├──────────────────────────────────────────────────┤
