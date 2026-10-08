@@ -65,13 +65,32 @@ def read(rel: str) -> str:
 
 
 def markdown_files() -> list[str]:
-    out = []
+    """Markdown a reader can open — git-visible files only.
+
+    A filesystem walk would also read local scratch that git ignores during a
+    build (`ad-home/` run reports, a runner's own docs), and those are not part
+    of the distribution: reporting them as findings punishes the working tree
+    for existing. Fall back to the walk when git is unavailable.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", ROOT, "ls-files", "--cached", "--others",
+             "--exclude-standard", "--", "*.md"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if out.returncode == 0:
+            return sorted(p for p in out.stdout.split("\n") if p)
+        notes.append("markdown files: git enumeration failed; falling back to a walk")
+    except (OSError, subprocess.SubprocessError):
+        notes.append("markdown files: git unavailable; falling back to a walk")
+
+    found: list[str] = []
     for base, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "dist"}]
         for name in files:
             if name.endswith(".md"):
-                out.append(os.path.relpath(os.path.join(base, name), ROOT))
-    return sorted(out)
+                found.append(os.path.relpath(os.path.join(base, name), ROOT))
+    return sorted(found)
 
 
 PRIVATE_COMMIT_ID = re.compile(r"\b(commit|shipped|reverted|prod)\s*`[0-9a-f]{7,}`")
