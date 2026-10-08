@@ -26,8 +26,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the build in the owner's own repository) and is deliberately not checked.
 DISTRIBUTION_ROOTS = {
     "AGENTS.md", "README.md", "DATABASE_SCHEMA.md", "GUIDE_FROM_SCRATCH.md",
-    "GUIDE_FROM_SCRATCH.pdf", "SKILL_INTERACTIVE_PORTFOLIO.md", "LICENSE",
-    "sanitize-id.lua", "references", "scripts", "skills", "examples",
+    "SKILL_INTERACTIVE_PORTFOLIO.md", "LICENSE",
+    "references", "scripts", "skills", "examples",
 }
 
 # `scripts/` holds two different things. The helpers and the checker below ship

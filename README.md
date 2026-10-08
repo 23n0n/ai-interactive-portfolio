@@ -79,28 +79,12 @@ frozen (below).
 | `SKILL_INTERACTIVE_PORTFOLIO.md` | The older build procedure, including the design questionnaire. Deep reference source; **not the primary path**. |
 | `DATABASE_SCHEMA.md` | The **frozen schema of record** — every table, column, view, RPC, policy, grant, storage rule and seed. The agent applies it; you do not need to read it. |
 
-Also in the tree: `GUIDE_FROM_SCRATCH.pdf`, an **offline render** of the guide, and
-`sanitize-id.lua`, the Pandoc filter that render needs.
-
-The PDF is a *build artifact*, so it goes stale whenever the guide changes. To rebuild it:
-
-```sh
-brew install pandoc typst
-pandoc GUIDE_FROM_SCRATCH.md -o GUIDE_FROM_SCRATCH.pdf \
-  --pdf-engine=typst --lua-filter=sanitize-id.lua --toc
-```
-
-Two notes on the flags, because both are easy to get wrong:
-
-- **`--toc` must keep its default depth.** `--toc-depth=1` looks harmless but the guide's only H1 is the
-  title, so it renders a table of contents holding nothing but that title — 1 entry instead of the 33
-  the default depth reaches, and a reader who scans for a Step cannot find it. The render is 39
-  pages either way; the entries are what move.
-- **The Lua filter stays.** It rewrites heading ids and in-document links into typst-safe labels (a
-  `sec-` prefix, collapsed hyphen runs). The original render used it, and dropping it changes every
-  label. It is harmless — same pages, same links — but it keeps the ids stable across rebuilds.
-
-The Markdown is the source of truth; if the two ever disagree, trust `GUIDE_FROM_SCRATCH.md`.
+The build skill is measured before it ships. A benchmark that lives beside this distribution, not
+inside it, scores the skill document on how strongly it steers an agent across six behaviour
+families — owner gates, owner-facing reporting, durable state, the design gate, staged loading and
+the security defaults. The four rules the skill's Non-negotiables gained most recently are the ones
+that benchmark's first run showed were missing; the benchmark and its run records are deliberately
+not part of this tree.
 
 ## Checks
 

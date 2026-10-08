@@ -18,6 +18,12 @@ needs them (§8). Everything here is written for the agent; the owner never has 
   base with an admin panel, a gated CV download, seasonal banners, and machine-readable SI
   surfaces.
 
+The build skill is measured before it ships. An evaluation harness kept beside this distribution —
+not shipped in it — scores how strongly the skill steers an agent across the contract's core
+behaviours, and the four rules the skill's Non-negotiables gained most recently are the ones that
+harness showed were missing. It is tooling for improving this distribution, not part of any site's
+build.
+
 This repository also holds the older linear kit — `GUIDE_FROM_SCRATCH.md`,
 `SKILL_INTERACTIVE_PORTFOLIO.md`, `DATABASE_SCHEMA.md`. Treat them as the deep fallback source of
 truth for their subjects; they are not the primary path any more. `DATABASE_SCHEMA.md` is the

@@ -2,3 +2,5 @@
 ad-home/
 Ryszard_ai/
 actions-runner/
+__pycache__/
+evals/
