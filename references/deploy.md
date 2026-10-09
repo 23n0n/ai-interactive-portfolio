@@ -1,8 +1,9 @@
 # references/deploy.md — domain, hosting, CI, staging-first, rollback
 
 Publishing is two events, in this order: a **staging link the owner can click**, then a **public
-site on its own domain**. Staging is never skipped and never optional. The stack is the frozen
-reference stack — deploying is not a licence to swap it (`AGENTS.md` §7). Deploy runs are recorded
+site on its own domain**. Staging is never skipped and never optional. The stack is the reference
+stack — deploying is not a licence to swap it, and the SI provider is the owner's choice, not the
+deployer's (`AGENTS.md` §7). Deploy runs are recorded
 per `references/state-layout.md`; the security controls that back every live target are in
 `references/secure.md`; the build commands are in `references/build.md`.
 

@@ -109,7 +109,7 @@ Identity and settled facts. Rewritten in place as facts change; always current, 
 | source | GitHub | connected |
 | hosting | Cloudflare | connected |
 | data | Supabase | connected |
-| SI features | DeepSeek | key stored server-side |
+| SI features | DeepSeek (default; any owner-chosen provider) | key stored server-side |
 
 ## URLs
 - staging: https://…-preview.workers.dev
@@ -125,6 +125,8 @@ Rules:
 - No secret values ever appear here. Accounts and URLs only, never keys, tokens or passwords.
 - `Stack decisions` must state `deviations: none` when the frozen stack is used; any deviation has
   an entry in the decisions log with the owner's approval.
+- `SI features` names the provider actually in use; DeepSeek is the default and not a requirement, and
+  a provider change is an entry in the decisions log with the owner's approval.
 - `placeholder name in use` is `yes` only while a stand-in name is visible; it must be `no` before
   the go-live gate.
 

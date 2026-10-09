@@ -282,14 +282,15 @@ distribution**:
 **The `ADR-000N` numbers cited throughout this distribution are labels, not documents.** No ADR file
 ships here. Each number names a decision whose substance is stated in the sentence that cites it —
 the sentence is what binds, the number is only a handle. The earlier ones (ADR-0007 … ADR-0011) are
-the reference build's filings; the cost-bound ones (ADR-0012 … ADR-0016) were added by the hardening
+the reference build's filings; the cost-bound ones (ADR-0012 … ADR-0017) were added by the hardening
 revisions that produced this distribution. The site opens its own `adr/` series when it is built and
 need not match either set; a number cited here that the site has not recorded is a to-do, not a
 fact.
 
 **A new ADR is required for:** any deviation from a documented default (the frozen stack, a security
-default, the anon read surface, the header suite); any risk acceptance; any compensating control
-standing in for a partial control; any no-silent-swap decision (`AGENTS.md` §5, §7); a change to
+default, the anon read surface, the header suite); the owner's choice of SI provider; any risk
+acceptance; any compensating control standing in for a partial control; any no-silent-swap decision
+(`AGENTS.md` §5, §7); a change to
 the data-minimization rules (the `rag_metrics` preview/TTL, the `abuse_alerts.detail` shape) or to
 the anon read surface — record the minimization rule and its legal basis as **ADR-0010** when the
 site is built.
@@ -357,7 +358,8 @@ domain or TLS change also re-verifies `www` → `301` → apex and the CORS allo
 | GitHub | unlimited public repos, Actions minutes | enough |
 | Cloudflare | Workers free (100k req/day), Turnstile free, DNS free | enough |
 | Supabase | 500 MB DB, 1 GB storage, 500k edge-function invocations/mo | enough; stay free-tier |
-| DeepSeek API | none (pay-per-token) | a $5 top-up lasts a long time |
+| SI provider API | none (pay-per-token) | the owner's choice of provider; DeepSeek in the reference build — a $5 top-up lasts a long time |
+| SI security layer (`jev`, typed classifier) | none (paid third-party API) | **opt-out** — on by default; disabled only by an owner decision |
 | Domain | — | ~$10/yr |
 
 **One-off build cost.** Building the whole site costs roughly **$1–3** of SI-provider tokens on top
@@ -405,6 +407,7 @@ accepted: that is how ADR-0009 fell.
 | ADR-0014 | **SI spend is bounded by a prepaid balance, not by a provider cap.** DeepSeek deducts per token from a topped-up balance and documents no console-level spend limit, so the ceiling is however much is topped up. Controls, both free: keep the topped-up balance at the size of one month's budget (the balance itself is the hard stop) and keep our own global token/cost budget with a circuit breaker in front of the endpoints (`references/secure.md` §7, SI cost) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Re-size the budget or move the gate | The provider shipping spend caps, a gateway with limits becoming affordable, a month where the breaker trips, or a balance large enough to matter |
 | ADR-0015 | **Platform logs cannot be the security record.** Supabase's free plan keeps API and database logs for **1 day** and Auth audit logs for **1 hour**, and log drains are a paid add-on; the platform audit log and metrics endpoint are paid too. Compensating control is free: security telemetry is written to an off-platform destination we control (the platform's own logs are not the record), and the administrative audit trail is ours, kept 400 days (`references/operate.md` §4.1, `DATABASE_SCHEMA.md` §2.3) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Add drains and extend retention | An incident whose evidence window predates our retention, or a plan with drains and longer retention |
 | ADR-0016 | **Edge WAF coverage on the free plan is the Free Managed Ruleset only** — Cloudflare's availability table shows *Free Managed Ruleset: Yes* on Free, while the Cloudflare Managed Ruleset and the OWASP Core Ruleset are paid. So the ingress is the Worker plus a shared secret plus our own rate limits, with the **Free Managed Ruleset enabled** (it is free — enable it rather than accept anything) | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Enable the fuller rulesets and supersede the ADR | Sustained L3/L7 abuse that the free ruleset and the rate limits cannot hold, or a plan that affords the fuller rulesets |
+| ADR-0017 | **The SI security layer (`jev`) is a paid third-party classifier, on by default.** It is **opt-out** — part of the default SI security layer, disabled only by an owner decision, which is recorded — and it is not a required control: every required control stays free-tier (ADR-0008), so an owner who wants the free-only posture opts out. Its spend is disclosed at the spend gate like the SI provider's | owner | 2026-09-25 | 2026-12-31 | reviewed each release | Move the screen onto a provider already paid for, or keep the structural controls alone | An owner opting out, the screen moving to a free or already-paid provider, or sustained false-positive refusals of legitimate traffic |
 
 Never upgrade a plan to clear a limit without asking: spend is owner gate #2. A compensating control
 and a superseding ADR are written in the same run as the change.

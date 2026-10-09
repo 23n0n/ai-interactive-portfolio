@@ -42,8 +42,8 @@ signup.
 2. **Reference stack only.** React 19 + TypeScript + Vite + TanStack Start
    (SSR) + TanStack Router + Tailwind CSS v4 + shadcn/ui; Cloudflare Workers +
    Static Assets (`@cloudflare/vite-plugin`) + Wrangler; Supabase (Postgres +
-   RLS, Auth, Storage, Edge Functions); Cloudflare Turnstile; Bun 1.4.x;
-   Wrangler 4. No silent swaps — ask user first.
+   RLS, Auth, Storage, Edge Functions); Cloudflare Turnstile; Bun;
+   Wrangler 4 (newest available of each). No silent swaps — ask user first.
 3. **Verify everything yourself — the agent's claims are unverified.** Every
    phase gate in this skill is the USER's check: run the commands, look at
    the output, approve deliberately. Never accept "it works" without seeing
@@ -272,7 +272,7 @@ time.
   database password, supply it via `SUPABASE_DB_PASSWORD` or the password
   created with the project. Without login, Step 3 fails with "Access token
   not found".
-- Local: Node 22+, Bun 1.4.x (or newer), git, Supabase CLI.
+- Local: newest Node LTS, newest Bun, git, newest Supabase CLI.
 - Repo cloned; `.env.local` PUBLIC vars only (`VITE_SUPABASE_URL`,
   `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY`), gitignored.
   Secrets go to server storage (Supabase secrets / Wrangler secrets), never

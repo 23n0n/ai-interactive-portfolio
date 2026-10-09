@@ -5,7 +5,7 @@
 > **Loaded at:** Build — migrations stage, before `supabase db push`.
 > **Source:** `DATABASE_SCHEMA.md` §2.2 (the two declared seed-value relocations reproduced below)
 > and §11, byte-identical, including the 2026-09-25 hardening revision. The source's closing
-> reference-files paragraph (source §12, lines 1049–1052) is reproduced at the end of §12 in
+> reference-files paragraph (source §12, lines 1051–1054) is reproduced at the end of §12 in
 > [`audit.md`](audit.md).
 > **Cross-references:** the profile domain is deliberately not seeded — see the §2.1 population note
 > in `profile.md`; **§12 final RLS audit → `audit.md`**; table definitions → `profile.md`,

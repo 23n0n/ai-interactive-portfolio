@@ -308,6 +308,29 @@ SUPERSEDED_CLAIMS = [
     # appends the extension to the eight-case matrix.)
     ("deploys start failing with auth errors", "schedule",
      "the deploy-token rotation is scheduled as well as reactive (`references/operate.md` §6)"),
+    # The SI provider became the owner's choice, and the prompt-guard screen became the
+    # default-on `jev` SI security layer. Both older framings now contradict `AGENTS.md` §7
+    # and must not creep back.
+    ("frozen stack's provider", None,
+     "the site's SI provider is the owner's choice now"),
+    ("not a licence to swap the site's own SI provider", None,
+     "the site's SI provider is the owner's choice now"),
+    ("optional pre-provider classifier", None,
+     "the screen is the default-on `jev` SI security layer now"),
+    ("Optional hardening — pre-provider input screening", None,
+     "the screen is the default-on `jev` SI security layer now"),
+    ("only once the owner has approved the classifier screen", None,
+     "the screen ships in the default build now"),
+    ("optional hardening and the stages do not otherwise need it", None,
+     "the screen ships in the default build now"),
+    # The screen is opt-OUT. These framings describe an opt-in control and must
+    # not return; the spend is disclosed, it is not the act of enabling the screen.
+    ("add-on you must opt into", None,
+     "the screen is opt-out — on by default"),
+    ("owner approves its account and spend", None,
+     "the screen is opt-out; its spend is disclosed, not an opt-in"),
+    ("adopted only with the owner's approval", None,
+     "the screen is opt-out — on by default"),
 ]
 
 

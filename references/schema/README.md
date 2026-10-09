@@ -99,7 +99,7 @@ both are reproduced byte-for-byte in [`seeds.md`](seeds.md); no other source lin
 
 The source's own pointer lines for both (`… Seed rows (adapt wording):` at line 279 and `… Seed
 rows` at line 317) stay in `content.md`, reproduced verbatim. The §12 closing "Reference files in
-the source project…" paragraph (`DATABASE_SCHEMA.md` lines 1049–1052) is **not** relocated: it is
+the source project…" paragraph (`DATABASE_SCHEMA.md` lines 1051–1054) is **not** relocated: it is
 reproduced at the end of §12 in [`audit.md`](audit.md).
 
 Markdown scaffolding added by the split (file titles, `> **Holds:** / **Loaded at:** / **Source:** /

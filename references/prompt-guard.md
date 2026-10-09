@@ -1,12 +1,11 @@
 # references/prompt-guard.md — screening visitor text before the model sees it
 
-> **Holds:** the optional pre-provider classifier screen for visitor-supplied free text: what it adds
-> on top of structural defence, the request shape, the block rule, the failure policy, the two
-> question sets that survived measurement, how to validate a set against the surface's own legitimate
-> traffic, and what it costs.
-> **Loaded at:** Build — features, and again at the go-live gate and in Operate, but only once the
-> owner has approved the screen (`AGENTS.md` §4). An unadopted control is not loaded, and no other
-> stage needs this file.
+> **Holds:** the pre-provider classifier screen (`jev`, the site's SI security layer) for
+> visitor-supplied free text: what it adds on top of structural defence, the request shape, the block
+> rule, the failure policy, the two question sets that survived measurement, how to validate a set
+> against the surface's own legitimate traffic, and what it costs.
+> **Loaded at:** Build — features, again at the go-live gate, and in Operate. The screen is
+> **opt-out** — on by default — so it is loaded unless the owner has turned it off.
 > **Source:** written from the reference implementation's accepted design and its measured corpus
 > runs. That site's own architecture decision record is the normative version for that site; this
 > reference generalizes it. Nothing here is a substitute for the structural controls, and none of it
@@ -17,11 +16,12 @@
 
 ## 1. What it is
 
-A prompt guard is one HTTP call to a **typed classifier** — a model that returns probabilities for a
-question you define, instead of generating text — made between the cheap gates and the provider call.
-You send the visitor's text as the classifier's `state`, together with one or more questions, and it
-answers with a distribution over the options you named. The site blocks when the probability of the
-hostile option is above a threshold.
+The prompt guard is **`jev`**, the site's SI security layer: it runs inside the SI edge functions,
+between the cheap gates and the provider call, and it ships in the default build. It is one HTTP call
+to a **typed classifier** — a model that returns probabilities for a question you define, instead of
+generating text. You send the visitor's text as the classifier's `state`, together with one or more
+questions, and it answers with a distribution over the options you named. The site blocks when the
+probability of the hostile option is above a threshold.
 
 It is a *veto*, not a filter and not a sanitiser: nothing is rewritten, nothing is removed, and the
 request either proceeds to the provider unchanged or is rejected. Its value is that it is a judgement
@@ -178,12 +178,13 @@ plus `40` output tokens per gated request for a two-question set — that is the
 `+537` / `+41` over the single-question set, for context. Long transcripts cost more; caching and the
 cheap gates in front of it decide how often you pay at all.
 
-The classifier is a **paid third-party API**, so this is an owner-gated decision under `AGENTS.md` §4
-(an account and money). It is deliberately *not* one of the required controls: `references/secure.md`
-§7 states that every required control is achievable on the documented free tiers, and this one is
-not. Adopt it as additional hardening, record it with the other cost-shaped decisions in the register
-(`references/operate.md` §7), and leave the structural controls and the red-team evidence in place
-either way — if the classifier is dropped, nothing else in the security model changes.
+The screen is **opt-out**: it is enabled by default, and the owner turns it off only by choice, with
+that decision recorded in the register (`references/operate.md` §7). The classifier is a **paid
+third-party API**, so its spend is disclosed and confirmed under `AGENTS.md` §4 — the default is on
+regardless. It is deliberately *not* one of the required controls: `references/secure.md` §7 states
+that every required control is achievable on the documented free tiers, and this one is not. Keep the
+structural controls and the red-team evidence in place either way — if the screen is dropped, nothing
+else in the security model changes.
 
 ## 7. Pitfalls
 

@@ -155,10 +155,12 @@ Build in this order, verifying each part before moving on.
    415; bad tokens are rejected; happy paths work end to end; **every** service-role endpoint
    passes the eight-case matrix (no token, forged, expired, non-admin, revoked-admin, valid admin,
    unsupported method, malformed body), with the non-admin adaptation in `references/secure.md` §3
-   item 7. If the owner approves it (an account and a spend — §4), additional hardening is available:
-   the pre-provider classifier screen in `references/prompt-guard.md`, which vetoes hostile visitor
-   text before the model is asked anything. It sits on top of the controls in this item and never
-   replaces one, and it is validated against each surface's own legitimate traffic before it ships.
+   item 7. The SI security layer is **opt-out**: the pre-provider screen (`jev`,
+   `references/prompt-guard.md`) is enabled by default and vetoes hostile visitor text before the
+   model is asked anything. It sits on top of the controls in this item and never replaces one, and
+   it is validated against each surface's own legitimate traffic before it ships. It is a paid
+   third-party API, so its spend is disclosed and confirmed at the spend gate (§4) — but the screen
+   is on by default, and the owner turns it off only by choice; that opt-out is the recorded decision.
 6. **Security defaults are not optional** (§5.4). Wire the full header suite, the CORS allowlist,
    the secrets policy, and CI secret and dependency scanning as part of the build, not after it.
    The supply chain carries its evidence: SBOM (CycloneDX or SPDX) per release; dependency-review on
@@ -255,7 +257,8 @@ it does. Wait for a clear yes. A silence, a maybe, or an unanswered question is 
    Router + Tailwind CSS v4 + shadcn/ui; Cloudflare Workers + Static Assets
    (`@cloudflare/vite-plugin`) + Wrangler; Supabase (Postgres + RLS, Auth, Storage, Edge
    Functions); Cloudflare Turnstile; Bun; Wrangler 4. **No silent swaps** — ask the owner first,
-   explain why, and record the decision.
+   explain why, and record the decision. The stack choices are frozen; package versions are not:
+   install the newest available of each (§7).
 3. **Verification is yours; approval is the owner's.** You run every gate and show evidence: the
    command, the output, the check. Never say "it works" without having checked it yourself, and
    never rest a claim on another tool's summary. Verify the accounts, the keys, the tools and the
@@ -325,13 +328,16 @@ This distribution must run on **any agent, any model, any vendor — or by hand*
 3. A human following the same six stages by hand is a supported path, not a degraded one. Never
    assume a tool call is available; state the outcome and let the runner choose the mechanism.
 4. Neutrality is about the SI, not about the stack. The target stack and the database schema are
-   frozen (§5.2, §7); this distribution does not offer alternative stacks or a lean mode. "Any
-   model, any vendor" describes the agent that runs this distribution — it is not a licence to
-   swap the site's own SI provider, which is frozen stack (§7).
+   frozen (§5.2, §7), and this distribution offers no alternative stacks and no lean mode. The one
+   layer the owner chooses is the **site's SI provider** (§7): DeepSeek is the reference provider and
+   the default, and a different provider is selected through the no-silent-swaps procedure. "Any
+   model, any vendor" describes the agent that runs this distribution; it never licenses the agent
+   to pick the site's provider on the owner's behalf.
 
 ## 7. Frozen technology
 
-Already documented and **must not change** as part of routine work:
+Already documented and **must not change** as part of routine work — the SI provider is the one
+layer the owner chooses, marked as such below:
 
 - **Hosting:** Cloudflare Workers + Static Assets, deployed with Wrangler.
 - **Data:** Supabase Postgres with RLS, Auth, Storage and Edge Functions.
@@ -339,11 +345,20 @@ Already documented and **must not change** as part of routine work:
 - **Styling:** Tailwind CSS v4 + shadcn/ui.
 - **Protection:** Cloudflare Turnstile.
 - **Toolchain:** Bun and Wrangler 4.
-- **SI features:** DeepSeek — the reference LLM provider, called from server-side edge functions
-  with the key held server-side. It is frozen like the rest of the stack; swapping it needs the
-  no-silent-swaps procedure below.
+- **SI features:** the provider is the owner's choice, called from server-side edge functions with the
+  key held server-side. **DeepSeek is the reference provider and the default**; a different provider
+  is chosen through the no-silent-swaps procedure below and recorded in an ADR, and the site's
+  records name the provider actually in use. Changing the provider changes nothing else in the SI
+  surface — the SI security layer (`jev`, `references/prompt-guard.md`) and the controls in
+  `references/secure.md` §7 hold for whichever provider is chosen.
 - **Database:** `DATABASE_SCHEMA.md` — every table, view, RPC, policy, grant, storage rule and
   seed, plus the §12 audit. It is the source of truth and is not edited to fit a shortcut.
+
+**The stack is frozen; package versions are not.** Resolve every dependency — Bun, Wrangler, React,
+TanStack Start and Router, Tailwind, shadcn/ui, the Supabase client and CLI — at its **newest
+available** version within the frozen major, never an older release, and record what was installed in
+the release manifest. The lockfile still installs reproducibly (`bun install --frozen-lockfile`); it
+pins what the build resolved, not a version this document froze.
 
 The inherited **no silent swaps** rule stands: if something genuinely cannot be done on this
 stack, stop and ask the owner, then record the decision.
@@ -364,10 +379,9 @@ Load only what the current stage needs. Never dump a reference the stage does no
 | Operate | `operate.md`, `secure.md`, `pitfalls.md`, `assurance.md` | — |
 
 **Status of this table:** every reference in the Load column exists (§9). Load them by stage; do
-not load a reference the current stage does not need. One reference is conditional rather than
-staged: `references/prompt-guard.md` loads at Build — features, and again at the go-live gate and in
-Operate, only once the owner has approved the classifier screen (§4), because it is optional
-hardening and the stages do not otherwise need it.
+not load a reference the current stage does not need. `references/prompt-guard.md` (the `jev` SI
+security layer) loads at Build — features, again at the go-live gate, and in Operate, because the
+screen ships in the default build; it is skipped only when the owner has opted out of the screen.
 
 Two rules keep the loading honest:
 
@@ -391,7 +405,7 @@ source for their subjects, but these references are the primary path.
 | `references/build.md` | Scaffold, sections, content model, features | **exists** |
 | `references/deploy.md` | Domain, hosting, CI, staging-first, rollback | **exists** |
 | `references/secure.md` | Security defaults, RLS audit, verification checklist | **exists** |
-| `references/prompt-guard.md` | Optional pre-provider classifier screening of visitor text: design rules, the question sets, how to validate one against your own traffic, and what it costs | **exists** |
+| `references/prompt-guard.md` | The `jev` SI security layer: pre-provider classifier screening of visitor text — design rules, the question sets, how to validate one against your own traffic, and what it costs | **exists** |
 | `references/assurance.md` | Specification vs evidence, the artifact set a release must show, the rules for accepted risk, the independent-review artifact, and the order to close gaps in | **exists** |
 | `references/distribute.md` | `llms.txt`, JSON-LD, markdown surfaces, schema.org | **exists** |
 | `references/operate.md` | Edits by conversation, backups, monitoring | **exists** |

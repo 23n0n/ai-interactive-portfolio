@@ -716,8 +716,10 @@ the Worker proxies public SI/CV requests to the functions and carries a shared s
 short-lived assertion) that the function verifies before any handling; the client address is taken
 only from the header the Worker sets; a request without the secret is rejected before rate-limit
 evaluation. `--no-verify-jwt` switches off the platform's JWT check only — it does not make the
-function an unauthenticated surface. DeepSeek calls go through the
-shared client `_shared/deepseek.ts` — the API key is read from the
+function an unauthenticated surface. SI calls go through a shared client —
+the reference client is `_shared/deepseek.ts` and the reference provider is
+DeepSeek, the default but not a requirement (the owner may choose another
+provider). The API key is read from the
 **`deepseek`** edge-function secret (`Deno.env.get("deepseek")`), never
 shipped to the browser. Set it with `supabase secrets set deepseek=<sk-...>`.
 

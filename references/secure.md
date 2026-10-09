@@ -156,8 +156,9 @@ needs an ADR.
     forbidden.
 11. **No secrets in the browser bundle.** `.env.local` holds only public vars
     (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY`) and is
-    gitignored. Secrets go to Supabase secrets / Wrangler secrets. The DeepSeek key is read as the
-    `deepseek` edge-function secret (`Deno.env.get("deepseek")`) and never shipped to the browser.
+    gitignored. Secrets go to Supabase secrets / Wrangler secrets. The provider key — DeepSeek's in
+    the reference build — is read as the `deepseek` edge-function secret
+    (`Deno.env.get("deepseek")`) and never shipped to the browser.
     Never echo secrets in chat/logs. **Deploy tokens are least-privilege and revocable**: scope
     each CI token to the minimum permission it needs and keep it rotatable — see
     `references/deploy.md` §5. **Prefer short-lived, federated credentials over stored secrets**
@@ -256,7 +257,7 @@ needs an ADR.
 
 The `ADR-000N` column holds labels, not documents that ship with this kit — the reference build
 filed ADR-0007 … ADR-0011, and the hardening revisions behind this distribution added ADR-0012 …
-ADR-0016. The decision text in the table is the authority, and the site records its own series
+ADR-0017. The decision text in the table is the authority, and the site records its own series
 (`references/operate.md` §5).
 
 | ADR | Record | Status |
@@ -267,6 +268,7 @@ ADR-0016. The decision text in the table is the authority, and the site records 
 | ADR-0014 | No provider-side SI spend cap: DeepSeek bills per token with no hard limit | Risk acceptance (see `references/operate.md` §7) |
 | ADR-0015 | Short platform log retention on the free plans; log drains are paid | Risk acceptance (see `references/operate.md` §7) |
 | ADR-0016 | No managed WAF on the free plan: the ingress is the Worker plus a shared secret | Risk acceptance (see `references/operate.md` §7) |
+| ADR-0017 | The SI security layer (`jev`) is a paid third-party classifier and is **opt-out**: on by default, disabled only by an owner decision, which is recorded in the register | Risk acceptance (see `references/operate.md` §7) |
 
 ## 3. Admin-function authentication
 
@@ -891,14 +893,16 @@ pausing after a week of inactivity — because they shape how staging is done (A
 | Governance | Every acceptance of residual risk carries an owner, an approval date, an **expiry**, a review cadence, the trigger that invalidates it and the remediation plan; an expired critical acceptance blocks promotion | the acceptance register (`references/assurance.md` §3) |
 | Governance | The independent review is a preserved artifact against the production commit, not a procedure: findings register, evidence, responses and retest results, by a reviewer who does not rely only on this documentation | the review artifact in the site repository |
 
-**Optional hardening — pre-provider input screening.** A hosted *typed classifier* in front of the
-provider, vetoing the request when the probability it returns for the visitor's text is above a
-threshold, is additional hardening and deliberately **not** a required row above: it is a paid API,
-so the free-tier posture this section opens with does not cover it, and the owner gate for accounts
-and money applies (`AGENTS.md` §4). The design rules, the two question sets that survived measurement,
-how to validate a set against each surface's own legitimate traffic, and the measured trade-offs are
-in `references/prompt-guard.md`. Adopt it on top of the SI data row, never instead of it, and record
-it with the other cost-shaped decisions in the register (`references/operate.md` §7).
+**Default SI security layer — pre-provider input screening (`jev`).** A hosted *typed classifier* in
+front of the provider, vetoing the request when the probability it returns for the visitor's text is
+above a threshold, is **opt-out**: it is on by default as part of the SI security layer — not an
+opt-in add-on — and it sits on top of the SI data row, never instead of it, disabled only by an owner
+decision, which is recorded in the register (`references/operate.md` §7). It is a paid API, so its
+spend is disclosed and confirmed at the owner gate for accounts and money (`AGENTS.md` §4) and it is
+deliberately **not** a required row above — the free-tier posture this section opens with covers the
+required controls. The design rules, the two question sets that
+survived measurement, how to validate a set against each surface's own legitimate traffic, and the
+measured trade-offs are in `references/prompt-guard.md`.
 
 ## Source map
 

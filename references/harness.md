@@ -99,14 +99,14 @@ steps your runner documents. The exact setting names are confirmed at connect ti
 Do these in order. Versions and flags come from the runner's own documentation — this list fixes
 the sequence, not the exact commands.
 
-1. **Install the runtime the runner needs.** The old kit's tooling targets **Node.js 22 LTS or
-   newer**; a chosen runner may need that or something else, so take the version from its install
+1. **Install the runtime the runner needs.** The old kit's tooling targets the **newest Node.js
+   LTS**; a chosen runner may need that or something else, so take the version from its install
    docs. The old kit's commands were one option among many:
 
    ```sh
    # One example among many — macOS/Homebrew. Replace with your platform's method.
    # The section still works with this block removed.
-   brew install node@22
+   brew install node
    ```
 
    Confirm it with a version command such as `node -v`, expecting `v22.x` or newer for the old
@@ -156,7 +156,8 @@ Two different keys are easy to conflate:
 | **The site's SI key** | The deployed site's SI features (chat, job analysis), read by the edge functions at runtime | A **server-side secret**, never shipped to the browser. The account procedure is in `references/intake.md`; the security rules are in `references/secure.md`. |
 
 - **They are separate.** The agent's key runs the build; the site's key runs the owner's product.
-  A harness whose model is cheap does not license swapping the site's provider (`AGENTS.md` §6.4).
+  A harness whose model is cheap does not license swapping the site's provider — the owner chooses
+  that provider (`AGENTS.md` §6.4, §7).
 - **Neither belongs in browser build variables.** The gitignored `.env.local` holds public `VITE_`
   values only and ships to the browser; no agent key and no site secret goes there.
 - **Neither is committed or pasted.** Not in the repository, not in `ad-home/`, not in chat or
@@ -257,8 +258,9 @@ model and works on any of them; this is a recommendation about quality, not a co
   example: explain in three bullets what Postgres Row Level Security is) and read the reply. Never
   rest on a model's own claim that it is working (`AGENTS.md` §5.3).
 - **Do not confuse this dial with the site's SI.** Neutrality is about the agent that runs this
-  distribution. The site's own SI features stay on the frozen stack's provider, held server-side
-  (`AGENTS.md` §6.4, §7). A harness whose model is cheap does not license swapping the site's.
+  distribution. The site's own SI provider is the owner's choice — DeepSeek is the reference default
+  — and the key is held server-side (`AGENTS.md` §6.4, §7). A harness whose model is cheap does not
+  license swapping the site's.
 
 ## 8. Working directory and state
 
@@ -308,7 +310,7 @@ old kit's install step and Non-negotiable 8; both are restated neutrally below.
 | §1 What this file is for | derived from `AGENTS.md` §6 (neutrality rule) |
 | §2 The universal path | new — derived from `AGENTS.md` §6.1, §6.3, §8, §10, §11 |
 | §3 By hand | new — derived from `AGENTS.md` §6.3; `GUIDE_FROM_SCRATCH.md` as the human-followed fallback, `SKILL_INTERACTIVE_PORTFOLIO.md` and `DATABASE_SCHEMA.md` as the deep technical source |
-| §4 Connect a runner and a model | `GUIDE_FROM_SCRATCH.md` Step 1 (1.1–1.7: create the provider key, install the runtime, install the harness, add the key, choose the model/effort, verify, optional local models) and the Step 3 tool table (Node.js 22 LTS+); `AGENTS.md` §5.3, §5.8, §11; `references/intake.md` (the site's SI key) and `references/secure.md` (secrets server-side) |
+| §4 Connect a runner and a model | `GUIDE_FROM_SCRATCH.md` Step 1 (1.1–1.7: create the provider key, install the runtime, install the harness, add the key, choose the model/effort, verify, optional local models) and the Step 3 tool table (Node.js newest LTS); `AGENTS.md` §5.3, §5.8, §11; `references/intake.md` (the site's SI key) and `references/secure.md` (secrets server-side) |
 | §5 The per-harness adapter | new — derived from `AGENTS.md` §6.2; container for `GUIDE_FROM_SCRATCH.md` Step 5 (placing the skill file into the harness), reduced to a pointer |
 | §6 Capabilities | new — derived from `AGENTS.md` §6.1, §6.3 and the Stage 6 fresh-session review; container for `GUIDE_FROM_SCRATCH.md` Step 1.3 ("delegates work") |
 | §7 Model choice | `SKILL_INTERACTIVE_PORTFOLIO.md` Non-negotiable 8; `GUIDE_FROM_SCRATCH.md` Steps 1.5–1.6; `AGENTS.md` §5.8, §6.4 |

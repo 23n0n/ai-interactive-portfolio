@@ -7,8 +7,8 @@ rules are in `AGENTS.md` §8.
 
 Stage 3 turns the approved design contract into a working site on a private preview link. Run the
 sub-stages in order; each gate (§6) must be green before the next. The stack is frozen
-(`AGENTS.md` §6–§7) — no silent swaps; a change that genuinely cannot
-be made on this stack stops and asks the owner, then is recorded.
+(`AGENTS.md` §6–§7) except the SI provider, which is the owner's choice — no silent swaps either
+way; a change that genuinely cannot be made on this stack stops and asks the owner, then is recorded.
 
 Machine-readable routes (`llms.txt`, `sitemap.xml`, markdown negotiation, `.well-known/`), JSON-LD
 and SERP meta are **not** in this file — they belong to `references/distribute.md` (Stage 5). The
@@ -17,28 +17,29 @@ function; what Stage 5 owns is the surface it produces, not the deployment.
 
 ## 1. Scaffold
 
-Frozen stack, verbatim — do not substitute a layer:
+Reference stack, verbatim — do not substitute a layer except the SI provider, which is the owner's
+choice:
 
-| Layer | Frozen choice |
+| Layer | Reference choice |
 |---|---|
 | Hosting | Cloudflare Workers + Static Assets (`@cloudflare/vite-plugin`) + Wrangler 4 |
 | Data | Supabase (Postgres + RLS, Auth, Storage, Edge Functions) |
 | Front end | React 19 + TypeScript + Vite + TanStack Start (SSR) + TanStack Router |
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | Protection | Cloudflare Turnstile |
-| Toolchain | Bun 1.4.x + Wrangler 4 |
-| SI features | DeepSeek, called server-side; key held server-side |
+| Toolchain | Bun + Wrangler 4 (newest available of each) |
+| SI features | The owner's choice; **DeepSeek** is the reference, called server-side, key held server-side |
 
 **Prerequisites** — install and verify these before the first `bun create vite`. The toolchain
 requires them, and none of the versions below are guesswork (CI pins the Supabase CLI):
 
 | Tool | Version | Install | Check |
 |---|---|---|---|
-| Node.js | **22 LTS or newer** — the toolchain requires it (Vite, TanStack Start and Wrangler all build on it; `nodejs_compat` in `wrangler.jsonc` is not a substitute for it locally) | macOS: `brew install node@22`; Windows: installer from https://nodejs.org (LTS); Linux: `nvm install 22` | `node -v` → `v22.x` or newer |
-| Bun | **1.4.x or newer** (the stack pins it) | `curl -fsSL https://bun.sh/install \| bash` (or `brew install bun`) | `bun -v` |
+| Node.js | **newest LTS** — the toolchain requires it (Vite, TanStack Start and Wrangler all build on it; `nodejs_compat` in `wrangler.jsonc` is not a substitute for it locally) | macOS: `brew install node`; Windows: installer from https://nodejs.org (LTS); Linux: `nvm install --lts` | `node -v` → the newest LTS or newer |
+| Bun | **newest 1.x available** — resolve it, never pin an older release (`AGENTS.md` §7) | `curl -fsSL https://bun.sh/install \| bash` (or `brew install bun`) | `bun -v` |
 | git | any current release | `brew install git` (macOS) or your package manager | `git --version` |
-| Supabase CLI | **2.115.0** — the version CI pins; a local/CI CLI mismatch breaks `supabase db push` | `brew install supabase/tap/supabase` (or `npm i -g supabase`) | `supabase --version` |
-| Wrangler | **4.x** — the stack freezes Wrangler 4 (`AGENTS.md` §7) | none — run it through `bunx` (e.g. `bunx wrangler deploy`); no global or project install needed | `bunx wrangler --version` → `4.x` |
+| Supabase CLI | **newest available** — CI pins the same version so local and CI agree; a mismatch breaks `supabase db push` (`AGENTS.md` §7) | `brew install supabase/tap/supabase` (or `npm i -g supabase`) | `supabase --version` |
+| Wrangler | **newest 4.x available** — the stack freezes the major, not the release (`AGENTS.md` §7) | none — run it through `bunx` (e.g. `bunx wrangler deploy`); no global or project install needed | `bunx wrangler --version` → `4.x` |
 
 Verify before you start:
 
@@ -46,9 +47,10 @@ Verify before you start:
 node -v && bun -v && git --version && supabase --version
 ```
 
-Expect four version lines, with `bun` reporting 1.4.x.
+Expect four version lines, with `bun` reporting the newest release.
 
-Dependency set (exact; nothing more is required for the scaffold):
+Dependency set (exact majors; nothing more is required for the scaffold — install the newest release
+of each, `AGENTS.md` §7):
 
 - Base: `react@19`, `react-dom@19`, `typescript`, `vite`, `@vitejs/plugin-react`.
 - Routing/SSR: `@tanstack/react-router`, `@tanstack/react-start`, `@tanstack/router-plugin`.
@@ -261,8 +263,10 @@ and `data:` URIs.
 
 ### 5.1 SI chat and JD analysis
 
-1. Edge functions call DeepSeek through the shared client `_shared/deepseek.ts`; the key comes from
-   the **`deepseek`** secret via `Deno.env.get("deepseek")`. Never expose the key to the browser.
+1. Edge functions call the SI provider through a shared client — the reference client is
+   `_shared/deepseek.ts` and the reference provider is DeepSeek (the default, not a requirement); the
+   key comes from the **`deepseek`** secret via `Deno.env.get("deepseek")`, and a different provider
+   changes the client and the secret name, not the rule. Never expose the key to the browser.
 2. **Per-IP rate limits** via `check_rate_limit`, keyed on `cf-connecting-ip`: `chat` 30/15 min,
    `analyze-jd` 10/15 min — the platform-set header only; never read `x-forwarded-for` and never
    fall back to it (a request without the platform header fails closed; `DATABASE_SCHEMA.md` §9).

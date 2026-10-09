@@ -333,9 +333,10 @@ Facts:
 
 Facts:
 
-- Create the SI provider account and API key (the old kit's provider is **DeepSeek**,
-  `platform.deepseek.com`). The key is shown **only once**, starts with `sk-...`, and must be saved
-  somewhere safe. Treat it as a secret: never commit it, never paste it into public chats.
+- Create the SI provider account and API key. The reference provider is **DeepSeek**
+  (`platform.deepseek.com`); the provider is the owner's choice, and a different one is recorded as a
+  decision. The key is shown **only once**, starts with `sk-...`, and must be saved somewhere safe.
+  Treat it as a secret: never commit it, never paste it into public chats.
 - The site's SI features (chat, JD analysis) run from **Supabase edge functions** and consume the key
   as a **server-side secret** named `deepseek`. Set the server secrets once with:
 

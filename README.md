@@ -63,15 +63,16 @@ point a session at this repository, what to check before starting, which model f
 what to do when a runner lacks a capability are all in
 [`references/harness.md`](references/harness.md).
 
-Neutrality is about the SI that runs this distribution — not about the site's technology, which is
-frozen (below).
+Neutrality is about the SI that runs this distribution — not about the site's technology. One layer
+of that technology is yours to pick: the AI provider behind your site's SI features, where DeepSeek
+ships as the reference (below).
 
 ## What is in the repository
 
 | Path | What it is |
 |---|---|
 | `AGENTS.md` | **The contract.** The agent's instructions: the six stages, the four owner gates and the non-negotiables. The place to start. |
-| `references/` | The knowledge package, loaded by the agent one stage at a time: intake, design, build, deploy, security, assurance, distribution, operations, pitfalls, state layout, harness notes, optional classifier screening of visitor text (`references/prompt-guard.md`), and the frozen schema split by domain. |
+| `references/` | The knowledge package, loaded by the agent one stage at a time: intake, design, build, deploy, security, assurance, distribution, operations, pitfalls, state layout, harness notes, the `jev` SI security layer (pre-provider screening of visitor text, `references/prompt-guard.md`), and the frozen schema split by domain. |
 | `scripts/` | The distribution's own tools: five shell helpers for workspace state (workspace home and lock handling — `ad-home.sh` plus the sourced `ad-lock.sh` — a new site `ad-new-site.sh`, updates `ad-update.sh`, status `ad-status.sh`) and `check-docs.py`, which checks this repository's internal consistency (see **Checks** below). |
 | `examples/` | A worked run. `examples/ad-home/` shows the on-disk state a registered site produces — registry, manifest, decisions log and run reports — and `examples/local-sandbox/` is the throwaway no-account prototype the intake stage can offer: a runnable Vite + React app with its own tests, docs and ADR, wired to flat dummy files instead of a database. |
 | `skills/` | The **convention for optional per-harness wrappers**: if a harness discovers skills only in a fixed directory, its adapter is one file, `skills/<harness>/SKILL.md`, that does nothing but point at `AGENTS.md`. No wrapper ships here — the tree holds only `skills/README.md` — and `references/harness.md` §5 carries the template. |
@@ -102,12 +103,13 @@ pipeline you point at it; the repository ships the check, not a pipeline definit
 push and drift lands as a failing check instead of as a stale cross-reference a reader has to
 notice.
 
-## The frozen stack
+## The technology
 
-The reference target technology and the database schema are fixed, and neither is swapped quietly.
-In plain terms, this is the machinery that makes the site open quickly, keeps your content and your
-SI key out of a visitor's reach, and runs the few interactive pieces — the chat about you, the admin
-panel and the gated CV download — for you:
+Almost everything is fixed so the site stays maintainable and its security controls keep working, and
+nothing is swapped quietly. In plain terms, this is the machinery that makes the site open quickly,
+keeps your content and your SI key out of a visitor's reach, and runs the few interactive pieces —
+the chat about you, the admin panel and the gated CV download — for you. What that protection
+actually is, and what it is not, is spelled out under **Security** below:
 
 - **Hosting:** Cloudflare Workers + Static Assets, deployed with Wrangler.
 - **Data:** Supabase Postgres with row-level security, Auth, Storage and Edge Functions.
@@ -115,15 +117,91 @@ panel and the gated CV download — for you:
 - **Styling:** Tailwind CSS v4 + shadcn/ui.
 - **Protection:** Cloudflare Turnstile.
 - **Toolchain:** Bun and Wrangler 4.
-- **The site's own SI features:** DeepSeek, called from server-side functions with the key held
-  server-side. Optional hardening on top of the structural controls, adopted only with the owner's
-  approval and its own account: a hosted typed classifier that vetoes hostile visitor text before the
-  model is asked anything (`references/prompt-guard.md`).
+- **The site's own SI features:** the AI provider behind them is **your choice** — DeepSeek is the
+  reference provider and the default, called from server-side functions with the key held
+  server-side, and a different provider is a decision the agent records rather than one it makes for
+  you. On top of the structural controls sits the SI security layer, which is **opt-out**: a
+  pre-provider screen (`jev`) that vetoes hostile visitor text before the model is asked anything, on
+  by default and switched off only if you say so.
 - **Database:** `DATABASE_SCHEMA.md` is the source of truth and is not edited to fit a shortcut.
+
+None of this names a version number: the stack choices are fixed, but the agent always resolves the
+**newest available** version of each package and records what it installed.
 
 If something genuinely cannot be done on this stack, the agent stops and asks you rather than
 swapping it silently and mentioning it later. That is the inherited **no silent swaps** rule
 (`AGENTS.md` §7).
+
+## Security
+
+An interactive portfolio holds your identity, your CV and a key that spends your money, and it runs
+three pieces a visitor can talk to. A builder that waves at "security" without saying what protects
+what is not worth trusting, so here is the model in plain terms, with the file that specifies each
+part for the agent.
+
+**The boundary is the data layer, not the rate limit.** Rate limits, input caps, response caching
+and Turnstile limit abuse and runaway SI spend. They do not stop a determined attacker, and nothing
+here is presented as if they did (`references/secure.md` §1). What actually decides who can read
+what is row-level security in Postgres: enabled on every table, enforced by policies and grants,
+and reached by the public only through vetted views.
+
+- **Reading.** The anonymous role can read public views only — it holds no privilege on any base
+  table, so a private column cannot leak through a query the site did not intend. Admin reads
+  require the admin role. A public view that is not marked `security_invoker` runs as its owner and
+  bypasses the policies underneath it; the agent treats that as a launch blocker and audits the whole
+  view layer with SQL, never by eye (`references/secure.md` §4).
+- **Writing.** Nothing is written from the browser. Every mutation goes through a server-side edge
+  function holding the service-role key. That key bypasses row-level security entirely, so it never
+  reaches the browser bundle and a secret scan runs over what actually ships — a leaked service-role
+  key is total read and write access, and no policy mitigates it.
+- **Your SI key.** The provider key — DeepSeek's in the reference build — lives as a server-side
+  secret, read only inside the edge function that calls the model. It is never in the browser, never
+  committed, and never echoed into a log (`references/secure.md` §2).
+- **The SI security layer.** In front of the model sits the pre-provider screen (`jev`): a typed
+  judgment on the visitor's text that vetoes a hostile request before the model is asked anything.
+  It is **opt-out**: on by default, not an add-on you must ask for, and you can switch it off. It is
+  validated against each surface's own legitimate traffic before it ships. It is a paid third-party
+  API, so its cost is disclosed and confirmed at the spend gate — but the default is on, and turning
+  it off is the decision that gets recorded.
+- **The interactive surfaces.** The CV download is gated by Turnstile verified server-side, and only
+  on the request that mints a short-lived, single-use signed download token; the challenge never
+  travels in a URL. The chat and job-description analysis carry no challenge — they are bounded by
+  per-IP rate limits keyed on the platform-set IP header, strict input caps and response caching.
+  The functions reject the wrong method (`405`) and a non-JSON body (`415`), and CORS is an
+  allowlist, never a wildcard — CORS is a browser rule, not access control, so it is never the only
+  gate on a function.
+- **Admin.** Public signup is off; the administrator is provisioned by hand and recorded by user
+  id. The admin login carries TOTP two-factor authentication enforced in the database, not the UI,
+  so a session that has not completed the second factor cannot write. Every change to a role,
+  password, MFA enrolment or account status revokes the affected sessions.
+- **Transport and the browser.** HTTPS only, HSTS for at least 180 days, and a per-response header
+  suite: a content-security policy with a per-response nonce and no `unsafe-inline` scripts,
+  `frame-ancestors 'none'` on every page, `nosniff`, a referrer policy and a permissions policy. If
+  the database is unreachable the site fails closed rather than serving stale content.
+- **Uploads.** The public image bucket is for publishable material only and says so in the admin
+  screen. Uploaded images are decoded, re-encoded and stripped of metadata before they are stored,
+  SVG is excluded, and approved external images are copied into controlled storage rather than
+  hot-linked.
+- **The supply chain.** CI scans both the source tree and the built artifact for secrets and
+  dependencies, produces a software bill of materials, pins every third-party action to a full
+  commit, runs static analysis and signed provenance, and every account that can deploy carries
+  phishing-resistant multi-factor authentication (`references/secure.md` §2).
+
+**Verified, not asserted.** Before anything is called done the agent runs the full row-level
+security audit with SQL, the authentication-case matrix against every server-side endpoint, a live
+header assertion across every route including error responses, and an independent security review
+in a fresh session that has no memory of the build; every finding is fixed or registered as a
+recorded risk. The controls are machine-checkable where the platform allows it, and a release that
+omits required evidence fails rather than shipping. The full specification is in
+[`references/secure.md`](references/secure.md); the evidence a release must be able to show, and the
+rules for accepted risk, are in [`references/assurance.md`](references/assurance.md).
+
+**What is accepted, not fixed.** On the free plans there is no managed web application firewall and
+the model provider sets no console-level spending limit, and the reference build accepts both — with
+the reasoning and the trigger that would supersede them written down, not remembered
+(`references/assurance.md` §3). The threat model behind every control here is abuse and cost, not a
+targeted attacker; when that assumption stops holding, the acceptances are revisited rather than
+quietly left in place.
 
 ## Licence
 
