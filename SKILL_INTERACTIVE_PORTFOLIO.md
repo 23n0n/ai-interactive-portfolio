@@ -1,0 +1,843 @@
+---
+name: interactive-portfolio
+description: >
+  Build interactive portfolio from scratch on reference stack. Cloudflare
+  Workers + Static Assets; Supabase (Postgres + RLS, Auth, Storage, Edge
+  Functions); React 19 + Vite + TanStack Start (SSR); Tailwind CSS v4;
+  shadcn/ui; Turnstile; Bun; Wrangler; GitHub Actions deploys. Design
+  questionnaire first; ORIGINAL layout encouraged — copying allowed, advised
+  against. Content collections / knowledge base + WYSIWYG admin; DeepSeek SI
+  (chat, JD analysis, content generation); Turnstile-gated CV download.
+  Covers scaffold, schema + RLS (full DDL in DATABASE_SCHEMA.md),
+  design system, sections, collections + KB admin, interactive features,
+  staging-first GitHub Actions deploy, hardening. Use when user asks to
+  build an interactive portfolio, personal site or CV site.
+---
+
+# Interactive Portfolio Builder
+
+Build complete interactive portfolio from scratch, phase by phase. Skill =
+source of truth. Follow in order; verify each phase before next.
+
+## When to use
+
+User asks for an interactive portfolio, personal brand or CV site. Accounts may be missing —
+guide through account creation
+(GitHub, Cloudflare, Supabase, DeepSeek) first.
+
+Do NOT use: template redesign without design pass; anything off reference
+stack (ask first).
+
+If the user has no accounts yet and is unsure, offer the **Optional local
+no-account sandbox** (below) to validate the idea in a browser before any
+signup.
+
+## Non-negotiables
+
+1. **Original layout.** Design questionnaire (below) BEFORE layout code.
+   Derive design system from answers. Copying an existing site's layout allowed
+   but advised against — guide user toward original design that resonates
+   with them. Every section designed for this user.
+2. **Reference stack only.** React 19 + TypeScript + Vite + TanStack Start
+   (SSR) + TanStack Router + Tailwind CSS v4 + shadcn/ui; Cloudflare Workers +
+   Static Assets (`@cloudflare/vite-plugin`) + Wrangler; Supabase (Postgres +
+   RLS, Auth, Storage, Edge Functions); Cloudflare Turnstile; Bun;
+   Wrangler 4 (newest available of each). No silent swaps — ask user first.
+3. **Verify everything yourself — the agent's claims are unverified.** Every
+   phase gate in this skill is the USER's check: run the commands, look at
+   the output, approve deliberately. Never accept "it works" without seeing
+   the gate pass. Do the same at the very start of the build: verify the
+   accounts, the keys, the tools and the SI connection yourself before
+   trusting anything the agent reports.
+4. **Security defaults always — industry level.** RLS everything; anon =
+   public read-only views; admin gated by `is_admin()` **and** the immutable
+   user-id allowlist; writes service-role-only; the public SI/CV functions sit
+   behind a **trusted ingress** (the Worker proxies them and carries a shared
+   secret the function verifies before any handling — the function URL is not a
+   public entry point); Turnstile server-side verify on the CV endpoint only, on
+   the `POST` that mints a short-lived single-use signed download token for
+   `GET`/`HEAD`, never on chat/analyze-jd (per-IP rate limits, ADR-0007); CORS
+   allowlist; HSTS 180d (`preload` only with a ≥1-year `max-age` and every
+   subdomain on HTTPS); full header suite (CSP per-response nonce, no
+   `unsafe-inline` in `script-src`, `frame-ancestors 'none'` on every HTML
+   response, `X-Content-Type-Options: nosniff`,
+   `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`,
+   `X-Frame-Options` as the legacy backstop); 405/415 guards on edge functions;
+   fail-closed SSR; secrets never in browser bundle; dependency + secret
+   scanning in CI; MFA on every platform account that deploys or holds secrets,
+   with **TOTP on the Supabase-hosted admin login and `aal2` enforced
+   server-side**. PARTIAL needs compensating control; risk acceptance needs ADR.
+   **Threat model — read this once:** most of the above controls (rate
+   limits, input caps, response caching, Turnstile) protect against **abuse
+   and excessive SI use**, not against a determined attacker. The real
+   security boundary is the **RLS model** (views + grants + policies) — which
+   is why the final RLS audit (Phase 8) is mandatory, not optional.
+5. **Content = data, not JSX.** Collections/hubs/docs = typed data in
+   Supabase behind public read-only views; pages, internal links, sitemap,
+   JSON-LD derive from same source of truth; admin edits via WYSIWYG panel
+   with server-side HTML sanitizer.
+6. **Verify every phase.** `bun run typecheck`, `bun run lint`,
+   `bun run build` green before next; staging before prod.
+7. **Docs discipline.** Maintain `docs/PROJECT_REFERENCE_ARCHITECTURE.md`,
+   `docs/CI-CD-RULES.md`, `adr/ADR-000N.md` records for decisions.
+8. **Model: high capability, high reasoning effort (recommended).** Run this
+   build with a high-capability model at maximum reasoning effort (e.g.
+   `deepseek-v4-flash`, high effort) — it generates security-sensitive code
+   (RLS, auth, edge functions) and the audit quality depends on it. The
+   default chat model works, but this is the recommended configuration.
+9. **Owner gates — ask, then wait.** There are exactly four points where you
+   ask the owner: approving the design contract (before any layout code);
+   creating an account or spending money (state the amount and what it buys,
+   then wait for a clear yes — a maybe, a silence or an unanswered question is
+   not approval); going live publicly; and anything destructive or
+   irreversible (deleting data, dropping a live resource, rotating a used
+   secret). These four are the points where the owner's **approval** is
+   required; beyond them, ask only a clarifying question you genuinely need —
+   one concise question, never a guess — and never let the owner first learn of
+   a cost, a public launch or a deletion from the result. Confirm the amount
+   before a purchase even when the owner says "just do it".
+10. **Durable state — chat is not the record.** Every site is a long-lived
+    project with state on disk: a manifest (what the site is, the owner's
+    answers verbatim, the placeholder flag), a decisions log (each approval and
+    each choice) and a run report per change. Before you act, and before you
+    answer, reconcile from those files — read the manifest and the latest run
+    report, then say what is done and what is left. Never answer "where are
+    we?" from chat memory and never invent progress; if the records are
+    missing, say so and say what you will create.
+11. **Report outcomes, not mechanics.** Speak to the owner about the site, not
+    the machinery: what the site can do and what happens next — "your site is
+    on a private preview link you can click" — not a log of steps. Never open
+    with a step log, a file list or a plan of internal steps, and do not name
+    services or components in front of the owner (the datastore, the edge
+    functions, the build pipeline) unless the owner asked or a decision needs
+    their consent; when you must name one, explain in one plain sentence what
+    it does for them. The facts come from the records (item 10); the *shape* of
+    the answer stays in outcomes even while you are still reading them — one
+    plain sentence about the site and what you will check, then the detail.
+12. **Load a stage at a time.** Read only what the current stage needs, and
+    say which files you loaded and why. Do not read the whole repository, the
+    schema or the deploy guide up front: the design conversation must not load
+    the schema, schema work must not load the deploy guide, and mixing them
+    produces changes nobody asked for.
+
+## Design questionnaire (run BEFORE layout)
+
+Ask user ALL questions (adapt language; note answers verbatim — they are the
+design contract). Run it as a **relentless interview over a design tree**: ask
+the **frontier** — every question whose prerequisites are settled — as one
+numbered round, each with your **recommended answer**, then wait for the
+answers, let them reshape the tree and push the frontier outward, and ask the
+next round. A question that depends on one still open in this round waits for a
+later one. An answer that turns on a decision the list does not cover mints a
+new question — numbered above this set, recorded with the answer that opened
+it, and asked in the next round. The interview is done when the frontier is
+empty: every question answered or explicitly skipped, nothing silently
+assumed. Grouped by theme:
+
+**Audience first — Q2 is the branch, not the second question.** Ask Q2
+(primary audience) before anything else in group 1: it decides how much of
+the questionnaire is even relevant. A focused, single-audience site does not
+need the full collection menu; a multi-audience hub does. When Q2 (and Q24)
+point at a focused site, offer group 5 with the minimal collection set — one
+or two collections serving the primary audience — and skip `speaking`,
+`glossary` and `resources` unless the user asks for them. Say plainly which
+questions you skipped and why; never trim the list silently.
+
+**1. Identity — who and for whom**
+1. Name, current role, one-line personal brand (exact wording to appear).
+   If the user does not provide a full name (first AND last), use the
+   placeholder name **Zygfryd Niewiadomski-Nieśmiałek** everywhere the name
+   is needed and tell the user it is a placeholder to be replaced before
+   launch.
+2. Primary audience: recruiters, clients, conference organizers, the SI
+   crawlers, or all of them? Pick ONE primary — it drives copy and layout.
+3. Voice: professional, warm, witty, direct, humble-expert? Give one example
+   sentence you like the sound of.
+4. What makes you different — 1–2 sentences a recruiter should remember.
+
+**2. Vision — the page in your head (most important)**
+5. **Open description:** walk through your ideal page top to bottom, as if
+   describing it to a designer who has never seen your site. What does the
+   visitor see FIRST (first 5 seconds)? What do they scroll past? What should
+   they remember after closing the tab?
+
+   **Follow-up probe (required):** *"Does this site need to do one thing
+   exceptionally well, or cover you completely?"* Record the answer
+   verbatim — it is a hard design constraint: *focused* = one primary call
+   to action, no competing sections, a shorter page; *comprehensive* = the
+   full section set and the knowledge base.
+6. One word (or two) for vibe: calm, bold, technical, warm, futuristic,
+   minimal, playful, corporate.
+7. 2–3 colors that represent you — or let the agent propose a palette from
+   the vibe word and defend it.
+8. Type mood: serif/editorial, geometric, technical/mono, friendly/rounded,
+   or mixed (e.g. serif headings + mono accents).
+9. Density: minimal/airy vs rich/dense. Light, dark, or both — and which is
+   the default?
+
+**3. Layout and structure**
+10. Page organization: single scrolling home with sections, separate pages,
+    or both (home + hub/doc pages)?
+11. Main Character pattern: portrait/photo, big headline + subline, terminal/typewriter
+    intro, split layout, badge + CTA buttons, or something else?
+12. Navigation: top bar, sidebar, or minimal (logo + 2–3 links)? Sticky or
+    not?
+13. Section order on the home page (e.g. Main Character → about → skills → experience →
+    testimonials → SI → footer). Anything to reorder, drop, or add?
+14. How to present data: experience as timeline or cards? Skills as
+    strong/moderate/gap columns, tag cloud, or progress bars? Testimonials as
+    quote cards, carousel, or grid?
+15. Footer: what lives there (contact, links, disclaimer, CV button,
+    knowledge-base nav)?
+
+**4. Interaction and detail**
+16. Effects: scroll reveal, hover tilt, typing intro, parallax, particles —
+    which do you actually want? (Aesthetics only; accessibility wins. Name
+    the cost: reveal/tilt ≈ 10 KB of JavaScript; parallax/particles ≈ 60–120
+    KB and must degrade under `prefers-reduced-motion`.)
+17. SI chat placement: floating widget (corner), dedicated section, or both?
+    JD analyzer as dialog or full page?
+18. Anything you HATE in websites — colors, fonts, animations, popups,
+    carousels. List it; it becomes a hard constraint. The same for copy:
+    phrases, buzzwords and writing styles you dislike — voice exclusions.
+19. 1–2 admired sites (inspiration only — copying discouraged; say WHAT you
+    like in them, not the sites themselves).
+
+**5. Content scope**
+20. Content collections (reference has nine: services, expertise, articles,
+    experience, certifications, technologies, speaking, glossary, resources) —
+    which do you want, and roughly how many docs each?
+21. CV: languages needed, sections to include, one page or longer?
+22. Contact surface: email link, form, socials, "Ask about my work" — which?
+23. Site language(s): single, bilingual, which is primary?
+
+    **Follow-up probe (required)** if the answer is not "single": *"Should
+    the whole site work in both languages, or one language with the other
+    used for search engines and link previews?"* Record `full UI` or
+    `primary + metadata` — the two build differently (i18n routing versus
+    `hreflang`/translated metadata).
+
+**6. Constraints**
+24. Scope priorities: what must be perfect vs good-enough for launch?
+25. Anything you expect off the reference stack? (Ask first — no silent
+    swaps.)
+
+**7. Working with you — your material and your calls**
+
+Working decisions, not page decisions; none of them is the agent's to settle.
+
+26. What you already have: a CV file, a LinkedIn profile, articles, talks,
+    photos, testimonials — what exists, in what form, and where should it live
+    while we work? Material that exists is converted, not retyped.
+27. Who writes the words: you supply the final copy, the agent drafts from your
+    material and you edit, or by section? An editing surface is not a typing
+    surface, and it decides how much SI copy generation is used.
+28. Other people on the page: will testimonials/recommendations be published —
+    and for each one, do you have that person's permission to publish their
+    name, role and words? Anything about them to keep off? (Needs the
+    collection set — Q20 and the focus answer — settled first.)
+29. What must NEVER be published: phone number, home address, personal email,
+    current employer, a photo of you, family, client names? A hard constraint
+    on every surface, the SI included.
+30. Your address: do you already own a domain, which name do you want, and is
+    there an old site or profile that must keep working or redirect? (Buying
+    one is owner gate #2.)
+31. How you will know it worked: six months after launch, what makes you say
+    this was worth it — an interview, an inbound enquiry, one particular
+    person's reaction? It drives the primary call to action.
+32. Which SI provider: the reference default is DeepSeek, and a different
+    provider is possible and recorded as a decision. (The provider is the
+    owner's choice, `AGENTS.md` §7; the spend is owner gate #2.)
+
+Derive: design tokens (Tailwind v4 `@theme`: color ramps, fonts, radius,
+shadow, motion), type scale, spacing rhythm, layout concept (nav style, Main Character
+pattern, section rhythm, card style, footer), responsive + accessibility
+(contrast AA, keyboard nav, reduced motion). Carry the two scope decisions
+into the contract — the focus/comprehensive answer (section budget) and the
+language mode (single, `primary + metadata`, or `full UI`). Show the token
+set + a layout sketch (ASCII wireframe of the home page top to bottom) and
+get approval before building sections. If the user cannot answer #5,
+re-derive it from answers #6–#19 and present the sketch — approval is still
+required. The working questions (Q26–Q32) derive the plan rather than the
+page: what gets imported, who writes copy, consent and attribution for
+anything published about another person, the publication boundary as a hard
+constraint on every surface, the domain and any redirect, the success signal,
+and the provider recorded as a decision.
+
+### Optional — a local, no-account sandbox first (before you commit)
+
+**Offer this first if the user has NO accounts yet** (GitHub / Cloudflare /
+Supabase / DeepSeek) and wants to see their idea before any commitment. Ask:
+*"Want to see your layout + copy live in a browser first, locally, with no
+accounts? ~20–30 min, throwaway — nothing is created or charged."*
+
+**What it does** — a 100%-local, disposable prototype:
+1. Scaffold a throwaway Vite + React + Tailwind app in a temp folder (no repo,
+   no accounts, no cloud).
+2. **Dummy DB = flat files.** A small `dummy/` directory of JSON/TS modules
+   (`profile.json`, `content.json`, `sections.json`) exposing the SAME shape
+   the real build reads: name, title, elevator_pitch, status, target stages;
+   site content (headline, pitch, CTA…); section order.
+3. Render a single-page approximation (Main Character → about → skills →
+   experience) fed by those files, so the design-questionnaire answers become
+   a real page the user can click through.
+4. SI copy help is optional and also account-free — a local Ollama model, or
+   none at all.
+
+**Boundaries (why it does not break the Non-negotiables):**
+- It is a **throwaway sandbox, not the deliverable.** The production build
+  still uses the full reference stack + Non-negotiables (RLS, real Supabase
+  data layer, security gate).
+- The flat-file model is disposable — it never becomes the production data
+  layer, and must not leak into the real schema/RLS design.
+- Once the user commits to accounts and the real build starts, skip this.
+
+**Commitment-free:** nothing is created on any platform and nothing is
+charged. Delete the temp folder and you leave no trace — you can stop any
+time.
+
+## Phases
+
+### Phase 0 — Prerequisites
+- Accounts: GitHub; Cloudflare (Turnstile widget: site key + secret);
+  Supabase (project URL + publishable + service-role key); DeepSeek API key.
+  Missing? Walk user through (GitHub signup; dash.cloudflare.com then
+  Turnstile then Add site; supabase.com then New project;
+  platform.deepseek.com then API Keys).
+- **Supabase CLI authentication (do this BEFORE `supabase link`/`db push`):**
+  create a PAT (dashboard → avatar → Account settings → Access Tokens →
+  Generate new token) and run `supabase login --token <PAT>` (or have the
+  user run interactive `supabase login`). If `supabase link` prompts for the
+  database password, supply it via `SUPABASE_DB_PASSWORD` or the password
+  created with the project. Without login, Step 3 fails with "Access token
+  not found".
+- Local: newest Node LTS, newest Bun, git, newest Supabase CLI.
+- Repo cloned; `.env.local` PUBLIC vars only (`VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY`), gitignored.
+  Secrets go to server storage (Supabase secrets / Wrangler secrets), never
+  `.env.local`.
+
+### Phase 1 — Scaffold
+- `bun create vite` (react-ts); add: `@tanstack/react-router
+  @tanstack/react-start @tanstack/router-plugin`, `@cloudflare/vite-plugin`,
+  `@tailwindcss/vite tailwindcss`, shadcn/ui (`bunx shadcn@latest init`),
+  `@supabase/supabase-js`, TipTap (admin).
+- Vite config: `react()`, `tailwindcss()`, `tanstackStart()`, `cloudflare()`
+  with SSR environment; `wrangler.jsonc`: worker name, `nodejs_compat`,
+  `preview` env (persistent workers.dev, noindex).
+- **Dependency source hygiene.** Resolve packages from the **public npm
+  registry** (`registry.npmjs.org`) only. Some SI/cloud scaffolds pin their
+  lockfile to a private package mirror or sandbox cache that GitHub Actions
+  runners cannot reach (403 on fresh `bun install`), which silently breaks CI
+  and any dependency bump (Dependabot fails). If you inherit such a lockfile,
+  re-home it to npmjs: add `.npmrc` with `registry=https://registry.npmjs.org/`,
+  regenerate the lockfile, and confirm `bun install --frozen-lockfile` is
+  green in CI. All runtime deps are public; there is no reason to depend on a
+  third-party mirror.
+- Gate: `bun install --frozen-lockfile`, `bun run typecheck`,
+  `bun run lint`, `bun run build` green; `bun run dev` serves app.
+
+### Phase 2 — Design system (original layout)
+- Run questionnaire; tokens + layout sketch; user approval.
+- Tokens in `styles.css` (Tailwind v4 `@theme`), base styles,
+  `components.json` for shadcn.
+- Copying reference layout allowed, advised against. Guide user toward
+  original design; re-derive from questionnaire if drifting to copy.
+
+### Phase 3 — Supabase schema + RLS
+- Apply the full schema from **`DATABASE_SCHEMA.md`** (in this folder):
+  complete DDL — every table with columns/types/constraints, all views,
+  RPCs, functions, triggers, policies, grants, storage rules, seeds.
+- Tables (reference naming, adapt content to persona): profile domain
+  `candidate_profile`, `experiences`, `skills`, `gaps_weaknesses`,
+  `values_culture`, `faq_responses`, `si_instructions`, `recommendations`;
+  content/KB `content_collections`, `content_docs` (typed blocks, tags,
+  related refs), `site_content`, `site_sections`, `fun_links`,
+  `holiday_banners`; SI/ops `rate_limits`, `chat_response_cache`,
+  `jd_analysis_cache`, `rag_metrics`, `cv_settings`, `cv_documents`,
+  `abuse_alerts` (watchdog output).
+- Public read-only views for everything site renders (`*_public`,
+  `security_invoker` + `security_barrier` wrappers over `private.api_*`
+  views) — the registry tables (`site_sections`, `fun_links`,
+  `holiday_banners`) and the CV singleton (`cv_settings`) are part of that
+  view set; the visible/active/window filters and the `creation_prompt`
+  exclusion live in the private `api_*` views, never in a base-table policy;
+  public read RPCs (`get_public_homepage_data`,
+  `get_public_homepage_route`, `get_public_content_catalog`,
+  `get_public_content_route`, `get_public_sitemap_data`); admin via
+  `is_admin()` (JWT claim `app_metadata.role = 'admin'` **and** the caller's
+  `auth.uid()` present in `private.admin_allowlist`); **public signup is
+  off** (`enable_signup = false`) and the admin is provisioned by hand into
+  that immutable, deny-by-default allowlist (one row per administrator, no
+  grant to any API role, changeable only by a reviewed migration); the domain
+  trigger `check_email_domain` +
+  auth hook `hook_restrict_signup_by_email_domain` (`supabase_auth_admin`
+  grant) stay as defence in depth — wire the hook in the dashboard
+  (Authentication → Hooks → Customize Signup) so a re-enabled signup still
+  rejects a foreign domain; all
+  writes via service role or SECURITY DEFINER (never browser RLS writes).
+- RLS per table: anon reads views only — **including** `cv_settings_public`
+  and the `site_sections_public`/`fun_links_public`/`holiday_banners_public`
+  registries. There is **no** anon base-table grant at all. No anon writes
+  anywhere. A function that needs a pruned column (`creation_prompt`) reads
+  the base table with the service-role client. Service role bypasses RLS.
+  Revoke anon write grants + write-RPC EXECUTE grants; revoke view-layer
+  writes from all roles.
+- Storage bucket `kb-images`: public bucket, admin-only
+  read/insert/update/delete policies (`is_admin()`), 5 MB limit, MIME
+  allow-list `png/jpeg/webp/gif` (no SVG), UUID filenames, sanitizer
+  allow-list (`<img>` **https** only, no `data:` URIs, hosts limited to the CSP
+  `img-src` allowlist). Every accepted image is decoded and re-encoded
+  server-side; the detected format is checked against the claimed MIME type;
+  metadata (EXIF, colour profiles, comments) is stripped before storage; pixel
+  and decompression limits apply before decoding; anything that fails validation
+  is quarantined, never stored; objects are served from a dedicated cookieless
+  origin under `Referrer-Policy: no-referrer`; and images at or below the
+  tracking-pixel dimensions (≤2×2) are rejected at sanitize time. The upload
+  flow classifies before it stores: only publishable material is accepted, and
+  the admin image library states in the UI that every upload is public —
+  non-public material belongs in a private bucket behind signed URLs. The object
+  URL answers with `X-Robots-Tag: noindex`, and every upload, replacement and
+  deletion is recorded with actor, object, timestamp and request id
+  (storage-object changes are outside `audit_admin_change`); a takedown deletes
+  the object, purges the CDN/browser cache entry and records the removal
+  (`references/operate.md` §4.3). An approved external image is downloaded,
+  validated and stored in `kb-images` before it is referenced; the site serves
+  images from controlled storage, so an approved third-party host is an
+  exception that is mirrored, not hot-linked.
+- Seeds (in migrations, adapt copy): `site_sections` registry (spotlight,
+  experience, skills, jd, testimonials, transparency, disclaimer, footer,
+  fun), `holiday_banners` seasonal rows, `fun_links` rows, singleton
+  `cv_settings`, nine `content_collections` hubs.
+- Populate the profile domain via the admin panel (reference: entered
+  manually, not seeded by migrations): `candidate_profile` singleton,
+  `experiences`, `skills`, `gaps_weaknesses`, `recommendations`, private
+  SI-context (`values_culture`, `faq_responses`, `si_instructions`) and the
+  `cv_settings` row — nothing renders until it holds data.
+- pg_cron: hourly `rate_limits` cleanup (GDPR data minimization); daily
+  `rag_metrics` sweep (7-day TTL — `question_preview` is PII-scrubbed and
+  truncated to 100 chars, raw user text is never stored); daily
+  `cv_documents` sweep (30-day TTL — a `cv_settings` edit purges the cache
+  anyway).
+- `abuse_alerts.detail` carries aggregates only (counts, thresholds,
+  windows, timestamps, function names) — never question text, user content,
+  IPs or PII.
+- Migrations committed; align local with remote (`supabase db push`);
+  apply migrations BEFORE deploying schema-dependent changes.
+- Gate: `supabase db push` applies cleanly; anon read works, anon write
+  denied (raw client test), admin path works, signup is **disabled** (a
+  foreign-domain attempt is rejected as defence in depth).
+
+### Phase 4 — Core sections
+- Build: nav, Main Character ("Ask about my work" CTA), about, skills matrix, experience
+  timeline, testimonials/recommendations, just-for-fun links, disclaimer,
+  contact surface, footer — approved design system only.
+- Responsive (mobile-first) + accessible (contrast AA, focus states,
+  `prefers-reduced-motion`).
+- **Code-split below-the-fold sections, and fix anchor navigation for them.**
+  Lazy-mounting heavy sections (footer, long lists) on scroll keeps the entry
+  chunk small, but it breaks native `#hash` anchors and scroll-to-section
+  links: the target element is not mounted yet, and hydration can also swap
+  out the server-rendered copy until the chunk loads — so a link to a footer
+  block (e.g. "Download CV" / "Contact") only works after the page has been
+  scrolled through. Wherever you defer a section, give the mechanism two
+  parts: (1) each deferred section declares the anchor ids it renders; (2) a
+  small shared driver routes a hash (URL load or in-page link) to the owning
+  section, forces it to mount immediately, then scrolls once the element
+  actually exists (e.g. a `MutationObserver`), re-asserting after layout
+  settles. Route every scroll-to-section click through that driver rather
+  than assuming the element is present. This is a common, easy-to-miss bug
+  that a fresh install reproduces on first load only.
+- Gate: typecheck/lint/build green; browser check desktop + mobile;
+  cold-load anchor test — every advertised `#anchor` opened in a fresh
+  context lands on its section on first load, desktop and mobile.
+
+### Phase 5 — Content collections + knowledge base
+- Typed block model: `p`, `h2`, `h3`, `list`, `steps`, `table`, `checklist`,
+  `callout`, `diagram`, sanitized `rich` HTML. `ContentDoc` shape: `h1`,
+  `label`, `description`, `intro`, `tags`, `related`, `faqs`, `blocks`
+  (`slug` is a `content_docs` column, not a key in `doc`).
+- Collections user chose (hub + docs) with seed content; content = DATA —
+  runtime renders from Supabase, seed modules for empty-DB population only.
+- Hub/doc routes with server-side related-link resolution (direct + backlinks
+  + tag matches, ~6 limit); nav uses lightweight summaries.
+- Admin: WYSIWYG editor (TipTap), KB image library, related-pages picker
+  (live catalog), SI tag / FAQ-label / content generation via DeepSeek edge
+  functions; server-side HTML sanitizer on all rich content.
+- Gate: hub + doc pages render from DB; admin create/edit/publish works;
+  related links resolve; sanitizer strips disallowed markup.
+
+### Phase 6 — Interactive features
+- **SI chat + JD analysis**: edge functions call DeepSeek API via shared
+  client (`_shared/deepseek.ts`, key from the **`deepseek`** secret —
+  `Deno.env.get("deepseek")`, the exact name set in Step 11 of the guide).
+  Their public entry point is the **trusted ingress**: the Worker proxies the
+  requests and carries a shared secret (or a signed, short-lived assertion)
+  that the function verifies before any handling, and the client address is
+  taken only from the header the Worker sets (`cf-connecting-ip`) — never
+  `x-forwarded-for`, never a fallback, and a request without that header fails
+  closed. A direct call to the function URL without the ingress secret is
+  rejected before rate-limit evaluation. Strict input length caps, response
+  caching keyed on the cache version (model, system prompt, context, content
+  and policy versions — any change is a cache miss) with a response that trips
+  a safety or leakage check never cached. Cost is bounded **in front of the
+  provider**, not only by the 15-minute watchdog: a global monthly token/cost
+  budget, a per-endpoint concurrency cap, a maximum output size and a hard
+  circuit breaker, with the prepaid balance as the outer stop (ADR-0014); a
+  budget or breaker trip alerts immediately, out of band from the aggregate
+  run. Prompt-injection defence is **structure, not only instruction**:
+  instructions and untrusted content are structurally separated, no secret or
+  credential material is ever placed in the model context, and outputs are
+  validated deterministically with canary strings that detect context leakage.
+  NO Turnstile here (ADR-0007). Never expose API key to browser.
+  **Provider privacy**: both chat and JD surfaces show a notice **before**
+  content is submitted, stating that the question (with its retrieved context)
+  or the JD text goes to the SI provider, and each offers a non-SI alternative
+  (the knowledge base and the contact surface) — the redaction pass (emails,
+  phone numbers, addresses, identifiers, sensitive employment data) runs
+  **before** transmission, and `references/secure.md` §7 (Provider privacy)
+  owns the data-flow note with the provider's retention and model-training
+  terms, the transfer/subprocessor position and the deletion limits.
+- **CV download**: edge function `generate-cv`, Turnstile widget in dialog,
+  server-side `siteverify` on the **`POST` only** — the challenge travels in a
+  body, never in a URL — with hyphenated error-code diagnostics (`no-token`,
+  `no-secret`, `http-*`, `error-codes`); 403 on missing/dummy token; the
+  verified `POST` mints a short-lived, single-use signed download token that
+  `GET`/`HEAD` must present, so no accepted method is unverified; downloads
+  answer `Referrer-Policy: no-referrer` and neither token is ever logged;
+  rate-limited. Content from `cv_settings` (headline, summary, achievements,
+  keywords, certifications, education, notes, admin-editable
+  `creation_prompt` custom rules); generated PDF cached in `cv_documents`,
+  keyed by the whole CV input (settings including `creation_prompt`, plus
+  the profile/experience data the PDF embeds), so any settings or content
+  change is a cache miss; the function reads `cv_settings` with the
+  service-role client.
+- **Edge-function inventory** (all `--no-verify-jwt`, CORS allowlist, 405/415
+  guards; DATABASE_SCHEMA.md §9 has the DB access matrix): `chat`,
+  `analyze-jd`, `generate-cv`, `generate-doc-content`,
+  `generate-doc-tags`, `generate-faq-labels`, `translate-recommendation`
+  (writes `recommendations.recommendation_text_en` with
+  `translation_reviewed = false`; the view serves it only after an admin
+  confirms it, plus `is_translated`), `get-contact` (public contact
+  endpoint — profile-view fields only, never email/phone), `sitemap`
+  (dynamic sitemap.xml from catalog), `abuse-alert` (scheduled watchdog,
+  every 15 min via `supabase/config.toml`, thresholds via `ABUSE_*`
+  secrets, writes `abuse_alerts` — `detail` is aggregates only (counts,
+  thresholds, windows, timestamps, function names), never question text,
+  user content, IPs or PII — optional counts-only webhook).
+- **Admin-function authentication (non-negotiable, DATABASE_SCHEMA.md §9):**
+  the four admin functions (`generate-doc-content`, `generate-doc-tags`,
+  `generate-faq-labels`, `translate-recommendation`) deploy `--no-verify-jwt`
+  and MUST verify the caller's JWT themselves: check presence AND signature
+  (`auth.getUser()` via the service-role client — decoding without signature
+  verification is NOT authentication). Behaviour: no token → 401; tampered/
+  forged token → 401; valid non-admin token → 403; admin token → works.
+  Ordering is part of the contract: the `OPTIONS` preflight is the **only**
+  pre-auth response; every other request runs the signature-verifying
+  `auth.getUser()` before the method guard, the body guard and any handler
+  logic — a return path ahead of auth is an auth bypass. This half of the
+  contract is a **code-review gate**: SQL cannot see a function's control
+  flow, so read each function's source and confirm nothing returns before the
+  signature check — the six cases prove the behaviour, the source review
+  proves the code path.
+  The four admin functions are not the whole service-role surface. For the
+  non-admin service-role endpoints (`chat`, `analyze-jd`, `generate-cv`,
+  `get-contact`, `sitemap`, `abuse-alert`) the same ordering rule applies to
+  their real control — the ingress/origin check and the rate limit, the
+  Turnstile `siteverify` on `generate-cv`, the scheduler for `abuse-alert` —
+  and the case matrix is adapted accordingly.
+  Gate: for **every** service-role endpoint run the eight-case matrix (no
+  token, forged, expired, non-admin, revoked-admin, valid admin, unsupported
+  method, malformed body); for each admin function the four token cases must
+  hold (no token → 401, tampered/forged → 401, valid non-admin → 403, admin →
+  works) and the ordering cases hold everywhere: `OPTIONS` without a token
+  returns the preflight, and a tokenless non-`OPTIONS` request returns 401
+  even for an unsupported method.
+- **Holiday banners**: recurring seasonal banners, dismissal logic.
+- **Machine-readable routes**: `/llms.txt` + `/llms-full.txt`, `sitemap.xml`
+  (dynamic from catalog), `robots.txt` (noindex admin/auth/staging),
+  `openapi.json`, `Accept: text/markdown` negotiation (SSR returns Markdown
+  for SI crawlers, canonical URL logic), `.well-known/` SI-discovery
+  surfaces (`si.txt`, `llms.txt`, `agent-card.json`, `agent-skills`,
+  `api-catalog`). **JSON-LD (schema.org) derived from the same data**: root
+  graph `Person` + `WebSite` (stable `@id` anchors + social image),
+  `ProfilePage` on home, `BreadcrumbList` on content pages, `FAQPage`
+  (Question/Answer) on docs with FAQs, `CollectionPage` on hubs, `Article`
+  on article docs, and collection-typed docs (`Service`,
+  `EducationalOccupationalCredential`, `Event` for certifications/speaking).
+  Route files lowercase on disk.
+- **SERP meta description.** Render a short HTML `<meta name="description">`
+  (≤ ~155 chars, cut on a word boundary) for search snippets, while keeping
+  the full text in `og:description`, `twitter:description` and the JSON-LD.
+  Derive both from the same content field so the visible page copy is never
+  truncated and the two stay consistent. Audit the live pages: no page should
+  ship a SERP description that is empty, over ~160 chars, or out of sync with
+  its social/meta description.
+- Gate: gates reject bad tokens; the eight-case matrix passes for every
+  service-role endpoint; rate limits enforced; happy paths
+  end-to-end; llms.txt returns 200; admin functions reject missing/tampered/
+  non-admin tokens (401/401/403) and have no pre-auth return path.
+
+### Phase 7 — Deploy (GitHub Actions, staging first)
+- Workflows: `ci.yml` + `cloudflare-migration.yml` (build/typecheck/lint/test
+  + dry-run + fail-closed SSR smoke with placeholder env), `deploy.yml`,
+  `rollback.yml`, `apply-migration.yml`, plus optional
+  `cloudflare-preview.yml` (branch-restricted `workflow_dispatch` preview:
+  public build vars only, build + `wrangler deploy --dry-run` + deploy to a
+  workers.dev preview URL, noindex; a **build-validation surface only** —
+  dispatch restricted to the deploy branch, never the link the owner is
+  given, never a staging substitute; staging covers the same ground).
+- `deploy.yml`: **staging** auto-deploys on push to deploy branch (docs-only
+  paths ignored): build; `scripts/patch-wrangler.mjs preview`;
+  `wrangler deploy` (persistent preview worker, workers.dev, noindex); live
+  smoke; blue/green parity vs prod; the edge-function deploy
+  (`scripts/deploy-edge-functions.sh`, `--no-verify-jwt`) against the
+  **staging project**, so the function set is exercised there first.
+  **production** = `workflow_dispatch`
+  against protected `production` environment (required reviewers; branch
+  restriction): build; patch (prod); `wrangler deploy` (custom domains apex
+  + `www`, `www` 301 to apex worker-side); smoke; the edge-function deploy
+  against the **production project** (`--no-verify-jwt`); live
+  CORS check; human browser checklist. The same migration and the same
+  function artifact are promoted through both environments — there is no
+  environment-specific build.
+- **Script contracts** (write these to spec, all CI-wired):
+  `patch-wrangler.mjs <preview|prod>` — patches `dist/server/wrangler.json`:
+  preview → workers.dev + noindex + `*-preview` name; prod →
+  `workers_dev=false` + custom domains. `smoke-test-live.mjs` — `BASE_URL`,
+  optional `EXPECT_NOINDEX=true`; asserts every route 200 and (when
+  expected) `x-robots-tag: noindex`; exit codes 0/1/2 (pass/fail/missing
+  env). `verify-public-parity.mjs` — `BLUE_URL` (default prod) vs
+  `GREEN_URL`; fetches the core route list on both and compares HTML;
+  skips routes absent in either environment (e.g. `/admin`, `/auth`);
+  exit codes 0/1/2 (parity/mismatch/missing env).
+  `verify-cors-live.mjs` — per-edge-function live CORS check against the
+  committed allowlist + Turnstile allow-header state (absent on
+  `chat`/`analyze-jd`, present on `generate-cv`); exit codes 0/1/2
+  (pass/fail/missing env), and a non-zero exit **fails the deploy job** —
+  it is a required step, never a warning. `verify-built-worker.mjs`
+  — wrangler test harness over the built worker: health endpoint must
+  return 200 `application/health+json` with `{"status":"pass"}`, and SSR
+  must fail closed (5xx, no stale content) when Supabase is unreachable
+  (CI passes an RFC-reserved `.invalid` host). `deploy-edge-functions.sh` —
+  loops `supabase/functions/*/index.ts`, skips `_shared`, deploys with
+  `--no-verify-jwt`, idempotent, oversized bundle (413) → **fail the run**
+  (a partially deployed function set is an inconsistent release).
+- Auth: API tokens (repo secrets): `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID` (variable), `SUPABASE_ACCESS_TOKEN` (PAT). Phase 0
+  runbook documents creation; jobs fail fast when missing. Local
+  `wrangler login` OAuth = fallback only. **Prefer short-lived, federated
+  credentials over stored secrets** wherever the platform supports them
+  (GitHub Actions OIDC into Cloudflare, workload identity into Supabase where
+  offered); where a provider offers only a long-lived token, scope it to one
+  project/environment/API surface, rotate it on a schedule as well as on
+  suspicion, alert on any use outside the approved workflows, keep
+  pull-request workflows away from deployment secrets, and pin every
+  third-party action to a full commit SHA.
+- DB migrations NOT applied by deploy workflows — apply before deploying
+  schema-dependent changes (`supabase db push` / Management API /
+  `apply-migration.yml`). `apply-migration.yml` is dispatch-guarded
+  (protected `production` environment, required reviewers, deploy-branch
+  restriction) and ends with the post-migration check: `supabase migration
+  list` clean, live smoke passes, run recorded. A failed check is a failed
+  deploy — recover with a follow-up migration, never a half-applied schema.
+- Rollback: the run report carries the live version id before every
+  production deploy. The runbook, in order — identify the last known-good
+  version id from the run report → dispatch `rollback.yml` with that id (it
+  restores that Worker version **and** re-deploys that release's function set
+  from the release manifest, so the whole release rolls back together) → live
+  smoke + parity → record the
+  run and name what was not undone. Declare the rollback successful only
+  after the smoke passes; if it still fails, go to the recovery path
+  instead of rolling further back. A release whose manifest is missing a
+  function hash cannot be rolled back and does not ship.
+- Gate: verify BOTH targets after each deploy; docs-only changes skip deploy.
+
+### Phase 8 — Hardening + verification (security gate)
+- Security checklist — every item mandatory: **final RLS audit** (below);
+  RLS + anon-grant audit (never revoke "dead" anon grant without verifying
+  every reader); Turnstile gate on the CV endpoint only (challenge verified on
+  the `POST`, signed single-use token on `GET`/`HEAD`); per-IP rate limits on
+  the SI endpoints behind the trusted ingress, plus the global budget,
+  per-endpoint concurrency cap, maximum output size and circuit breaker in
+  front of the provider; CORS allowlist (prod domains + staging only); full
+  header suite (HSTS 180d, `preload` only with a ≥1-year `max-age`; CSP no
+  `unsafe-inline` in `script-src` via per-response nonce
+  + `<meta property="csp-nonce">`, with `style-src 'unsafe-inline'` only while
+  React inline styles need it; `frame-ancestors 'none'` on every HTML response,
+  `X-Content-Type-Options: nosniff`;
+  `Referrer-Policy: strict-origin-when-cross-origin`; `Permissions-Policy`;
+  `X-Frame-Options` as the legacy backstop); 405/415 guards on edge functions;
+  `abuse-alert` watchdog (scheduled, counts only) — the cost signal, never
+  attack detection, because security telemetry is separate and off-platform
+  (authentication failures, admin-role and account changes, grant/policy/
+  storage-policy changes, large reads, secret-access anomalies, RLS denial
+  spikes, header regressions, suspicious function invocation), each with a
+  severity, an owner, an escalation path and a response time
+  (`references/operate.md` §4.1); SVG out of image bucket; legacy anon
+  key disabled; secret + dependency scanning in CI (both, enforced — not
+  optional), with the supply-chain evidence in place — SBOM (CycloneDX or SPDX)
+  per release, dependency-review on every pull request blocking vulnerable
+  additions, every third-party action pinned to a full commit SHA (**never** a
+  tag), SAST (CodeQL or equivalent) and a workflow-security analyzer (`zizmor`
+  or equivalent) in CI, signed provenance for the built artifacts verified
+  before deploy, and the bundle/artifact secret scan run against what ships,
+  not only the source tree; test application rendering under the tightened
+  policy **before** enforcing it — the owner's pages, the KB hub/detail, the
+  admin WYSIWYG and the error pages must render with no style breakage and no
+  new CSP violation reports; browser smoke test; `/llms.txt` 200. The normative
+  requirements are machine-checkable: policy-as-code where the platform allows,
+  migration linting including policy diffs, generated test suites,
+  machine-readable deviation and omission records, and a versioned security
+  baseline that the release records itself against — a release that omits
+  required evidence fails.
+- **Final RLS audit — mandatory, run at the very end.** Run the audit SQL
+  in `DATABASE_SCHEMA.md` §12 (A–H, not eyeballs; automate B–H in
+  `scripts/audit-rls.mjs` so it is one command): RLS enabled on all 22
+  tables; anon base-table `SELECT` is denied on **every** table (registries
+  and `cv_settings` included — public reads go through the views); the
+  **policy inventory (F)** shows no permissive non-admin policy on
+  admin/private tables; the **authenticated non-admin probe (G2)** fails on
+  private reads and admin writes; the **admin probe (G3)** reads the admin
+  tables and `abuse_alerts` successfully, with `admin_audit` read-only;
+  deny-all tables
+  stay deny-all; `*_public` views have no anon/authenticated/public write
+  grants (C — owner/service_role grants are expected, not findings);
+  `EXECUTE` grants on cache/rate-limit RPCs go to no API role (D);
+  service-role grants match the edge-function matrix. Fix every deviation
+  before launch — the RLS model is the actual security boundary.
+- **Service-role auth test — the eight-case matrix for every endpoint.** For
+  every service-role endpoint — the four admin functions
+  (`generate-doc-content`, `generate-doc-tags`, `generate-faq-labels`,
+  `translate-recommendation`) and the non-admin endpoints (`chat`,
+  `analyze-jd`, `generate-cv`, `get-contact`, `sitemap`, `abuse-alert`) — run
+  the eight cases: no token, forged, expired, non-admin, revoked-admin, valid
+  admin, unsupported method and malformed body, recorded per release. For the
+  admin functions: no token → 401; tampered/forged token → 401; valid
+  non-admin token → 403; admin token → works; signature-verified via
+  `auth.getUser()` (DATABASE_SCHEMA.md §9). The non-admin endpoints test their
+  real control — the ingress/origin check and the rate limit, the Turnstile
+  `siteverify` on `generate-cv`, the scheduler for `abuse-alert` — with the
+  adapted matrix in `references/secure.md` §3 item 7. Ordering cases
+  everywhere: `OPTIONS` returns the
+  preflight without a token, and a tokenless non-`OPTIONS` request returns
+  401 even for an unsupported method (no handler path precedes the auth
+  check).
+- **Independent security review.** Run a FRESH session (new conversation,
+  no memory of the build) with this brief (copy-paste into the new
+  session):
+  ```
+  You are an independent security reviewer with no memory of this build.
+  Read: the skill, DATABASE_SCHEMA.md §10 and §12, the security checklist,
+  and the code under review. Threat model: the RLS model is the security
+  boundary; rate limits/caps/caching/Turnstile are abuse controls only.
+  Re-run DATABASE_SCHEMA.md §12 queries A–H and the service-role auth tests
+  for every endpoint — no token / forged / expired / non-admin /
+  revoked-admin / valid admin / unsupported method / malformed body, plus the
+  ordering cases: OPTIONS returns the preflight without a token, and a
+  tokenless non-OPTIONS request returns 401 even for an unsupported
+  method. Report findings as a table: severity (blocker/major/minor/nit),
+  location (file + line/function), evidence, concrete fix. Do not modify
+  anything.
+  ```
+  Fix every finding before launch. Record findings, compensating
+  controls and risk acceptances (free tier only — ADR-0008, plus the
+  cost-bound rows in `references/operate.md` §7) in
+  `docs/PROJECT_REFERENCE_ARCHITECTURE.md`, `docs/CI-CD-RULES.md`, new
+  `adr/ADR-000N.md` records. These records live in the site's own repo;
+  the ADR numbers cited in this kit are labels carried from the build it was
+  written against, not documents that ship with it.
+- **Abuse vs attack — state it plainly.** Rate limits, input caps, response
+  caching and Turnstile limit abuse and excessive SI use; they are not
+  designed to stop a determined attacker. The RLS model is the security
+  boundary. Do not present the abuse controls as attack protection.
+- **Accepted CV-gate risk (ADR-0011).** Turnstile plus the per-IP limit stop
+  abuse and excessive SI use; they do not stop a determined attacker who solves
+  the challenge programmatically, and CORS is browser-only, so it is not a gate.
+  Revisit if the threat model expands (targeted abuse of the CV endpoint at
+  volume, confidential material in the CV, or a plan that affords a second
+  control).
+- **MFA status checked and recorded.** MFA enabled on GitHub, Cloudflare,
+  Supabase and DeepSeek — phishing-resistant (passkey or security key) where
+  the provider offers it. Supabase's **Basic Multi-Factor Auth is included on
+  the free plan**, so the admin login carries TOTP and `aal2` is enforced in
+  the policies (`(select auth.jwt()->>'aal') = 'aal2'`); only phone MFA is
+  the paid add-on, and it is not needed. Signup stays disabled with a user-id
+  allowlist, the password lives in the password manager, and the reset mailbox
+  itself has MFA.
+- **Session revocation and token lifetime.** On any change to
+  `app_metadata.role`, password, MFA enrolment or account status, the affected
+  sessions are revoked and the user is signed out (Supabase global sign-out),
+  so a token minted before the change cannot act; the access-token lifetime is
+  the documented `[auth] jwt_expiry` in `supabase/config.toml`, and every
+  privileged write revalidates the caller — `sessions_timebox` stays unset
+  because it is Pro-gated (ADR-0008), which is why the lifetime is enforced by
+  JWT expiry plus that per-request revalidation.
+- **Backups before launch.** Content is data and data is the site: daily
+  (14 days), weekly (8 weeks) and monthly (12 months) tiers of
+  `supabase db dump` + Storage export, held off the Supabase platform, with
+  versioning or immutable retention at the destination and alerts on deletion
+  or policy change; a restore verified at least monthly, not just once, with
+  the recovery-point and recovery-time objectives recorded.
+- Final gate: full checklist verified; summarize to user: what built, where
+  deployed, what remains.
+
+## Verification checklist (run at end)
+
+- [ ] `bun run typecheck && bun run lint && bun run test && bun run build` green
+- [ ] **Final RLS audit passed (DATABASE_SCHEMA.md §12 A–H)** — RLS enabled on all 22 tables; policy inventory (F) has no permissive non-admin policy on admin/private tables; authenticated non-admin probe (G2) fails on private reads and admin writes; the admin probe (G3) reads the admin tables and `abuse_alerts` successfully, with `admin_audit` read-only; anon base-table `SELECT` denied on every table (registries and `cv_settings` included — public reads go through the views); anon write denied on ALL tables; views read-only for API roles; RPC EXECUTE grants clean; the retention-sweep indexes exist and no policy calls `is_admin()` bare (H)
+- [ ] **Service-role auth test passed** — for every service-role endpoint (the four admin functions plus `chat`, `analyze-jd`, `generate-cv`, `get-contact`, `sitemap`, `abuse-alert`) the eight-case matrix (no token, forged, expired, non-admin, revoked-admin, valid admin, unsupported method, malformed body) is recorded per release; the four admin functions reject no/forged/non-admin tokens (401/401/403) and accept the admin token (signature-verified); plus the ordering cases — `OPTIONS` returns the preflight without a token, and a tokenless non-`OPTIONS` request returns 401 even for an unsupported method (no handler path precedes the auth check)
+- [ ] **IP-header trust test**: the spoofed `cf-connecting-ip`/`x-forwarded-for` burst is sent **through the trusted ingress** and does NOT bypass the rate limit on chat/analyze-jd (loop past the cap with rotating fake headers); a direct call to the function URL without the ingress secret is rejected (`401`/`403`) and never reaches the rate-limit key; a distributed-source variant from several source networks with the headers rotated still keys on the real address; no code path reads `x-forwarded-for` at all (grep the functions), and a request without the header the Worker sets fails closed instead of sharing an attacker-chosen bucket
+- [ ] **Prompt-injection test**: injected instructions in a JD / chat question do not leak the system prompt or private SI context; tool-oriented, fragmented, encoded, indirect and multi-turn payloads are tested too, and a replay of each **through the cache** is retested rather than assumed clean
+- [ ] **Sanitizer test**: `<script>`, `<img onerror=…>`, `javascript:` hrefs, `<iframe>` and `data:` URIs all stripped; the adversarial corpus (mutation-XSS, encoding, namespace transitions) is fuzzed with malformed and namespace-transitioning markup, not only the named payloads, and re-runs after any editor, parser, renderer or allowlist change
+- [ ] **No secret shapes in the bundle**: `sk-`, `sb_secret_`, Turnstile `0x3…` all absent from `dist/`
+- [ ] Anon client: reads public views/RPCs, writes nothing
+- [ ] Turnstile: missing token = 403; dummy token = `invalid-input-response`; happy path OK; `siteverify` on the `POST` only, with the short-lived single-use signed download token on `GET`/`HEAD` — every method gated server-side, no `GET` bypass and no challenge in a URL
+- [ ] SI endpoints: rate limit 429 after burst; input caps enforced; no key in browser bundle; the global token/cost budget, per-endpoint concurrency cap, maximum output size and circuit breaker sit in front of the provider, and a budget or breaker trip alerts immediately rather than waiting for the 15-minute run
+- [ ] Content: hub + doc pages render from DB; admin WYSIWYG + images + related pages work; sanitizer strips disallowed markup; images at or below the tracking-pixel dimensions (≤2×2) are rejected at sanitize time, a failed upload is quarantined rather than stored, and every upload, replacement and deletion is recorded with actor, object, timestamp and request id
+- [ ] Staging + prod both 200; staging noindex; www = 301 apex
+- [ ] llms.txt / llms-full.txt / sitemap.xml / robots.txt / openapi.json 200
+- [ ] Security headers live: CSP rotating `nonce-…`, no `'unsafe-inline'` in `script-src` (with `style-src 'unsafe-inline'` only while React inline styles need it); `frame-ancestors 'none'` on **every** HTML response — SSR, static and error pages alike — proven by an automated live header assertion over every route including the error responses (5xx/404), not only the core route list; HSTS 180d (`preload` only with a ≥1-year `max-age` and every subdomain on HTTPS); `nosniff`; `Referrer-Policy`; `Permissions-Policy`; `X-Frame-Options` on non-SSR responses; the nonce actually matches the hydration scripts
+- [ ] **Availability**: the public read paths target 99.9% monthly availability, the degraded read-only mode (signed, sanitized, published rows only, served with `noindex`) is the authorised exception, and the external synthetic check — the health endpoint plus one public route, run from outside Cloudflare, at least every 15 minutes — is configured and firing
+- [ ] Edge functions: wrong method = 405 + `Allow`; non-JSON body = 415
+- [ ] CI: secret + dependency scanning enabled and enforced; no key material in git history; the supply-chain evidence is present — SBOM (CycloneDX or SPDX) per release, dependency-review blocking vulnerable additions on every pull request, every third-party action pinned to a full commit SHA (never a tag), SAST (CodeQL or equivalent) and a workflow-security analyzer (`zizmor` or equivalent) in CI, signed provenance for the built artifacts verified before deploy, and the bundle/artifact secret scan run against what ships
+- [ ] **MFA status checked and recorded** — MFA enabled on GitHub, Cloudflare, Supabase and DeepSeek (phishing-resistant where the provider offers it); the **Supabase-hosted admin login carries TOTP MFA with `aal2` enforced in the policies** (Basic MFA is included on the free plan — only phone MFA is paid), so there is no MFA acceptance to make; any change to `app_metadata.role`, password, MFA enrolment or account status revokes the affected sessions and signs the user out, and the access-token lifetime is the documented `[auth] jwt_expiry`; signup stays disabled with a user-id allowlist and the reset mailbox itself has MFA, recorded in `docs/PROJECT_REFERENCE_ARCHITECTURE.md`
+- [ ] No secrets in browser bundle; `.env.local` gitignored; nothing secret committed
+- [ ] Backups configured — daily (14 days), weekly (8 weeks) and monthly (12 months) tiers of `supabase db dump` + Storage export held off the Supabase platform, with versioning or immutable retention at the destination and deletion/policy-change alerts; a restore verified at least monthly (not just once), and the recovery-point/recovery-time objectives recorded
+- [ ] Layout per approved questionnaire — original unless user chose copy
+- [ ] Docs + ADRs up to date
+
+## Security self-test — final gate (run this LAST, before reporting done)
+
+Before you report the build complete, run this self-test yourself; do not
+hand it to the user to run. It must PASS in full — any failure means the
+build is not done.
+
+1. **RLS check (the security boundary).** Run `DATABASE_SCHEMA.md` §12 A–H
+   (or `scripts/audit-rls.mjs`). Assert: RLS is enabled on **all** tables;
+   anon base-table `SELECT` is denied on **every** table (registries and
+   `cv_settings` included — public reads go through the views); the policy
+   inventory has no permissive non-admin policy on admin or private tables;
+   anon `INSERT`/`UPDATE`/`DELETE` is denied on every table; an
+   authenticated non-admin cannot read private rows or write admin rows, and
+   the admin probe (G3) reads the admin tables and `abuse_alerts` with
+   `admin_audit` read-only;
+   `*_public` views are read-only to every API role; `EXECUTE` on
+   cache/rate-limit RPCs is granted to no API role; service-role grants match
+   the edge-function matrix.
+2. **Anon probe.** As a raw anon client, reads succeed on public views/RPCs
+   and every write attempt returns a permission error.
+3. **Service-role auth.** For every service-role endpoint — the four admin
+   functions and the non-admin endpoints (`chat`, `analyze-jd`, `generate-cv`,
+   `get-contact`, `sitemap`, `abuse-alert`) — run the eight-case matrix
+   (no token, forged, expired, non-admin, revoked-admin, valid admin,
+   unsupported method, malformed body; `references/secure.md` §3 item 7 for
+   the non-admin adaptation), plus the ordering cases: `OPTIONS` returns the
+   preflight without a token, and a tokenless non-`OPTIONS` request returns
+   401 even for an unsupported method (no handler path precedes the auth
+   check).
+4. **Secrets + bundle scan.** No secret-shaped strings in `dist/`; nothing
+   secret in git history.
+5. Report the result plainly: **PASS** (state what you verified, with counts)
+   or list each deviation as blocker/major/minor with its fix. Do not mark
+   the build complete while step 1 or step 3 has a failure.

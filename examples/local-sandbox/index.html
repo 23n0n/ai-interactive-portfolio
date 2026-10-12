@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preload" href="/fonts/Libron-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="description" content="Zygfryd Niewiadomski-Nieśmiałek — interactive portfolio demo. Services, technologies, and a friendly SI chat." />
+    <title>Zygfryd Niewiadomski-Nieśmiałek — Interactive Portfolio</title>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Person",
+          "@id": "https://demo.invalid/#person",
+          "name": "Zygfryd Niewiadomski-Nieśmiałek",
+          "jobTitle": "Full-Stack Tinkerer & Friendly SI Enthusiast",
+          "description": "Interactive portfolio demo persona. Placeholder content — not a real person.",
+          "knowsAbout": ["TypeScript", "React", "Node.js", "PostgreSQL", "Tailwind CSS", "SI chatbots"]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://demo.invalid/#website",
+          "url": "https://demo.invalid/",
+          "name": "Zygfryd Niewiadomski-Nieśmiałek — Interactive Portfolio",
+          "publisher": { "@id": "https://demo.invalid/#person" }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
