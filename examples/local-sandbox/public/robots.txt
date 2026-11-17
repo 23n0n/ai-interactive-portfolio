@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+# Demo build: nothing sensitive is indexed-adjacent; no admin/auth routes exist.
+Sitemap: /sitemap.xml

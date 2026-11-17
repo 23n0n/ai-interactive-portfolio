@@ -1,0 +1,19 @@
+# Zygfryd Niewiadomski-Nieśmiałek — Interactive Portfolio (demo)
+
+Zygfryd Niewiadomski-Nieśmiałek is a fictional persona used to demo the
+interactive-portfolio skill. This is placeholder content; replace before any
+real launch.
+
+## Pages
+- Home: /
+- Services: /services
+- Service docs: /services/si-chatbot-embedding, /services/react-typescript, /services/fullstack-consulting
+- Technologies: /technologies
+- Technology docs: /technologies/typescript, /technologies/react, /technologies/postgresql, /technologies/supabase
+- Contact / Ask SI: /contact
+- CV (English): /cv
+
+## Key facts (placeholder)
+- Role: Full-Stack Tinkerer & Friendly SI Enthusiast
+- Strong skills: TypeScript, React, Node.js, PostgreSQL, Tailwind CSS
+- Offerings: SI chatbot embedding, React + TypeScript builds, full-stack consulting

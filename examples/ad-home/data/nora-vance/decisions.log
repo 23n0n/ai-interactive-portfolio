@@ -1,0 +1,5 @@
+[2026-09-18T09:10:00Z] intake: registered site nora-vance for nora-vance.example; owner has no accounts yet
+[2026-09-18T09:45:00Z] design-contract: APPROVED by owner — dark-first, serif headings, mono accents; wireframe accepted as shown
+[2026-09-18T10:20:00Z] decision: Turnstile on the CV endpoint only; chat and JD analysis use per-IP rate limits (ADR-0007 carried over)
+[2026-09-18T12:30:00Z] change: build finished to the approved design; staging deploy posted for owner review
+[2026-09-18T14:20:00Z] publish: go-live APPROVED by owner; production deploy run-20260918-03

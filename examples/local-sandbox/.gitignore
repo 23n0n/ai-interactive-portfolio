@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.local
+.env.*.local
+.npmcache
+.npmlogs
+.buntmp
+.buninstall
+.buncache
+*.log
+.DS_Store
+
+# TypeScript build info
+*.tsbuildinfo

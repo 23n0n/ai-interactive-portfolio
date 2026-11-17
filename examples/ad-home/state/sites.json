@@ -1,0 +1,14 @@
+{
+  "sites": [
+    {
+      "id": "nora-vance",
+      "owner": "Nora Vance",
+      "domain": "nora-vance.example",
+      "plan": "free",
+      "repo": "git@github.com:owner/nora-vance.git",
+      "status": "live",
+      "created": "2026-09-18T09:00:00Z",
+      "updated": "2026-09-18T14:20:00Z"
+    }
+  ]
+}
